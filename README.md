@@ -15,7 +15,7 @@ Di bagian general -> Scroll Kebawah -> Download google-services.json
 ## BACA RULES SEBELUM NGODING 
 ## RULES DARI PM!!!
 
-- Aturan warna tema background, text color, dll → [rules](rules/theme%20rules)
+- Aturan warna tema background, text color, dll → [rules](rules/README.md)
 
 ## Lanjutan
 
