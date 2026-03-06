@@ -5,7 +5,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'controllers/auth_controller.dart';
 import 'utils/theme_notifier.dart';
-import 'widgets/app_drawer.dart';
+import 'widgets/login_drawer.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -13,9 +13,6 @@ void main() async {
   runApp(const MyApp());
 }
 
-// ============================================================
-//  MyApp
-// ============================================================
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -65,9 +62,6 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// ============================================================
-//  MyHomePage
-// ============================================================
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
 
@@ -121,7 +115,7 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ],
       ),
-      endDrawer: AppDrawer(
+      endDrawer: LoginDrawer(
         currentUser: _currentUser,
         isSigningIn: _isSigningIn,
         onSignIn: _handleSignIn,

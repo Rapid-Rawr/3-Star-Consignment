@@ -7,25 +7,22 @@ class AuthController {
   AuthController._();
   static final AuthController instance = AuthController._();
 
-  // ── Stream auth state ──
   Stream<User?> get authStateChanges =>
       FirebaseAuth.instance.authStateChanges();
 
   User? get currentUser => FirebaseAuth.instance.currentUser;
 
-  // ── Inisialisasi Google Sign-In ──
   Future<void> init() async {
     try {
       await GoogleSignIn.instance.initialize();
     } catch (_) {}
   }
 
-  // ── Sign In dengan Google ──
   Future<void> signInWithGoogle(BuildContext context) async {
     try {
       final GoogleSignInAccount account = await GoogleSignIn.instance
           .authenticate();
-      final GoogleSignInAuthentication auth = await account.authentication;
+      final GoogleSignInAuthentication auth = account.authentication;
       final credential = GoogleAuthProvider.credential(idToken: auth.idToken);
       await FirebaseAuth.instance.signInWithCredential(credential);
     } catch (e) {
@@ -37,7 +34,6 @@ class AuthController {
     }
   }
 
-  // ── Sign Out ──
   Future<void> signOut() async {
     await FirebaseAuth.instance.signOut();
     await GoogleSignIn.instance.signOut();
