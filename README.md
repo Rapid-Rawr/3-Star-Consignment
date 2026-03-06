@@ -12,6 +12,11 @@ Di bagian general -> Scroll Kebawah -> Download google-services.json
 
 ![Screenshot Location Google Service JSON File](assets/image/Screenshot%20Guide%20Google%20Service%20Location.png)
 
+## BACA RULES SEBELUM NGODING 
+## RULES DARI PM!!!
+
+- Aturan warna tema background, text color, dll → [rules](rules/theme%20rules)
+
 ## Lanjutan
 
 Proyek ini merupakan titik awal untuk aplikasi Flutter dengan integrasi Firebase.
