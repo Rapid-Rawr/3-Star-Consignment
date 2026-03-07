@@ -95,7 +95,21 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<void> _handleSignIn() async {
     setState(() => _isSigningIn = true);
     await _auth.signInWithGoogle(context);
-    if (mounted) setState(() => _isSigningIn = false);
+    if (mounted) {
+      setState(() => _isSigningIn = false);
+      // Cek apakah login berhasil
+      if (FirebaseAuth.instance.currentUser != null) {
+        _scaffoldKey.currentState?.closeEndDrawer();
+        final name =
+            FirebaseAuth.instance.currentUser?.displayName ?? 'Pengguna';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Anda berhasil masuk sebagai $name'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _handleSignOut() async {

@@ -1,7 +1,10 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import '../widgets/app_dialog.dart';
 
 class AuthController {
   AuthController._();
@@ -19,6 +22,21 @@ class AuthController {
   }
 
   Future<void> signInWithGoogle(BuildContext context) async {
+    // ── Pre-check: cek koneksi internet sebelum mulai ──
+    try {
+      final result = await InternetAddress.lookup(
+        'google.com',
+      ).timeout(const Duration(seconds: 4));
+      if (result.isEmpty || result[0].rawAddress.isEmpty) {
+        if (context.mounted) _showNoInternetDialog(context);
+        return;
+      }
+    } catch (_) {
+      if (context.mounted) _showNoInternetDialog(context);
+      return;
+    }
+
+    // ── Lanjut proses sign-in ──
     try {
       final GoogleSignInAccount account = await GoogleSignIn.instance
           .authenticate();
@@ -26,12 +44,57 @@ class AuthController {
       final credential = GoogleAuthProvider.credential(idToken: auth.idToken);
       await FirebaseAuth.instance.signInWithCredential(credential);
     } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Sign in failed: $e')));
+      // ── 1. User cancel — diam saja ──────────────────────
+      if (e is PlatformException && e.code == 'sign_in_cancelled') return;
+      final errStr = e.toString().toLowerCase();
+      if (errStr.contains('sign_in_cancelled') ||
+          errStr.contains('canceled') ||
+          errStr.contains('cancelled'))
+        return;
+
+      if (!context.mounted) return;
+
+      // ── 2. Tidak ada koneksi — tampilkan AppDialog ──────
+      final isNetworkError =
+          e is SocketException ||
+          (e is FirebaseAuthException && e.code == 'network-request-failed') ||
+          errStr.contains('network') ||
+          errStr.contains('socket') ||
+          errStr.contains('failed host lookup');
+
+      if (isNetworkError) {
+        showAppDialog(
+          context: context,
+          title: 'Tidak Ada Koneksi',
+          titleIcon: const Icon(Icons.wifi_off_rounded),
+          content: 'Periksa koneksi internet Anda lalu coba lagi.',
+          actions: [
+            AppDialogAction(
+              label: 'OK',
+              onPressed: () => Navigator.pop(context),
+            ),
+          ],
+        );
+        return;
       }
+
+      // ── 3. Error tak terduga — snackbar ─────────────────
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal masuk: $e')));
     }
+  }
+
+  void _showNoInternetDialog(BuildContext context) {
+    showAppDialog(
+      context: context,
+      title: 'Tidak Ada Koneksi',
+      titleIcon: const Icon(Icons.wifi_off_rounded),
+      content: 'Periksa koneksi internet Anda lalu coba lagi.',
+      actions: [
+        AppDialogAction(label: 'OK', onPressed: () => Navigator.pop(context)),
+      ],
+    );
   }
 
   Future<void> signOut() async {

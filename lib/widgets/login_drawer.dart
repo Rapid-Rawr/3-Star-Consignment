@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../utils/theme_notifier.dart';
+import 'app_dialog.dart';
 
 class LoginDrawer extends StatelessWidget {
   final User? currentUser;
@@ -186,95 +187,36 @@ class LoginDrawer extends StatelessWidget {
                           ),
                         ),
                         onTap: () async {
-                          // Navigator.pop(context);
-                          final confirm = await showDialog<bool>(
+                          bool confirmed = false;
+                          await showAppDialog(
                             context: context,
-                            builder: (ctx) {
-                              final bool dIsDark =
-                                  Theme.of(ctx).brightness == Brightness.dark;
-                              final Color dialogTextColor = dIsDark
-                                  ? Colors.white
-                                  : const Color(0xFF1D1B20);
-                              // Warna button "Keluar" = kebalikan gradient container
-                              final Color btnTextColor = dIsDark
-                                  ? const Color(0xFF1D1B20)
-                                  : Colors.white;
-                              return AlertDialog(
-                                title: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.warning_amber_rounded,
-                                      color: dialogTextColor,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'Keluar',
-                                      style: TextStyle(color: dialogTextColor),
-                                    ),
-                                  ],
-                                ),
-                                content: Text(
-                                  'Apakah anda yakin ingin keluar?',
-                                  style: TextStyle(color: dialogTextColor),
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(ctx, false),
-                                    child: Text(
-                                      'Batal',
-                                      style: TextStyle(color: dialogTextColor),
-                                    ),
-                                  ),
-                                  // Keluar button: gradient background
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(ctx, true),
-                                    style: TextButton.styleFrom(
-                                      padding: EdgeInsets.zero,
-                                      overlayColor: dIsDark
-                                          ? const Color(0xFF1D1B20)
-                                          : Colors.white,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(20),
-                                      ),
-                                    ),
-                                    child: Ink(
-                                      decoration: BoxDecoration(
-                                        gradient: LinearGradient(
-                                          begin: Alignment.bottomLeft,
-                                          end: Alignment.topRight,
-                                          colors: dIsDark
-                                              ? [
-                                                  const Color(0xFFA3A3A3),
-                                                  const Color(0xFFFFFFFF),
-                                                ]
-                                              : [
-                                                  const Color(0xFF67636D),
-                                                  const Color(0xFF1D1B20),
-                                                ],
-                                        ),
-                                        borderRadius: BorderRadius.circular(20),
-                                      ),
-                                      child: Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 16,
-                                          vertical: 8,
-                                        ),
-                                        child: Text(
-                                          'Keluar',
-                                          style: TextStyle(
-                                            color: btnTextColor,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
+                            title: 'Keluar',
+                            titleIcon: const Icon(Icons.warning_amber_rounded),
+                            content: 'Apakah anda yakin ingin keluar?',
+                            actions: [
+                              AppDialogAction(
+                                label: 'Batal',
+                                onPressed: () => Navigator.pop(context),
+                              ),
+                              AppDialogAction(
+                                label: 'Keluar',
+                                type: AppDialogActionType.gradient,
+                                onPressed: () {
+                                  confirmed = true;
+                                  Navigator.pop(context);
+                                },
+                              ),
+                            ],
                           );
-                          if (confirm == true && context.mounted) {
+                          if (confirmed && context.mounted) {
                             onSignOut();
+                            Navigator.pop(context); // tutup drawer
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Anda telah berhasil keluar'),
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
                           }
                         },
                       )

@@ -113,9 +113,13 @@ class _AppDialogWidget extends StatelessWidget {
           );
         }
 
-        // Flat button (default) — warna teks mengikuti tema
+        // Flat button (default) — tanpa splash
         return TextButton(
           onPressed: action.onPressed,
+          style: TextButton.styleFrom(
+            splashFactory: NoSplash.splashFactory,
+            overlayColor: Colors.transparent,
+          ),
           child: Text(action.label, style: TextStyle(color: textColor)),
         );
       }).toList(),
