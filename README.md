@@ -16,6 +16,7 @@ Di bagian general -> Scroll Kebawah -> Download google-services.json
 ## RULES DARI PM!!!
 
 - Aturan warna tema background, text color, dll → [rules](rules/README.md)
+- Aturan penggunaan notfikasi seperti snackbar, dialog, dll → [rules](rules/notifikasi.md)
 
 ## Lanjutan
 
