@@ -1,14 +1,16 @@
 # 3-Star Consignment
 
+Jangan lupa build ulang dulu sebelum anda mengerjakan atau restart dari vscode agar tau perubahan terbaru
+
 ## Untuk Terhubung Ke Firebase 
 1. download dulu file google-services.json dari firebase console
 [disini](https://console.firebase.google.com/u/0/project/test-4d7e0/settings/general/android:com.example.star_consignment?hl=id&fb_gclid=Cj0KCQiA9OnJBhD-ARIsAPV51xP0lyBAWYVKRmNyJpiQmdihTNngn4LVKG_pdUiIFq4Kj3o1XW2CPJIaApEeEALw_wcB)
 
-Jika tidak muncul seperti gambar diatas berarti anda tidak punya akses, minta akses ke PM
-
 Di bagian general -> Scroll Kebawah -> Download google-services.json
 
 ![Screenshot Download Google Service JSON File](assets/images/Screenshot%20Download%20Google%20Service%20JSON%20File.png)
+
+Jika tidak muncul seperti gambar diatas berarti anda tidak punya akses, minta akses ke PM
 
 2. letakkan di folder `android/app/`
 
