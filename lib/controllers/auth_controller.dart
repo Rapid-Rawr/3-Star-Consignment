@@ -22,7 +22,6 @@ class AuthController {
   }
 
   Future<void> signInWithGoogle(BuildContext context) async {
-    // ── Pre-check: cek koneksi internet sebelum mulai ──
     try {
       final result = await InternetAddress.lookup(
         'google.com',
@@ -36,7 +35,6 @@ class AuthController {
       return;
     }
 
-    // ── Lanjut proses sign-in ──
     try {
       final GoogleSignInAccount account = await GoogleSignIn.instance
           .authenticate();
@@ -44,7 +42,6 @@ class AuthController {
       final credential = GoogleAuthProvider.credential(idToken: auth.idToken);
       await FirebaseAuth.instance.signInWithCredential(credential);
     } catch (e) {
-      // ── 1. User cancel — diam saja ──────────────────────
       if (e is PlatformException && e.code == 'sign_in_cancelled') return;
       final errStr = e.toString().toLowerCase();
       if (errStr.contains('sign_in_cancelled') ||
@@ -54,7 +51,6 @@ class AuthController {
 
       if (!context.mounted) return;
 
-      // ── 2. Tidak ada koneksi — tampilkan AppDialog ──────
       final isNetworkError =
           e is SocketException ||
           (e is FirebaseAuthException && e.code == 'network-request-failed') ||
@@ -77,8 +73,6 @@ class AuthController {
         );
         return;
       }
-
-      // ── 3. Error tak terduga — snackbar ─────────────────
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Gagal masuk: $e')));

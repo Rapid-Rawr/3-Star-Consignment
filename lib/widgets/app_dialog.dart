@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
 import 'gradient_button.dart';
 
-// ─────────────────────────────────────────────
-// Model untuk setiap tombol aksi di dialog
-// ─────────────────────────────────────────────
-
 /// Tipe tombol aksi di dalam AppDialog.
 enum AppDialogActionType {
   /// Tombol tanpa background — style TextButton biasa (mengikuti tema)
@@ -93,18 +89,13 @@ class _AppDialogWidget extends StatelessWidget {
     final Color textColor = isDark ? Colors.white : const Color(0xFF1D1B20);
 
     return AlertDialog(
-      // ── Judul dengan ikon opsional ──
       title: Row(
         children: [
           if (titleIcon != null) ...[titleIcon!, const SizedBox(width: 8)],
           Text(title, style: TextStyle(color: textColor)),
         ],
       ),
-
-      // ── Konten ──
       content: Text(content, style: TextStyle(color: textColor)),
-
-      // ── Tombol aksi ──
       actions: actions.map((action) {
         if (action.type == AppDialogActionType.gradient) {
           return GradientButton(
@@ -112,8 +103,6 @@ class _AppDialogWidget extends StatelessWidget {
             onPressed: action.onPressed,
           );
         }
-
-        // Flat button (default) — tanpa splash
         return TextButton(
           onPressed: action.onPressed,
           style: TextButton.styleFrom(

@@ -30,15 +30,12 @@ class GradientButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // Warna gradient menyesuaikan mode
     final List<Color> gradientColors = isDark
         ? [const Color(0xFFA3A3A3), const Color(0xFFFFFFFF)]
         : [const Color(0xFF67636D), const Color(0xFF1D1B20)];
 
-    // Warna teks mengikuti kontras gradient
     final Color textColor = isDark ? const Color(0xFF1D1B20) : Colors.white;
 
-    // Warna ripple: kebalikan dari tekstnya agar terlihat
     final Color splashColor = isDark ? const Color(0xFF1D1B20) : Colors.white;
 
     return TextButton(

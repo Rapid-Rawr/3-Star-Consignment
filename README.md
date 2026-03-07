@@ -6,11 +6,11 @@
 
 Di bagian general -> Scroll Kebawah -> Download google-services.json
 
-![Screenshot Download Google Service JSON File](assets/image/Screenshot%20Download%20Google%20Service%20JSON%20File.png)
+![Screenshot Download Google Service JSON File](assets/images/Screenshot%20Download%20Google%20Service%20JSON%20File.png)
 
 2. letakkan di folder `android/app/`
 
-![Screenshot Location Google Service JSON File](assets/image/Screenshot%20Guide%20Google%20Service%20Location.png)
+![Screenshot Location Google Service JSON File](assets/images/Screenshot%20Guide%20Google%20Service%20Location.png)
 
 ## 📋 Rules dari PM — Baca sebelum ngoding!<br>(SEBISANYA SAJA, GAUSAH DIPAKSA NGIKUT SEMUA)
 

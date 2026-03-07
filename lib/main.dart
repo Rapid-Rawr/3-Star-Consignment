@@ -6,6 +6,10 @@ import 'firebase_options.dart';
 import 'controllers/auth_controller.dart';
 import 'utils/theme_notifier.dart';
 import 'widgets/login_drawer.dart';
+import 'views/beranda_page.dart';
+import 'views/pembayaran_page.dart';
+import 'views/barang_page.dart';
+import 'widgets/custom_bottom_nav.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -69,17 +73,25 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final AuthController _auth = AuthController.instance;
 
   User? _currentUser;
   StreamSubscription<User?>? _authSubscription;
   bool _isSigningIn = false;
+  late final TabController _tabController;
+  int _currentTabIndex = 0;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(() {
+      if (!_tabController.indexIsChanging && mounted) {
+        setState(() => _currentTabIndex = _tabController.index);
+      }
+    });
     _auth.init();
     _authSubscription = _auth.authStateChanges.listen((user) {
       if (mounted) setState(() => _currentUser = user);
@@ -88,6 +100,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   void dispose() {
+    _tabController.dispose();
     _authSubscription?.cancel();
     super.dispose();
   }
@@ -97,7 +110,6 @@ class _MyHomePageState extends State<MyHomePage> {
     await _auth.signInWithGoogle(context);
     if (mounted) {
       setState(() => _isSigningIn = false);
-      // Cek apakah login berhasil
       if (FirebaseAuth.instance.currentUser != null) {
         _scaffoldKey.currentState?.closeEndDrawer();
         final name =
@@ -120,8 +132,9 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       key: _scaffoldKey,
+      extendBody: true,
       appBar: AppBar(
-        title: const Text('Star Consignment'),
+        title: Text(['Beranda', 'Transaksi', 'Barang'][_currentTabIndex]),
         actions: [
           IconButton(
             icon: const Icon(Icons.menu),
@@ -135,8 +148,32 @@ class _MyHomePageState extends State<MyHomePage> {
         onSignIn: _handleSignIn,
         onSignOut: _handleSignOut,
       ),
-      body: const Center(
-        child: Text('Star Consignment', style: TextStyle(fontSize: 24)),
+      bottomNavigationBar: CustomBottomNav(
+        currentIndex: _currentTabIndex,
+        onTap: (i) {
+          setState(() => _currentTabIndex = i);
+          _tabController.animateTo(i);
+        },
+        items: const [
+          CustomBottomNavItem(
+            icon: Icons.home_rounded,
+            activeIcon: Icons.home_rounded,
+          ),
+          CustomBottomNavItem(
+            icon: Icons.payment_rounded,
+            activeIcon: Icons.payment_rounded,
+          ),
+          CustomBottomNavItem(
+            icon: Icons.inventory_2_rounded,
+            iconSize: 24,
+            activeIcon: Icons.inventory_2_rounded,
+            activeIconSize: 24,
+          ),
+        ],
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        children: const [BerandaPage(), PesananPage(), LaporanPage()],
       ),
     );
   }

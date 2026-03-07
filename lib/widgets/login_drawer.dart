@@ -29,13 +29,11 @@ class LoginDrawer extends StatelessWidget {
       surfaceTintColor: Colors.transparent,
       child: Column(
         children: <Widget>[
-          // ── Profile section ──
           Expanded(
             child: ListView(
               padding: EdgeInsets.zero,
               children: <Widget>[
                 if (currentUser != null)
-                  // ===== SUDAH LOGIN =====
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 40, 16, 16),
                     child: Column(
@@ -75,7 +73,6 @@ class LoginDrawer extends StatelessWidget {
                     ),
                   )
                 else
-                  // ===== BELUM LOGIN =====
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 40, 16, 16),
                     child: Column(
