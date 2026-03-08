@@ -6,9 +6,10 @@ import 'firebase_options.dart';
 import 'controllers/auth_controller.dart';
 import 'utils/theme_notifier.dart';
 import 'widgets/login_drawer.dart';
-import 'views/beranda_page.dart';
-import 'views/pembayaran_page.dart';
-import 'views/barang_page.dart';
+import 'views/tabbar_page/beranda_page.dart';
+import 'views/tabbar_page/pembayaran_page.dart';
+import 'views/tabbar_page/barang_page.dart';
+import 'views/tabbar_page/pengguna_page.dart';
 import 'widgets/custom_bottom_nav.dart';
 
 void main() async {
@@ -86,7 +87,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
     _tabController.addListener(() {
       if (!_tabController.indexIsChanging && mounted) {
         setState(() => _currentTabIndex = _tabController.index);
@@ -134,7 +135,9 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
       key: _scaffoldKey,
       extendBody: true,
       appBar: AppBar(
-        title: Text(['Beranda', 'Transaksi', 'Barang'][_currentTabIndex]),
+        title: Text(
+          ['Beranda', 'Transaksi', 'Barang', 'Pengguna'][_currentTabIndex],
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.menu),
@@ -156,24 +159,36 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
         },
         items: const [
           CustomBottomNavItem(
-            icon: Icons.home_rounded,
-            activeIcon: Icons.home_rounded,
+            iconSvg: 'assets/icons/Home Outlined.svg',
+            activeIconSvg: 'assets/icons/Home Filled.svg',
+            activeIconSize: 30,
           ),
           CustomBottomNavItem(
-            icon: Icons.payment_rounded,
-            activeIcon: Icons.payment_rounded,
+            iconSvg: 'assets/icons/Payment Outline.svg',
+            activeIconSvg: 'assets/icons/Payment Filled.svg',
+            activeIconSize: 30,
           ),
           CustomBottomNavItem(
-            icon: Icons.inventory_2_rounded,
+            iconSvg: 'assets/icons/Shelves Outlined.svg',
+            activeIconSvg: 'assets/icons/Shelves Filled.svg',
             iconSize: 24,
-            activeIcon: Icons.inventory_2_rounded,
-            activeIconSize: 24,
+            activeIconSize: 26,
+          ),
+          CustomBottomNavItem(
+            icon: Icons.group_outlined,
+            activeIcon: Icons.group_rounded,
+            activeIconSize: 30,
           ),
         ],
       ),
       body: TabBarView(
         controller: _tabController,
-        children: const [BerandaPage(), PesananPage(), LaporanPage()],
+        children: const [
+          BerandaPage(),
+          PesananPage(),
+          LaporanPage(),
+          PenggunaPage(),
+        ],
       ),
     );
   }

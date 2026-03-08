@@ -46,8 +46,9 @@ class AuthController {
       final errStr = e.toString().toLowerCase();
       if (errStr.contains('sign_in_cancelled') ||
           errStr.contains('canceled') ||
-          errStr.contains('cancelled'))
+          errStr.contains('cancelled')) {
         return;
+      }
 
       if (!context.mounted) return;
 

@@ -1,17 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class CustomBottomNavItem {
-  final IconData icon;
-  final IconData activeIcon;
+  final IconData? icon;
+  final IconData? activeIcon;
+  final String? iconSvg;
+  final String? activeIconSvg;
   final double? iconSize;
   final double? activeIconSize;
 
   const CustomBottomNavItem({
-    required this.icon,
-    required this.activeIcon,
+    this.icon,
+    this.activeIcon,
+    this.iconSvg,
+    this.activeIconSvg,
     this.iconSize,
     this.activeIconSize,
-  });
+  }) : assert((icon != null || iconSvg != null), 'Harus ada icon atau iconSvg');
 }
 
 class CustomBottomNav extends StatefulWidget {
@@ -54,6 +59,32 @@ class _CustomBottomNavState extends State<CustomBottomNav> {
 
   void _onTapCancel(int index) {
     setState(() => _scales[index] = 1.0);
+  }
+
+  Widget _buildIcon({
+    required CustomBottomNavItem item,
+    required bool isActive,
+    required double size,
+    required Color color,
+  }) {
+    final String? svgPath = isActive
+        ? (item.activeIconSvg ?? item.iconSvg)
+        : item.iconSvg;
+
+    if (svgPath != null) {
+      return SvgPicture.asset(
+        svgPath,
+        width: size,
+        height: size,
+        colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+      );
+    }
+
+    // Fallback ke IconData
+    final IconData iconData = isActive
+        ? (item.activeIcon ?? item.icon!)
+        : item.icon!;
+    return Icon(iconData, size: size, color: color);
   }
 
   @override
@@ -104,8 +135,9 @@ class _CustomBottomNavState extends State<CustomBottomNav> {
                       scale: _scales[i],
                       duration: const Duration(milliseconds: 120),
                       curve: Curves.easeOut,
-                      child: Icon(
-                        isActive ? item.activeIcon : item.icon,
+                      child: _buildIcon(
+                        item: item,
+                        isActive: isActive,
                         size: isActive
                             ? (item.activeIconSize ?? widget.activeIconSize)
                             : (item.iconSize ?? widget.iconSize),
