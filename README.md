@@ -16,6 +16,22 @@ Jika tidak muncul seperti gambar diatas berarti anda tidak punya akses, minta ak
 
 ![Screenshot Location Google Service JSON File](assets/images/Screenshot%20Guide%20Google%20Service%20Location.png)
 
+3. Generate `firebase_options.dart` dengan FlutterFire CLI
+
+   Install FlutterFire CLI (sekali saja):
+   ```bash
+   dart pub global activate flutterfire_cli
+   ```
+
+   Lalu jalankan di root folder proyek:
+   ```bash
+   flutterfire configure --project=test-4d7e0
+   ```
+
+   Pilih platform **android** saat diminta, file `lib/firebase_options.dart` akan otomatis terbuat/terupdate.
+
+   > **Catatan:** Butuh login Google yang punya akses ke Firebase project. Jika belum, minta akses ke PM.
+
 ## 📋 Rules dari PM — Baca sebelum ngoding!<br>(SEBISANYA SAJA, GAUSAH DIPAKSA NGIKUT SEMUA)
 
 - Aturan warna tema background, text color, dll → [rules](rules/theme.md)
