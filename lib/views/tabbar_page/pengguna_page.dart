@@ -31,14 +31,14 @@ class PenggunaPage extends StatelessWidget {
                     children: [
                       _UserMenuButton(
                         svgPath: 'assets/icons/Operator.svg',
-                        label: 'Operator',
+                        label: 'Karyawan',
                         borderColor: borderColor,
                         onTap: () {},
                       ),
                       const SizedBox(height: 16),
                       _UserMenuButton(
                         svgPath: 'assets/icons/Client.svg',
-                        label: 'Client',
+                        label: 'Klien',
                         borderColor: borderColor,
                         onTap: () {},
                       ),
