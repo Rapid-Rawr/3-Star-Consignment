@@ -37,8 +37,9 @@ class ClientController {
   }
 
   String? validatePhone(String? value) {
-    if (value == null || value.isEmpty)
+    if (value == null || value.isEmpty) {
       return 'Nomor telepon tidak boleh kosong';
+    }
     final digits = value.replaceAll(RegExp(r'\D'), '');
     if (digits.length < 8) return 'Nomor telepon minimal 8 digit';
     if (digits.length > 15) return 'Nomor telepon maksimal 15 digit';
@@ -60,18 +61,26 @@ class ClientController {
     return null;
   }
 
+  String? validateEmail(String? value) {
+    if (value == null || value.isEmpty) return 'Email tidak boleh kosong';
+    final emailRegex = RegExp(r'^[\w._%+\-]+@[\w.\-]+\.[a-zA-Z]{2,}$');
+    if (!emailRegex.hasMatch(value)) return 'Format email tidak valid';
+    return null;
+  }
+
   Future<Map<String, dynamic>> createClient({
     required String name,
     required String phone,
+    required String email,
     required String address,
-    required double debt,
   }) async {
     try {
       await firestore.collection(collectionName).add({
         'name': name.trim(),
         'phone': phone.trim(),
+        'email': email.trim(),
         'address': address.trim(),
-        'debt': debt,
+        'debt': 0,
         'createdAt': FieldValue.serverTimestamp(),
       });
       return {'success': true};
@@ -84,15 +93,15 @@ class ClientController {
     required String id,
     required String name,
     required String phone,
+    required String email,
     required String address,
-    required double debt,
   }) async {
     try {
       await firestore.collection(collectionName).doc(id).update({
         'name': name.trim(),
         'phone': phone.trim(),
+        'email': email.trim(),
         'address': address.trim(),
-        'debt': debt,
         'updatedAt': FieldValue.serverTimestamp(),
       });
       return {'success': true};

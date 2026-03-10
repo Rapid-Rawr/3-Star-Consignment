@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../catalog_page.dart';
 
 class LaporanPage extends StatelessWidget {
   const LaporanPage({super.key});
@@ -56,7 +57,12 @@ class LaporanPage extends StatelessWidget {
                         label: 'Manajemen Katalog',
                         borderColor: borderColor,
                         imageOffset: const Offset(8, 0),
-                        onTap: () {},
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const CatalogPage(),
+                          ),
+                        ),
                       ),
                     ],
                   ),

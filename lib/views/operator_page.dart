@@ -3,6 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../controllers/operator_controller.dart';
 import '../models/operator_model.dart';
 import '../widgets/search_filter_bar.dart';
+import '../widgets/app_dialog.dart';
+import '../widgets/gradient_button.dart';
 
 class OperatorPage extends StatefulWidget {
   const OperatorPage({super.key});
@@ -17,7 +19,7 @@ class _OperatorPageState extends State<OperatorPage> {
   late OperatorController _controller;
 
   static const List<FilterChipOption<String>> _roleFilters = [
-    FilterChipOption(label: 'All', value: null),
+    FilterChipOption(label: 'Semua', value: null),
     FilterChipOption(label: 'Administrator', value: 'Administrator'),
     FilterChipOption(label: 'Karyawan', value: 'Karyawan'),
   ];
@@ -34,7 +36,6 @@ class _OperatorPageState extends State<OperatorPage> {
     _searchFocusNode.dispose();
     super.dispose();
   }
-
 
   Widget _buildInitialsAvatar(Color bg, String initials) {
     return Container(
@@ -119,9 +120,15 @@ class _OperatorPageState extends State<OperatorPage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
+              style: TextButton.styleFrom(
+                foregroundColor: Theme.of(dialogContext).colorScheme.onSurface,
+                splashFactory: NoSplash.splashFactory,
+                overlayColor: Colors.transparent,
+              ),
               child: const Text('Batal'),
             ),
-            TextButton(
+            GradientButton(
+              label: 'Tambah',
               onPressed: () async {
                 if (formKey.currentState!.validate()) {
                   Navigator.pop(dialogContext);
@@ -138,16 +145,14 @@ class _OperatorPageState extends State<OperatorPage> {
                               ? 'Operator berhasil ditambahkan'
                               : (result['error'] ?? 'Terjadi kesalahan'),
                         ),
-                        backgroundColor:
-                            result['success'] == true
-                                ? Colors.green
-                                : Colors.red,
+                        backgroundColor: result['success'] == true
+                            ? Colors.green
+                            : Colors.red,
                       ),
                     );
                   }
                 }
               },
-              child: const Text('Tambah'),
             ),
           ],
         ),
@@ -221,9 +226,15 @@ class _OperatorPageState extends State<OperatorPage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
+              style: TextButton.styleFrom(
+                foregroundColor: Theme.of(dialogContext).colorScheme.onSurface,
+                splashFactory: NoSplash.splashFactory,
+                overlayColor: Colors.transparent,
+              ),
               child: const Text('Batal'),
             ),
-            TextButton(
+            GradientButton(
+              label: 'Simpan',
               onPressed: () async {
                 if (formKey.currentState!.validate()) {
                   Navigator.pop(dialogContext);
@@ -241,16 +252,14 @@ class _OperatorPageState extends State<OperatorPage> {
                               ? 'Operator berhasil diupdate'
                               : (result['error'] ?? 'Terjadi kesalahan'),
                         ),
-                        backgroundColor:
-                            result['success'] == true
-                                ? Colors.green
-                                : Colors.red,
+                        backgroundColor: result['success'] == true
+                            ? Colors.green
+                            : Colors.red,
                       ),
                     );
                   }
                 }
               },
-              child: const Text('Simpan'),
             ),
           ],
         ),
@@ -261,38 +270,38 @@ class _OperatorPageState extends State<OperatorPage> {
 
   //============DIALOG HAPUS OPERATOR============\\
   void _showDeleteOperatorDialog(OperatorModel operator) {
-    showDialog(
+    showAppDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Hapus Operator'),
-        content: Text('Apakah Anda yakin ingin menghapus ${operator.name}?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Batal'),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(dialogContext);
-              final result = await _controller.deleteOperator(operator.id);
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      result['success'] == true
-                          ? '${operator.name} telah dihapus'
-                          : (result['error'] ?? 'Terjadi kesalahan'),
-                    ),
-                    backgroundColor:
-                        result['success'] == true ? Colors.green : Colors.red,
+      titleIcon: const Icon(Icons.warning_amber_rounded),
+      title: 'Hapus Operator',
+      content: 'Apakah Anda yakin ingin menghapus ${operator.name}?',
+      actions: [
+        AppDialogAction(
+          label: 'Batal',
+          onPressed: () => Navigator.pop(context),
+        ),
+        AppDialogAction(
+          label: 'Hapus',
+          type: AppDialogActionType.gradient,
+          onPressed: () async {
+            Navigator.pop(context);
+            final result = await _controller.deleteOperator(operator.id);
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    result['success'] == true
+                        ? '${operator.name} telah dihapus'
+                        : (result['error'] ?? 'Terjadi kesalahan'),
                   ),
-                );
-              }
-            },
-            child: const Text('Hapus', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
+                  backgroundColor:
+                      result['success'] == true ? Colors.green : Colors.red,
+                ),
+              );
+            }
+          },
+        ),
+      ],
     );
   }
   //============DIALOG HAPUS OPERATOR============\\
@@ -406,10 +415,12 @@ class _OperatorPageState extends State<OperatorPage> {
                       )
                       .toList();
 
-                  final allOperators =
-                      operators.map((e) => e.operator).toList();
-                  final filteredOps =
-                      _controller.filteredOperators(allOperators);
+                  final allOperators = operators
+                      .map((e) => e.operator)
+                      .toList();
+                  final filteredOps = _controller.filteredOperators(
+                    allOperators,
+                  );
                   final filteredWithMeta = operators
                       .where(
                         (e) => filteredOps.any((o) => o.id == e.operator.id),
@@ -553,32 +564,31 @@ class _OperatorPageState extends State<OperatorPage> {
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
-                                    if (isPending) ...
-                                      [
-                                        const SizedBox(height: 1),
-                                        Row(
-                                          children: [
-                                            Icon(
-                                              Icons.access_time_rounded,
-                                              size: 12,
+                                    if (isPending) ...[
+                                      const SizedBox(height: 1),
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.access_time_rounded,
+                                            size: 12,
+                                            color: isDark
+                                                ? Colors.amber.shade300
+                                                : Colors.orange,
+                                          ),
+                                          const SizedBox(width: 3),
+                                          Text(
+                                            'Menunggu sinkronisasi...',
+                                            style: TextStyle(
+                                              fontFamily: 'Poppins',
+                                              fontSize: 10,
                                               color: isDark
                                                   ? Colors.amber.shade300
                                                   : Colors.orange,
                                             ),
-                                            const SizedBox(width: 3),
-                                            Text(
-                                              'Menunggu sinkronisasi...',
-                                              style: TextStyle(
-                                                fontFamily: 'Poppins',
-                                                fontSize: 10,
-                                                color: isDark
-                                                    ? Colors.amber.shade300
-                                                    : Colors.orange,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
+                                          ),
+                                        ],
+                                      ),
+                                    ],
                                     const SizedBox(height: 3),
                                     Row(
                                       children: [

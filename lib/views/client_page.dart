@@ -3,6 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../controllers/client_controller.dart';
 import '../models/client_model.dart';
 import '../widgets/search_filter_bar.dart';
+import '../widgets/app_dialog.dart';
+import '../widgets/gradient_button.dart';
 import '../utils/currency_format.dart';
 
 class ClientPage extends StatefulWidget {
@@ -35,8 +37,8 @@ class _ClientPageState extends State<ClientPage> {
     final formKey = GlobalKey<FormState>();
     final nameController = TextEditingController();
     final phoneController = TextEditingController();
+    final emailController = TextEditingController();
     final addressController = TextEditingController();
-    final debtController = TextEditingController();
 
     showDialog(
       context: context,
@@ -74,6 +76,19 @@ class _ClientPageState extends State<ClientPage> {
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
+                  controller: emailController,
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    border: OutlineInputBorder(),
+                    hintText: 'contoh@email.com',
+                    prefixIcon: Icon(Icons.email_outlined),
+                  ),
+                  keyboardType: TextInputType.emailAddress,
+                  validator: _controller.validateEmail,
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
                   controller: addressController,
                   decoration: const InputDecoration(
                     labelText: 'Alamat',
@@ -84,18 +99,6 @@ class _ClientPageState extends State<ClientPage> {
                   maxLines: 2,
                   validator: _controller.validateAddress,
                 ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: debtController,
-                  decoration: const InputDecoration(
-                    labelText: 'Hutang (Rp)',
-                    border: OutlineInputBorder(),
-                    hintText: '0',
-                    prefixIcon: Icon(Icons.account_balance_wallet_outlined),
-                  ),
-                  keyboardType: TextInputType.number,
-                  validator: _controller.validateDebt,
-                ),
               ],
             ),
           ),
@@ -103,24 +106,23 @@ class _ClientPageState extends State<ClientPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(dialogContext).colorScheme.onSurface,
+              splashFactory: NoSplash.splashFactory,
+              overlayColor: Colors.transparent,
+            ),
             child: const Text('Batal'),
           ),
-          TextButton(
+          GradientButton(
+            label: 'Tambah',
             onPressed: () async {
               if (formKey.currentState!.validate()) {
-                final debtRaw = debtController.text.trim();
-                final debt = debtRaw.isEmpty
-                    ? 0.0
-                    : double.tryParse(
-                            debtRaw.replaceAll(',', '').replaceAll('.', ''),
-                          ) ??
-                          0.0;
                 Navigator.pop(dialogContext);
                 final result = await _controller.createClient(
                   name: nameController.text.trim(),
                   phone: phoneController.text.trim(),
+                  email: emailController.text.trim(),
                   address: addressController.text.trim(),
-                  debt: debt,
                 );
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -131,13 +133,14 @@ class _ClientPageState extends State<ClientPage> {
                             : (result['error'] ?? 'Terjadi kesalahan'),
                       ),
                       backgroundColor:
-                          result['success'] == true ? Colors.green : Colors.red,
+                          result['success'] == true
+                              ? Colors.green
+                              : Colors.red,
                     ),
                   );
                 }
               }
             },
-            child: const Text('Tambah'),
           ),
         ],
       ),
@@ -149,10 +152,8 @@ class _ClientPageState extends State<ClientPage> {
     final formKey = GlobalKey<FormState>();
     final nameController = TextEditingController(text: client.name);
     final phoneController = TextEditingController(text: client.phone);
+    final emailController = TextEditingController(text: client.email);
     final addressController = TextEditingController(text: client.address);
-    final debtController = TextEditingController(
-      text: client.debt == 0 ? '' : client.debt.toStringAsFixed(0),
-    );
 
     showDialog(
       context: context,
@@ -188,6 +189,18 @@ class _ClientPageState extends State<ClientPage> {
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
+                  controller: emailController,
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.email_outlined),
+                  ),
+                  keyboardType: TextInputType.emailAddress,
+                  validator: _controller.validateEmail,
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
                   controller: addressController,
                   decoration: const InputDecoration(
                     labelText: 'Alamat',
@@ -197,17 +210,6 @@ class _ClientPageState extends State<ClientPage> {
                   maxLines: 2,
                   validator: _controller.validateAddress,
                 ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: debtController,
-                  decoration: const InputDecoration(
-                    labelText: 'Hutang (Rp)',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.account_balance_wallet_outlined),
-                  ),
-                  keyboardType: TextInputType.number,
-                  validator: _controller.validateDebt,
-                ),
               ],
             ),
           ),
@@ -215,25 +217,24 @@ class _ClientPageState extends State<ClientPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(dialogContext).colorScheme.onSurface,
+              splashFactory: NoSplash.splashFactory,
+              overlayColor: Colors.transparent,
+            ),
             child: const Text('Batal'),
           ),
-          TextButton(
+          GradientButton(
+            label: 'Simpan',
             onPressed: () async {
               if (formKey.currentState!.validate()) {
-                final debtRaw = debtController.text.trim();
-                final debt = debtRaw.isEmpty
-                    ? 0.0
-                    : double.tryParse(
-                            debtRaw.replaceAll(',', '').replaceAll('.', ''),
-                          ) ??
-                          0.0;
                 Navigator.pop(dialogContext);
                 final result = await _controller.updateClient(
                   id: client.id,
                   name: nameController.text.trim(),
                   phone: phoneController.text.trim(),
+                  email: emailController.text.trim(),
                   address: addressController.text.trim(),
-                  debt: debt,
                 );
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -244,13 +245,14 @@ class _ClientPageState extends State<ClientPage> {
                             : (result['error'] ?? 'Terjadi kesalahan'),
                       ),
                       backgroundColor:
-                          result['success'] == true ? Colors.green : Colors.red,
+                          result['success'] == true
+                              ? Colors.green
+                              : Colors.red,
                     ),
                   );
                 }
               }
             },
-            child: const Text('Simpan'),
           ),
         ],
       ),
@@ -259,38 +261,38 @@ class _ClientPageState extends State<ClientPage> {
 
   // ─── DIALOG HAPUS ─────────────────────────────────────────────────────────
   void _showDeleteClientDialog(ClientModel client) {
-    showDialog(
+    showAppDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Hapus Klien'),
-        content: Text('Apakah Anda yakin ingin menghapus ${client.name}?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Batal'),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(dialogContext);
-              final result = await _controller.deleteClient(client.id);
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      result['success'] == true
-                          ? '${client.name} telah dihapus'
-                          : (result['error'] ?? 'Terjadi kesalahan'),
-                    ),
-                    backgroundColor:
-                        result['success'] == true ? Colors.green : Colors.red,
+      titleIcon: const Icon(Icons.warning_amber_rounded),
+      title: 'Hapus Klien',
+      content: 'Apakah Anda yakin ingin menghapus ${client.name}?',
+      actions: [
+        AppDialogAction(
+          label: 'Batal',
+          onPressed: () => Navigator.pop(context),
+        ),
+        AppDialogAction(
+          label: 'Hapus',
+          type: AppDialogActionType.gradient,
+          onPressed: () async {
+            Navigator.pop(context);
+            final result = await _controller.deleteClient(client.id);
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    result['success'] == true
+                        ? '${client.name} telah dihapus'
+                        : (result['error'] ?? 'Terjadi kesalahan'),
                   ),
-                );
-              }
-            },
-            child: const Text('Hapus', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
+                  backgroundColor:
+                      result['success'] == true ? Colors.green : Colors.red,
+                ),
+              );
+            }
+          },
+        ),
+      ],
     );
   }
 
@@ -537,6 +539,34 @@ class _ClientPageState extends State<ClientPage> {
                                         ),
                                       ],
                                     ),
+                                    const SizedBox(height: 2),
+                                    // Email (jika ada)
+                                    if (client.email.isNotEmpty)
+                                      Padding(
+                                        padding: const EdgeInsets.only(bottom: 2),
+                                        child: Row(
+                                          children: [
+                                            Icon(
+                                              Icons.email_outlined,
+                                              size: 13,
+                                              color: subColor,
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Expanded(
+                                              child: Text(
+                                                client.email,
+                                                style: TextStyle(
+                                                  fontFamily: 'Poppins',
+                                                  fontSize: 12,
+                                                  color: subColor,
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
                                     const SizedBox(height: 2),
                                     // Address
                                     Row(

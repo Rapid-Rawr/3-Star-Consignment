@@ -55,9 +55,10 @@ class AppDialogAction {
 Future<void> showAppDialog({
   required BuildContext context,
   required String title,
-  required String content,
+  String content = '',
   required List<AppDialogAction> actions,
   Widget? titleIcon,
+  Widget? contentWidget,
 }) {
   return showDialog(
     context: context,
@@ -66,6 +67,7 @@ Future<void> showAppDialog({
       content: content,
       actions: actions,
       titleIcon: titleIcon,
+      contentWidget: contentWidget,
     ),
   );
 }
@@ -75,12 +77,14 @@ class _AppDialogWidget extends StatelessWidget {
   final String content;
   final List<AppDialogAction> actions;
   final Widget? titleIcon;
+  final Widget? contentWidget;
 
   const _AppDialogWidget({
     required this.title,
     required this.content,
     required this.actions,
     this.titleIcon,
+    this.contentWidget,
   });
 
   @override
@@ -95,7 +99,7 @@ class _AppDialogWidget extends StatelessWidget {
           Text(title, style: TextStyle(color: textColor)),
         ],
       ),
-      content: Text(content, style: TextStyle(color: textColor)),
+      content: contentWidget ?? Text(content, style: TextStyle(color: textColor)),
       actions: actions.map((action) {
         if (action.type == AppDialogActionType.gradient) {
           return GradientButton(
