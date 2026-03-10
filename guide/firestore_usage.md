@@ -1,158 +1,61 @@
-# 📖 Panduan Penggunaan Firestore di Flutter
+# 📖 Panduan Penggunaan Firestore di Proyek Ini
 
-Panduan ini menjelaskan cara read dan write data ke Firestore dalam kode Dart/Flutter,
-termasuk cara kerja offline cache dan deteksi pending (belum tersinkron ke server).
+Panduan ini hanya mencakup operasi Firestore yang **benar-benar dipakai** di proyek ini.
 
 ---
 
-## Konsep Dasar
-
-Firestore menggunakan dua layer data:
+## Konsep Dasar — Dua Layer Data
 
 ```
 Flutter App
     ↓ tulis/baca
 [Cache Lokal (SQLite)] ← selalu ada, instant
-    ↕ sinkron otomatis
+    ↕ sinkron otomatis (background)
 [Firebase Server]      ← butuh internet
 ```
 
-Artinya: **semua operasi write selalu berhasil secara lokal** meski offline.
-Data akan dikirim ke server secara otomatis saat internet tersedia.
+- Operasi **write** (`add`, `update`, `delete`) selalu resolve **instant** meski offline — data masuk cache dulu, lalu dikirim ke server saat ada internet.
+- Operasi **read sekali** (`get()`) butuh internet, kecuali data sudah ada di cache.
+- Operasi **stream** (`snapshots()`) selalu jalan — mengambil dari cache offline, lalu update saat server merespons.
 
 ---
 
-## Mendapatkan Instance Firestore
+## Yang Dipakai di Proyek Ini
+
+### 1. Stream Realtime — `snapshots()`
+
+Dipakai di **semua halaman list** (client, operator). UI otomatis terupdate saat data berubah.
 
 ```dart
-import 'package:cloud_firestore/cloud_firestore.dart';
-
-final firestore = FirebaseFirestore.instance;
-```
-
----
-
-## WRITE — Menulis Data
-
-### Tambah dokumen baru (auto-ID)
-
-```dart
-await firestore.collection('clients').add({
-  'name': 'Budi Santoso',
-  'phone': '081234567890',
-  'debt': 150000.0,
-  'createdAt': FieldValue.serverTimestamp(), // waktu dari server
-});
-```
-
-### Buat dokumen dengan ID manual
-
-```dart
-await firestore.collection('clients').doc('custom-id-123').set({
-  'name': 'Ani',
-});
-```
-
-### Update sebagian field (tidak menimpa semua)
-
-```dart
-await firestore.collection('clients').doc(docId).update({
-  'debt': 0,
-  'updatedAt': FieldValue.serverTimestamp(),
-});
-```
-
-### Hapus dokumen
-
-```dart
-await firestore.collection('clients').doc(docId).delete();
-```
-
-> 💡 Semua operasi di atas menggunakan `await` dan langsung resolve meski offline,
-> karena Firestore menulis ke cache lokal terlebih dahulu.
-
----
-
-## READ — Membaca Data
-
-### Baca sekali (one-time get)
-
-```dart
-final snapshot = await firestore.collection('clients').get();
-
-for (final doc in snapshot.docs) {
-  final data = doc.data();         // Map<String, dynamic>
-  final id   = doc.id;             // ID dokumen
-  print('$id: ${data['name']}');
-}
-```
-
-### Baca satu dokumen
-
-```dart
-final doc = await firestore.collection('clients').doc(docId).get();
-
-if (doc.exists) {
-  print(doc.data()?['name']);
-}
-```
-
----
-
-## STREAM — Baca Real-time
-
-Stream memungkinkan UI **otomatis terupdate** saat data berubah di Firestore.
-
-### Stream basic
-
-```dart
-Stream<QuerySnapshot> getClientsStream() {
-  return firestore.collection('clients').snapshots();
-}
-```
-
-### Stream dengan metadata changes (untuk deteksi pending)
-
-```dart
+// Di controller
 Stream<QuerySnapshot> getClientsStream() {
   return firestore
       .collection('clients')
-      .snapshots(includeMetadataChanges: true); // ← tambahkan ini
+      .snapshots(includeMetadataChanges: true); // ← wajib untuk deteksi pending
 }
 ```
 
-`includeMetadataChanges: true` membuat stream juga memancarkan event saat
-status sinkronisasi dokumen berubah (bukan hanya saat data berubah).
-
-### Gunakan di Widget dengan `StreamBuilder`
-
 ```dart
+// Di view — pakai StreamBuilder
 StreamBuilder<QuerySnapshot>(
   stream: _controller.getClientsStream(),
   builder: (context, snapshot) {
-    // Masih loading
     if (snapshot.connectionState == ConnectionState.waiting) {
       return const CircularProgressIndicator();
     }
-
-    // Ada error
-    if (snapshot.hasError) {
-      return Text('Error: ${snapshot.error}');
-    }
-
-    // Data kosong
+    if (snapshot.hasError) return Text('Error: ${snapshot.error}');
     if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
       return const Text('Belum ada data');
     }
 
-    // Tampilkan data
     final docs = snapshot.data!.docs;
     return ListView.builder(
       itemCount: docs.length,
       itemBuilder: (context, index) {
         final doc  = docs[index];
         final data = doc.data() as Map<String, dynamic>;
-        return Text(data['name'] ?? '');
+        final isPending = doc.metadata.hasPendingWrites; // ← status sinkronisasi
+        return Text(data['name']);
       },
     );
   },
@@ -161,156 +64,133 @@ StreamBuilder<QuerySnapshot>(
 
 ---
 
-## Metadata & Pending Writes
+### 2. Read Sekali + Filter — `.where().get()`
 
-Setiap `DocumentSnapshot` memiliki property `metadata` yang berisi info sinkronisasi:
-
-```dart
-final doc = docs[index];
-
-doc.metadata.hasPendingWrites  // true = ditulis lokal, belum dikonfirmasi server
-doc.metadata.isFromCache       // true = data berasal dari cache lokal
-```
-
-### Cara pakai di UI (contoh dari proyek ini)
+Dipakai di **`checkEmailExists`** (operator/karyawan) dan **`syncPhotoUrl`** (auth).
+Berguna untuk cek data sebelum menulis, bukan untuk tampilan.
 
 ```dart
-final items = snapshot.data!.docs
-    .map((doc) => (
-          data: MyModel.fromMap(doc.id, doc.data() as Map<String, dynamic>),
-          isPending: doc.metadata.hasPendingWrites, // ← ambil status pending
-        ))
-    .toList();
+// Contoh: cek apakah email sudah ada
+final query = await firestore
+    .collection('users')
+    .where('gmail', isEqualTo: email.toLowerCase())
+    .limit(1) // stop setelah ketemu 1 — lebih efisien
+    .get();
 
-// Di dalam ListView item:
-if (isPending)
-  Row(children: [
-    Icon(Icons.access_time_rounded, size: 12, color: Colors.orange),
-    SizedBox(width: 4),
-    Text('Menunggu sinkronisasi...', style: TextStyle(fontSize: 10)),
-  ]),
+final exists = query.docs.isNotEmpty;
 ```
 
-### Alur lengkap pending
+> ⚠️ `.get()` butuh internet dan bisa gagal saat offline. Jangan gunakan untuk tampilan utama — gunakan `snapshots()`.
+
+---
+
+### 3. Tambah Dokumen — `.add()`
+
+Auto-generate ID dokumen.
+
+```dart
+await firestore.collection('clients').add({
+  'name': name.trim(),
+  'phone': phone.trim(),
+  'address': address.trim(),
+  'debt': debt,
+  'createdAt': FieldValue.serverTimestamp(), // timestamp dari server Firebase
+});
+```
+
+---
+
+### 4. Update Dokumen — `.doc(id).update()`
+
+Update hanya field yang disebutkan, field lain tidak berubah.
+
+```dart
+await firestore.collection('clients').doc(id).update({
+  'name': name.trim(),
+  'debt': debt,
+  'updatedAt': FieldValue.serverTimestamp(),
+});
+```
+
+---
+
+### 5. Hapus Dokumen — `.doc(id).delete()`
+
+```dart
+await firestore.collection('clients').doc(docId).delete();
+```
+
+---
+
+## Pola Wrapper di Proyek Ini
+
+Semua operasi write dibungkus di controller dan mengembalikan `Map` agar view bisa cek hasilnya:
+
+```dart
+// Di controller
+Future<Map<String, dynamic>> createClient({...}) async {
+  try {
+    await firestore.collection('clients').add({...});
+    return {'success': true};
+  } catch (e) {
+    return {'success': false, 'error': e.toString()};
+  }
+}
+```
+
+```dart
+// Di view — tutup dialog SEBELUM await agar tidak hang saat offline
+onPressed: () async {
+  if (formKey.currentState!.validate()) {
+    Navigator.pop(dialogContext);           // tutup dialog dulu
+    final result = await _controller.createClient(...);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(result['success'] == true
+            ? 'Berhasil ditambahkan'
+            : result['error'] ?? 'Terjadi kesalahan'),
+        backgroundColor: result['success'] == true ? Colors.green : Colors.red,
+      ));
+    }
+  }
+}
+```
+
+---
+
+## Cara Kerja Pending (Icon ⏰)
+
+Saat tidak ada internet, data masuk cache lokal. Icon ⏰ muncul otomatis lewat `hasPendingWrites`:
 
 ```
-User tekan Tambah → form valid
+User tekan Tambah
     ↓
-Navigator.pop()           ← dialog ditutup langsung
+Navigator.pop()       ← dialog tutup langsung
     ↓
-firestore.add({...})      ← simpan ke cache lokal, resolve instantly
+firestore.add()       ← simpan ke cache lokal, resolve instant
     ↓
-Stream emit (hasPendingWrites = true)
+Stream emit → hasPendingWrites = true
     ↓
 Icon ⏰ muncul di kartu
     ↓
-[Background] Firestore coba kirim ke server Firebase
+[Background] Firestore coba kirim ke server...
     ↓ (saat internet tersedia)
-Server konfirmasi → Stream emit (hasPendingWrites = false)
+Server konfirmasi → hasPendingWrites = false
     ↓
 Icon ⏰ hilang otomatis ✅
 ```
 
-> ⚠️ Tutup dialog **sebelum** `await` agar dialog tidak mengantung saat offline.
-> Tampilkan snackbar menggunakan `context` halaman (bukan `dialogContext`).
-
----
-
-## Query — Filter & Sort
-
 ```dart
-// Where
-firestore.collection('clients')
-    .where('debt', isGreaterThan: 0)
-    .get();
+// Di itemBuilder ListView:
+final isPending = doc.metadata.hasPendingWrites;
 
-// Order
-firestore.collection('clients')
-    .orderBy('createdAt', descending: true)
-    .get();
-
-// Limit
-firestore.collection('clients')
-    .limit(10)
-    .get();
-
-// Gabungan
-firestore.collection('clients')
-    .where('debt', isGreaterThan: 0)
-    .orderBy('debt', descending: true)
-    .limit(20)
-    .snapshots();
-```
-Di console firestore query builder juga ada
----
-
-## Pola Controller di Proyek Ini
-
-Proyek ini memisahkan logika Firestore ke dalam **Controller** terpisah:
-
-```
-lib/
-├── controllers/
-│   ├── client_controller.dart    ← semua logika Firestore untuk clients
-│   └── operator_controller.dart  ← semua logika Firestore untuk operators
-├── models/
-│   └── client_model.dart         ← struktur data (fromMap / toMap)
-└── views/
-    └── client_page.dart          ← UI, hanya memanggil controller
+if (isPending)
+  Row(children: [
+    Icon(Icons.access_time_rounded, size: 12, color: Colors.orange),
+    SizedBox(width: 4),
+    Text('Menunggu sinkronisasi...', style: TextStyle(fontSize: 10, color: Colors.orange)),
+  ]),
 ```
 
-### Contoh pattern controller
-
-```dart
-class ClientController {
-  final FirebaseFirestore firestore;
-  ClientController({required this.firestore});
-
-  // Stream untuk UI
-  Stream<QuerySnapshot> getClientsStream() {
-    return firestore
-        .collection('clients')
-        .snapshots(includeMetadataChanges: true);
-  }
-
-  // Write — return Map agar view bisa cek success/error
-  Future<Map<String, dynamic>> createClient({...}) async {
-    try {
-      await firestore.collection('clients').add({...});
-      return {'success': true};
-    } catch (e) {
-      return {'success': false, 'error': e.toString()};
-    }
-  }
-}
-```
-
-### Di view, selalu tutup dialog sebelum await
-
-```dart
-onPressed: () async {
-  if (formKey.currentState!.validate()) {
-    Navigator.pop(dialogContext);          // tutup dulu
-    final result = await _controller.createClient(...);
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result['success'] == true
-              ? 'Berhasil ditambahkan'
-              : result['error'] ?? 'Terjadi kesalahan'),
-          backgroundColor: result['success'] == true
-              ? Colors.green : Colors.red,
-        ),
-      );
-    }
-  }
-}
-```
-
----
-
-## Referensi
-
-- [Dokumentasi Firestore Flutter](https://firebase.google.com/docs/firestore/quickstart?hl=id)
-- [Offline support Firestore](https://firebase.google.com/docs/firestore/manage-data/enable-offline)
-- [StreamBuilder dokumentasi Flutter](https://api.flutter.dev/flutter/widgets/StreamBuilder-class.html)
+> `includeMetadataChanges: true` di stream **wajib** agar UI ikut update saat icon mau hilang.
+> Tanpanya, stream tidak akan emit event saat `hasPendingWrites` berubah `true → false`.
