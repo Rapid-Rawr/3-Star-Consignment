@@ -10,7 +10,9 @@ class ClientController {
   ClientController({required this.firestore});
 
   Stream<QuerySnapshot> getClientsStream() {
-    return firestore.collection(collectionName).snapshots();
+    return firestore
+        .collection(collectionName)
+        .snapshots(includeMetadataChanges: true);
   }
 
   void setSearchQuery(String query) {

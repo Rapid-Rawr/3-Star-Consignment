@@ -30,6 +30,7 @@ class _ClientPageState extends State<ClientPage> {
     super.dispose();
   }
 
+
   void _showAddClientDialog() {
     final formKey = GlobalKey<FormState>();
     final nameController = TextEditingController();
@@ -114,29 +115,25 @@ class _ClientPageState extends State<ClientPage> {
                             debtRaw.replaceAll(',', '').replaceAll('.', ''),
                           ) ??
                           0.0;
+                Navigator.pop(dialogContext);
                 final result = await _controller.createClient(
                   name: nameController.text.trim(),
                   phone: phoneController.text.trim(),
                   address: addressController.text.trim(),
                   debt: debt,
                 );
-                if (dialogContext.mounted) {
-                  if (result['success'] == true) {
-                    Navigator.pop(dialogContext);
-                    ScaffoldMessenger.of(dialogContext).showSnackBar(
-                      const SnackBar(
-                        content: Text('Klien berhasil ditambahkan'),
-                        backgroundColor: Colors.green,
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        result['success'] == true
+                            ? 'Klien berhasil ditambahkan'
+                            : (result['error'] ?? 'Terjadi kesalahan'),
                       ),
-                    );
-                  } else {
-                    ScaffoldMessenger.of(dialogContext).showSnackBar(
-                      SnackBar(
-                        content: Text(result['error'] ?? 'Terjadi kesalahan'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
+                      backgroundColor:
+                          result['success'] == true ? Colors.green : Colors.red,
+                    ),
+                  );
                 }
               }
             },
@@ -230,6 +227,7 @@ class _ClientPageState extends State<ClientPage> {
                             debtRaw.replaceAll(',', '').replaceAll('.', ''),
                           ) ??
                           0.0;
+                Navigator.pop(dialogContext);
                 final result = await _controller.updateClient(
                   id: client.id,
                   name: nameController.text.trim(),
@@ -237,23 +235,18 @@ class _ClientPageState extends State<ClientPage> {
                   address: addressController.text.trim(),
                   debt: debt,
                 );
-                if (dialogContext.mounted) {
-                  if (result['success'] == true) {
-                    Navigator.pop(dialogContext);
-                    ScaffoldMessenger.of(dialogContext).showSnackBar(
-                      const SnackBar(
-                        content: Text('Klien berhasil diupdate'),
-                        backgroundColor: Colors.green,
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        result['success'] == true
+                            ? 'Klien berhasil diupdate'
+                            : (result['error'] ?? 'Terjadi kesalahan'),
                       ),
-                    );
-                  } else {
-                    ScaffoldMessenger.of(dialogContext).showSnackBar(
-                      SnackBar(
-                        content: Text(result['error'] ?? 'Terjadi kesalahan'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
+                      backgroundColor:
+                          result['success'] == true ? Colors.green : Colors.red,
+                    ),
+                  );
                 }
               }
             },
@@ -278,24 +271,20 @@ class _ClientPageState extends State<ClientPage> {
           ),
           TextButton(
             onPressed: () async {
+              Navigator.pop(dialogContext);
               final result = await _controller.deleteClient(client.id);
-              if (dialogContext.mounted) {
-                Navigator.pop(dialogContext);
-                if (result['success'] == true) {
-                  ScaffoldMessenger.of(dialogContext).showSnackBar(
-                    SnackBar(
-                      content: Text('${client.name} telah dihapus'),
-                      backgroundColor: Colors.green,
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      result['success'] == true
+                          ? '${client.name} telah dihapus'
+                          : (result['error'] ?? 'Terjadi kesalahan'),
                     ),
-                  );
-                } else {
-                  ScaffoldMessenger.of(dialogContext).showSnackBar(
-                    SnackBar(
-                      content: Text(result['error'] ?? 'Terjadi kesalahan'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
+                    backgroundColor:
+                        result['success'] == true ? Colors.green : Colors.red,
+                  ),
+                );
               }
             },
             child: const Text('Hapus', style: TextStyle(color: Colors.red)),
@@ -401,16 +390,23 @@ class _ClientPageState extends State<ClientPage> {
 
                   final clients = snapshot.data!.docs
                       .map(
-                        (doc) => ClientModel.fromMap(
-                          doc.id,
-                          doc.data() as Map<String, dynamic>,
+                        (doc) => (
+                          client: ClientModel.fromMap(
+                            doc.id,
+                            doc.data() as Map<String, dynamic>,
+                          ),
+                          isPending: doc.metadata.hasPendingWrites,
                         ),
                       )
                       .toList();
 
-                  final filtered = _controller.filteredClients(clients);
+                  final allClients = clients.map((e) => e.client).toList();
+                  final filteredClients = _controller.filteredClients(allClients);
+                  final filteredWithMeta = clients
+                      .where((e) => filteredClients.any((c) => c.id == e.client.id))
+                      .toList();
 
-                  if (filtered.isEmpty) {
+                  if (filteredWithMeta.isEmpty) {
                     return Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -432,9 +428,10 @@ class _ClientPageState extends State<ClientPage> {
 
                   return ListView.builder(
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
-                    itemCount: filtered.length,
+                    itemCount: filteredWithMeta.length,
                     itemBuilder: (context, index) {
-                      final client = filtered[index];
+                      final client = filteredWithMeta[index].client;
+                      final isPending = filteredWithMeta[index].isPending;
 
                       final hasDebt = client.debt > 0;
                       final debtBg = hasDebt
@@ -489,16 +486,36 @@ class _ClientPageState extends State<ClientPage> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     // Name
-                                    Text(
-                                      client.name,
-                                      style: TextStyle(
-                                        fontFamily: 'Poppins',
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 15,
-                                        color: nameColor,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            client.name,
+                                            style: TextStyle(
+                                              fontFamily: 'Poppins',
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 15,
+                                              color: nameColor,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        if (isPending) ...
+                                          [
+                                            const SizedBox(width: 4),
+                                            Tooltip(
+                                              message: 'Menunggu sinkronisasi...',
+                                              child: Icon(
+                                                Icons.access_time_rounded,
+                                                size: 14,
+                                                color: isDark
+                                                    ? Colors.amber.shade300
+                                                    : Colors.orange,
+                                              ),
+                                            ),
+                                          ],
+                                      ],
                                     ),
                                     const SizedBox(height: 3),
                                     // Phone

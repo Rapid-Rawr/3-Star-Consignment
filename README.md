@@ -32,21 +32,24 @@ Jika tidak muncul seperti gambar diatas berarti anda tidak punya akses, minta ak
 
    > **Catatan:** Butuh login Google yang punya akses ke Firebase project. Jika belum, minta akses ke PM.
 
+4. Yang terpenting di aplikasi login dulu pakai google agar bisa akses firebase, karena sudah di konfigurasi bahwa user yang tidak login tidak bisa akses firebase.
+   Karena nantinya agar aman user yang tidak terdaftar atau belum login dibuat tidak bisa akses firebase.
+
 ## 📋 Rules dari PM — Baca sebelum ngoding!<br>(SEBISANYA SAJA, GAUSAH DIPAKSA NGIKUT SEMUA)
 
 - Aturan warna tema background, text color, dll → [rules](rules/theme.md)
 - Aturan penggunaan notfikasi seperti snackbar, dialog, dll → [rules](rules/notifikasi.md)
 
+## Panduan
+
+- Setup koneksi Firebase → [guide/firebase_setup.md](guide/firebase_setup.md)
+- Cara read & write Firestore di kode Flutter → [guide/firestore_usage.md](guide/firestore_usage.md)
+
 ## Lanjutan
-
-Proyek ini merupakan titik awal untuk aplikasi Flutter dengan integrasi Firebase.
-
-Beberapa sumber yang berguna:
 
 - [Dokumentasi Firebase untuk Flutter](https://firebase.google.com/docs/flutter/setup)
 - [Lab: Buat aplikasi Flutter pertamamu](https://docs.flutter.dev/get-started/codelab)
 - [Cookbook: Contoh Flutter yang berguna](https://docs.flutter.dev/cookbook)
 
 Untuk bantuan memulai pengembangan Flutter, lihat
-[dokumentasi online Flutter](https://docs.flutter.dev/), yang menyediakan tutorial,
-contoh, panduan pengembangan mobile, dan referensi API lengkap.
+[dokumentasi online Flutter](https://docs.flutter.dev/)

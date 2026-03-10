@@ -35,6 +35,7 @@ class _OperatorPageState extends State<OperatorPage> {
     super.dispose();
   }
 
+
   Widget _buildInitialsAvatar(Color bg, String initials) {
     return Container(
       width: 52,
@@ -123,28 +124,26 @@ class _OperatorPageState extends State<OperatorPage> {
             TextButton(
               onPressed: () async {
                 if (formKey.currentState!.validate()) {
+                  Navigator.pop(dialogContext);
                   final result = await _controller.createOperator(
                     name: nameController.text.trim(),
                     email: emailController.text.trim(),
                     role: selectedRole,
                   );
-                  if (dialogContext.mounted) {
-                    if (result['success'] == true) {
-                      Navigator.pop(dialogContext);
-                      ScaffoldMessenger.of(dialogContext).showSnackBar(
-                        const SnackBar(
-                          content: Text('Operator berhasil ditambahkan'),
-                          backgroundColor: Colors.green,
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          result['success'] == true
+                              ? 'Operator berhasil ditambahkan'
+                              : (result['error'] ?? 'Terjadi kesalahan'),
                         ),
-                      );
-                    } else {
-                      ScaffoldMessenger.of(dialogContext).showSnackBar(
-                        SnackBar(
-                          content: Text(result['error'] ?? 'Terjadi kesalahan'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    }
+                        backgroundColor:
+                            result['success'] == true
+                                ? Colors.green
+                                : Colors.red,
+                      ),
+                    );
                   }
                 }
               },
@@ -227,29 +226,27 @@ class _OperatorPageState extends State<OperatorPage> {
             TextButton(
               onPressed: () async {
                 if (formKey.currentState!.validate()) {
+                  Navigator.pop(dialogContext);
                   final result = await _controller.updateOperator(
                     id: operator.id,
                     name: nameController.text.trim(),
                     email: emailController.text.trim(),
                     role: selectedRole,
                   );
-                  if (dialogContext.mounted) {
-                    if (result['success'] == true) {
-                      Navigator.pop(dialogContext);
-                      ScaffoldMessenger.of(dialogContext).showSnackBar(
-                        const SnackBar(
-                          content: Text('Operator berhasil diupdate'),
-                          backgroundColor: Colors.green,
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          result['success'] == true
+                              ? 'Operator berhasil diupdate'
+                              : (result['error'] ?? 'Terjadi kesalahan'),
                         ),
-                      );
-                    } else {
-                      ScaffoldMessenger.of(dialogContext).showSnackBar(
-                        SnackBar(
-                          content: Text(result['error'] ?? 'Terjadi kesalahan'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    }
+                        backgroundColor:
+                            result['success'] == true
+                                ? Colors.green
+                                : Colors.red,
+                      ),
+                    );
                   }
                 }
               },
@@ -276,24 +273,20 @@ class _OperatorPageState extends State<OperatorPage> {
           ),
           TextButton(
             onPressed: () async {
+              Navigator.pop(dialogContext);
               final result = await _controller.deleteOperator(operator.id);
-              if (dialogContext.mounted) {
-                Navigator.pop(dialogContext);
-                if (result['success'] == true) {
-                  ScaffoldMessenger.of(dialogContext).showSnackBar(
-                    SnackBar(
-                      content: Text('${operator.name} telah dihapus'),
-                      backgroundColor: Colors.green,
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      result['success'] == true
+                          ? '${operator.name} telah dihapus'
+                          : (result['error'] ?? 'Terjadi kesalahan'),
                     ),
-                  );
-                } else {
-                  ScaffoldMessenger.of(dialogContext).showSnackBar(
-                    SnackBar(
-                      content: Text(result['error'] ?? 'Terjadi kesalahan'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
+                    backgroundColor:
+                        result['success'] == true ? Colors.green : Colors.red,
+                  ),
+                );
               }
             },
             child: const Text('Hapus', style: TextStyle(color: Colors.red)),
@@ -403,18 +396,27 @@ class _OperatorPageState extends State<OperatorPage> {
 
                   final operators = snapshot.data!.docs
                       .map(
-                        (doc) => OperatorModel.fromMap(
-                          doc.id,
-                          doc.data() as Map<String, dynamic>,
+                        (doc) => (
+                          operator: OperatorModel.fromMap(
+                            doc.id,
+                            doc.data() as Map<String, dynamic>,
+                          ),
+                          isPending: doc.metadata.hasPendingWrites,
                         ),
                       )
                       .toList();
 
-                  final filteredOperators = _controller.filteredOperators(
-                    operators,
-                  );
+                  final allOperators =
+                      operators.map((e) => e.operator).toList();
+                  final filteredOps =
+                      _controller.filteredOperators(allOperators);
+                  final filteredWithMeta = operators
+                      .where(
+                        (e) => filteredOps.any((o) => o.id == e.operator.id),
+                      )
+                      .toList();
 
-                  if (filteredOperators.isEmpty) {
+                  if (filteredWithMeta.isEmpty) {
                     return Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -436,9 +438,10 @@ class _OperatorPageState extends State<OperatorPage> {
 
                   return ListView.builder(
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
-                    itemCount: filteredOperators.length,
+                    itemCount: filteredWithMeta.length,
                     itemBuilder: (context, index) {
-                      final operator = filteredOperators[index];
+                      final operator = filteredWithMeta[index].operator;
+                      final isPending = filteredWithMeta[index].isPending;
                       final avatarColors = [
                         const Color(0xFF6750A4),
                         const Color(0xFF0288D1),
@@ -550,6 +553,32 @@ class _OperatorPageState extends State<OperatorPage> {
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
+                                    if (isPending) ...
+                                      [
+                                        const SizedBox(height: 1),
+                                        Row(
+                                          children: [
+                                            Icon(
+                                              Icons.access_time_rounded,
+                                              size: 12,
+                                              color: isDark
+                                                  ? Colors.amber.shade300
+                                                  : Colors.orange,
+                                            ),
+                                            const SizedBox(width: 3),
+                                            Text(
+                                              'Menunggu sinkronisasi...',
+                                              style: TextStyle(
+                                                fontFamily: 'Poppins',
+                                                fontSize: 10,
+                                                color: isDark
+                                                    ? Colors.amber.shade300
+                                                    : Colors.orange,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
                                     const SizedBox(height: 3),
                                     Row(
                                       children: [
