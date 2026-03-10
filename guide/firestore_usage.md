@@ -4,6 +4,52 @@ Panduan ini hanya mencakup operasi Firestore yang **benar-benar dipakai** di pro
 
 ---
 
+## Inisiasi Firebase
+
+### 1. Di `main.dart` — wajib dipanggil sekali saat app pertama kali jalan (ini sudah ada di `main.dart` jadi hanya tambahan)
+
+```dart
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  runApp(const MyApp());
+}
+```
+
+- `WidgetsFlutterBinding.ensureInitialized()` — wajib dipanggil sebelum Firebase karena `main()` bersifat `async`.
+- `Firebase.initializeApp(...)` — membaca `firebase_options.dart` yang di-generate FlutterFire CLI.
+- Setelah baris ini, semua fitur Firebase (Firestore, Auth, dll) siap dipakai.
+
+### 2. Di Controller — mendapatkan instance Firestore
+
+```dart
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+class ClientController {
+  final FirebaseFirestore firestore; // ← disuntik dari luar agar mudah di-test
+
+  ClientController({required this.firestore});
+}
+```
+
+### 3. Di View (`State`) — membuat controller di `initState`
+
+```dart
+late ClientController _controller;
+
+@override
+void initState() {
+  super.initState();
+  _controller = ClientController(firestore: FirebaseFirestore.instance);
+  //                                         ↑ singleton global dari Firebase SDK
+}
+```
+
+`FirebaseFirestore.instance` adalah singleton — satu instansi dipakai di seluruh app.
+Controller menerima instance ini lewat constructor agar bisa diganti saat testing (dependency injection).
+
+---
+
 ## Konsep Dasar — Dua Layer Data
 
 ```
