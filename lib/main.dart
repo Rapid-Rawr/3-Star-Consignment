@@ -96,6 +96,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     _auth.init();
     _authSubscription = _auth.authStateChanges.listen((user) {
       if (mounted) setState(() => _currentUser = user);
+      if (user != null) _auth.syncPhotoUrl(user);
     });
   }
 

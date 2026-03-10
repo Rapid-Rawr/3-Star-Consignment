@@ -2,6 +2,8 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../operator_page.dart';
+import '../client_page.dart';
 
 class PenggunaPage extends StatelessWidget {
   const PenggunaPage({super.key});
@@ -31,16 +33,30 @@ class PenggunaPage extends StatelessWidget {
                     children: [
                       _UserMenuButton(
                         svgPath: 'assets/icons/Operator.svg',
-                        label: 'Karyawan',
+                        label: 'Operator',
                         borderColor: borderColor,
-                        onTap: () {},
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const OperatorPage(),
+                            ),
+                          );
+                        },
                       ),
                       const SizedBox(height: 16),
                       _UserMenuButton(
                         svgPath: 'assets/icons/Client.svg',
                         label: 'Klien',
                         borderColor: borderColor,
-                        onTap: () {},
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const ClientPage(),
+                            ),
+                          );
+                        },
                       ),
                     ],
                   ),

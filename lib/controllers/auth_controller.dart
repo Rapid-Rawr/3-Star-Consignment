@@ -1,9 +1,11 @@
 import 'dart:async';
-import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import '../utils/internet_check.dart';
 import '../widgets/app_dialog.dart';
 
 class AuthController {
@@ -16,44 +18,68 @@ class AuthController {
   User? get currentUser => FirebaseAuth.instance.currentUser;
 
   Future<void> init() async {
+    if (kIsWeb) return;
     try {
       await GoogleSignIn.instance.initialize();
     } catch (_) {}
   }
 
-  Future<void> signInWithGoogle(BuildContext context) async {
+  /// Sync Google photoURL ke dokumen Firestore user yang emailnya cocok.
+  Future<void> syncPhotoUrl(User user) async {
+    final photoUrl = user.photoURL;
+    final email = user.email?.toLowerCase();
+    if (photoUrl == null || email == null) return;
+
     try {
-      final result = await InternetAddress.lookup(
-        'google.com',
-      ).timeout(const Duration(seconds: 4));
-      if (result.isEmpty || result[0].rawAddress.isEmpty) {
+      final query = await FirebaseFirestore.instance
+          .collection('users')
+          .where('gmail', isEqualTo: email)
+          .limit(1)
+          .get();
+
+      if (query.docs.isNotEmpty) {
+        await query.docs.first.reference.update({'photoUrl': photoUrl});
+      }
+    } catch (_) {}
+  }
+
+  Future<void> signInWithGoogle(BuildContext context) async {
+    if (!kIsWeb) {
+      final hasInternet = await checkInternetConnection();
+      if (!hasInternet) {
         if (context.mounted) _showNoInternetDialog(context);
         return;
       }
-    } catch (_) {
-      if (context.mounted) _showNoInternetDialog(context);
-      return;
     }
 
     try {
-      final GoogleSignInAccount account = await GoogleSignIn.instance
-          .authenticate();
-      final GoogleSignInAuthentication auth = account.authentication;
-      final credential = GoogleAuthProvider.credential(idToken: auth.idToken);
-      await FirebaseAuth.instance.signInWithCredential(credential);
+      if (kIsWeb) {
+        final provider = GoogleAuthProvider();
+        await FirebaseAuth.instance.signInWithPopup(provider);
+      } else {
+        final GoogleSignInAccount account = await GoogleSignIn.instance
+            .authenticate();
+        final GoogleSignInAuthentication auth = account.authentication;
+        final credential = GoogleAuthProvider.credential(idToken: auth.idToken);
+        await FirebaseAuth.instance.signInWithCredential(credential);
+      }
+
+      // Sync photo URL setelah berhasil login
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) await syncPhotoUrl(user);
     } catch (e) {
       if (e is PlatformException && e.code == 'sign_in_cancelled') return;
       final errStr = e.toString().toLowerCase();
       if (errStr.contains('sign_in_cancelled') ||
           errStr.contains('canceled') ||
-          errStr.contains('cancelled')) {
+          errStr.contains('cancelled') ||
+          errStr.contains('popup_closed')) {
         return;
       }
 
       if (!context.mounted) return;
 
       final isNetworkError =
-          e is SocketException ||
           (e is FirebaseAuthException && e.code == 'network-request-failed') ||
           errStr.contains('network') ||
           errStr.contains('socket') ||
@@ -94,6 +120,8 @@ class AuthController {
 
   Future<void> signOut() async {
     await FirebaseAuth.instance.signOut();
-    await GoogleSignIn.instance.signOut();
+    if (!kIsWeb) {
+      await GoogleSignIn.instance.signOut();
+    }
   }
 }

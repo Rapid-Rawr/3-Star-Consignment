@@ -1,0 +1,660 @@
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../controllers/client_controller.dart';
+import '../models/client_model.dart';
+import '../widgets/search_filter_bar.dart';
+import '../utils/currency_format.dart';
+
+class ClientPage extends StatefulWidget {
+  const ClientPage({super.key});
+
+  @override
+  State<ClientPage> createState() => _ClientPageState();
+}
+
+class _ClientPageState extends State<ClientPage> {
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
+  late ClientController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = ClientController(firestore: FirebaseFirestore.instance);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _searchFocusNode.dispose();
+    super.dispose();
+  }
+
+  void _showAddClientDialog() {
+    final formKey = GlobalKey<FormState>();
+    final nameController = TextEditingController();
+    final phoneController = TextEditingController();
+    final addressController = TextEditingController();
+    final debtController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Tambah Klien'),
+        content: SingleChildScrollView(
+          child: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Nama Klien',
+                    border: OutlineInputBorder(),
+                    hintText: 'Masukkan nama lengkap',
+                    prefixIcon: Icon(Icons.person_outline),
+                  ),
+                  validator: _controller.validateName,
+                  textCapitalization: TextCapitalization.words,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: phoneController,
+                  decoration: const InputDecoration(
+                    labelText: 'Nomor Telepon',
+                    border: OutlineInputBorder(),
+                    hintText: '08xxxxxxxxxx',
+                    prefixIcon: Icon(Icons.phone_outlined),
+                  ),
+                  keyboardType: TextInputType.phone,
+                  validator: _controller.validatePhone,
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: addressController,
+                  decoration: const InputDecoration(
+                    labelText: 'Alamat',
+                    border: OutlineInputBorder(),
+                    hintText: 'Masukkan alamat lengkap',
+                    prefixIcon: Icon(Icons.location_on_outlined),
+                  ),
+                  maxLines: 2,
+                  validator: _controller.validateAddress,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: debtController,
+                  decoration: const InputDecoration(
+                    labelText: 'Hutang (Rp)',
+                    border: OutlineInputBorder(),
+                    hintText: '0',
+                    prefixIcon: Icon(Icons.account_balance_wallet_outlined),
+                  ),
+                  keyboardType: TextInputType.number,
+                  validator: _controller.validateDebt,
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () async {
+              if (formKey.currentState!.validate()) {
+                final debtRaw = debtController.text.trim();
+                final debt = debtRaw.isEmpty
+                    ? 0.0
+                    : double.tryParse(
+                            debtRaw.replaceAll(',', '').replaceAll('.', ''),
+                          ) ??
+                          0.0;
+                final result = await _controller.createClient(
+                  name: nameController.text.trim(),
+                  phone: phoneController.text.trim(),
+                  address: addressController.text.trim(),
+                  debt: debt,
+                );
+                if (dialogContext.mounted) {
+                  if (result['success'] == true) {
+                    Navigator.pop(dialogContext);
+                    ScaffoldMessenger.of(dialogContext).showSnackBar(
+                      const SnackBar(
+                        content: Text('Klien berhasil ditambahkan'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(dialogContext).showSnackBar(
+                      SnackBar(
+                        content: Text(result['error'] ?? 'Terjadi kesalahan'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              }
+            },
+            child: const Text('Tambah'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── DIALOG EDIT ──────────────────────────────────────────────────────────
+  void _showEditClientDialog(ClientModel client) {
+    final formKey = GlobalKey<FormState>();
+    final nameController = TextEditingController(text: client.name);
+    final phoneController = TextEditingController(text: client.phone);
+    final addressController = TextEditingController(text: client.address);
+    final debtController = TextEditingController(
+      text: client.debt == 0 ? '' : client.debt.toStringAsFixed(0),
+    );
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Edit Klien'),
+        content: SingleChildScrollView(
+          child: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Nama Klien',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.person_outline),
+                  ),
+                  validator: _controller.validateName,
+                  textCapitalization: TextCapitalization.words,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: phoneController,
+                  decoration: const InputDecoration(
+                    labelText: 'Nomor Telepon',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.phone_outlined),
+                  ),
+                  keyboardType: TextInputType.phone,
+                  validator: _controller.validatePhone,
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: addressController,
+                  decoration: const InputDecoration(
+                    labelText: 'Alamat',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.location_on_outlined),
+                  ),
+                  maxLines: 2,
+                  validator: _controller.validateAddress,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: debtController,
+                  decoration: const InputDecoration(
+                    labelText: 'Hutang (Rp)',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.account_balance_wallet_outlined),
+                  ),
+                  keyboardType: TextInputType.number,
+                  validator: _controller.validateDebt,
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () async {
+              if (formKey.currentState!.validate()) {
+                final debtRaw = debtController.text.trim();
+                final debt = debtRaw.isEmpty
+                    ? 0.0
+                    : double.tryParse(
+                            debtRaw.replaceAll(',', '').replaceAll('.', ''),
+                          ) ??
+                          0.0;
+                final result = await _controller.updateClient(
+                  id: client.id,
+                  name: nameController.text.trim(),
+                  phone: phoneController.text.trim(),
+                  address: addressController.text.trim(),
+                  debt: debt,
+                );
+                if (dialogContext.mounted) {
+                  if (result['success'] == true) {
+                    Navigator.pop(dialogContext);
+                    ScaffoldMessenger.of(dialogContext).showSnackBar(
+                      const SnackBar(
+                        content: Text('Klien berhasil diupdate'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(dialogContext).showSnackBar(
+                      SnackBar(
+                        content: Text(result['error'] ?? 'Terjadi kesalahan'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              }
+            },
+            child: const Text('Simpan'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── DIALOG HAPUS ─────────────────────────────────────────────────────────
+  void _showDeleteClientDialog(ClientModel client) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Hapus Klien'),
+        content: Text('Apakah Anda yakin ingin menghapus ${client.name}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () async {
+              final result = await _controller.deleteClient(client.id);
+              if (dialogContext.mounted) {
+                Navigator.pop(dialogContext);
+                if (result['success'] == true) {
+                  ScaffoldMessenger.of(dialogContext).showSnackBar(
+                    SnackBar(
+                      content: Text('${client.name} telah dihapus'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                } else {
+                  ScaffoldMessenger.of(dialogContext).showSnackBar(
+                    SnackBar(
+                      content: Text(result['error'] ?? 'Terjadi kesalahan'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text('Hapus', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── BUILD ────────────────────────────────────────────────────────────────
+  @override
+  Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final Color editBg = isDark
+        ? const Color(0xFF49454F)
+        : const Color(0xFFE8E5EC);
+    final Color editIcon = isDark ? Colors.white : const Color(0xFF1D1B20);
+    final Color deleteBg = isDark
+        ? const Color(0xFF4D2B2B)
+        : const Color(0xFFFCE8E8);
+    final Color deleteIcon = isDark ? const Color(0xFFFF8A8A) : Colors.red;
+    final Color emptyIcon = isDark ? Colors.white24 : Colors.black26;
+    final Color emptyText = isDark ? Colors.white38 : const Color(0xFF9E9E9E);
+
+    final List<Color> fabGradient = isDark
+        ? [const Color(0xFFA3A3A3), const Color(0xFFFFFFFF)]
+        : [const Color(0xFF67636D), const Color(0xFF1D1B20)];
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Klien', style: TextStyle(fontFamily: 'Poppins')),
+      ),
+      body: GestureDetector(
+        onTap: _searchFocusNode.unfocus,
+        child: Column(
+          children: [
+            SearchFilterBar<String>(
+              searchController: _searchController,
+              searchFocusNode: _searchFocusNode,
+              hintText: 'Cari nama, telepon, atau alamat...',
+              onSearchChanged: (value) =>
+                  setState(() => _controller.setSearchQuery(value)),
+              filters: const [],
+              selectedFilter: null,
+              onFilterSelected: (_) {},
+            ),
+            Expanded(
+              child: StreamBuilder<QuerySnapshot>(
+                stream: _controller.getClientsStream(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.error_outline,
+                            size: 64,
+                            color: Colors.red,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Error: ${snapshot.error}',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              color: Colors.red,
+                              fontFamily: 'Poppins',
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.people_outline,
+                            size: 64,
+                            color: emptyIcon,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Belum Ada Klien',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: emptyText,
+                              fontFamily: 'Poppins',
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  final clients = snapshot.data!.docs
+                      .map(
+                        (doc) => ClientModel.fromMap(
+                          doc.id,
+                          doc.data() as Map<String, dynamic>,
+                        ),
+                      )
+                      .toList();
+
+                  final filtered = _controller.filteredClients(clients);
+
+                  if (filtered.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.search_off, size: 64, color: emptyIcon),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Klien Tidak Ditemukan',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: emptyText,
+                              fontFamily: 'Poppins',
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  return ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
+                    itemCount: filtered.length,
+                    itemBuilder: (context, index) {
+                      final client = filtered[index];
+
+                      final hasDebt = client.debt > 0;
+                      final debtBg = hasDebt
+                          ? (isDark
+                                ? const Color(0xFF4D2B2B)
+                                : const Color(0xFFFCE8E8))
+                          : (isDark
+                                ? const Color(0xFF1A3A2A)
+                                : const Color(0xFFE8F5E9));
+                      final debtTextColor = hasDebt
+                          ? (isDark ? const Color(0xFFFF8A8A) : Colors.red)
+                          : (isDark
+                                ? const Color(0xFF80CBC4)
+                                : const Color(0xFF2E7D32));
+
+                      final cardBg = isDark
+                          ? const Color(0xFF2B2930)
+                          : Colors.white;
+                      final cardBorder = isDark
+                          ? const Color(0xFF49454F)
+                          : const Color(0xFFE0E0E0);
+                      final nameColor = isDark
+                          ? Colors.white
+                          : const Color(0xFF1D1B20);
+                      final subColor = isDark
+                          ? Colors.white54
+                          : const Color(0xFF757575);
+
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        decoration: BoxDecoration(
+                          color: cardBg,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: cardBorder, width: 1),
+                          boxShadow: [
+                            BoxShadow(
+                              color: isDark
+                                  ? Colors.black26
+                                  : Colors.black.withValues(alpha: 0.06),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            children: [
+                              // Info
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // Name
+                                    Text(
+                                      client.name,
+                                      style: TextStyle(
+                                        fontFamily: 'Poppins',
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 15,
+                                        color: nameColor,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 3),
+                                    // Phone
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.phone_outlined,
+                                          size: 13,
+                                          color: subColor,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          client.phone,
+                                          style: TextStyle(
+                                            fontFamily: 'Poppins',
+                                            fontSize: 12,
+                                            color: subColor,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 2),
+                                    // Address
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.location_on_outlined,
+                                          size: 13,
+                                          color: subColor,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Expanded(
+                                          child: Text(
+                                            client.address,
+                                            style: TextStyle(
+                                              fontFamily: 'Poppins',
+                                              fontSize: 12,
+                                              color: subColor,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    // Debt badge
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 3,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: debtBg,
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            hasDebt
+                                                ? Icons.account_balance_wallet
+                                                : Icons.check_circle_outline,
+                                            size: 11,
+                                            color: debtTextColor,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            hasDebt
+                                                ? formatRupiah(client.debt)
+                                                : 'Lunas',
+                                            style: TextStyle(
+                                              fontFamily: 'Poppins',
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w600,
+                                              color: debtTextColor,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              // Action buttons
+                              Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  InkWell(
+                                    onTap: () => _showEditClientDialog(client),
+                                    borderRadius: BorderRadius.circular(20),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: editBg,
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: Icon(
+                                        Icons.edit_outlined,
+                                        color: editIcon,
+                                        size: 18,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  InkWell(
+                                    onTap: () =>
+                                        _showDeleteClientDialog(client),
+                                    borderRadius: BorderRadius.circular(20),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: deleteBg,
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: Icon(
+                                        Icons.delete_outline,
+                                        color: deleteIcon,
+                                        size: 18,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+      floatingActionButton: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.bottomLeft,
+            end: Alignment.topRight,
+            colors: fabGradient,
+          ),
+          shape: BoxShape.circle,
+        ),
+        child: FloatingActionButton(
+          onPressed: _showAddClientDialog,
+          tooltip: 'Tambah Klien',
+          backgroundColor: Colors.transparent,
+          foregroundColor: isDark ? const Color(0xFF1D1B20) : Colors.white,
+          elevation: 0,
+          shape: const CircleBorder(),
+          child: const Icon(Icons.add),
+        ),
+      ),
+    );
+  }
+}
