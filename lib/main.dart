@@ -25,7 +25,6 @@ void main() async {
   runApp(const MyApp());
 }
 
-
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -195,7 +194,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
         children: const [
           BerandaPage(),
           PesananPage(),
-          LaporanPage(),
+          BarangPage(),
           PenggunaPage(),
         ],
       ),

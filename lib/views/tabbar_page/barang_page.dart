@@ -3,9 +3,10 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../catalog_page.dart';
+import '../consignment_request_page.dart';
 
-class LaporanPage extends StatelessWidget {
-  const LaporanPage({super.key});
+class BarangPage extends StatelessWidget {
+  const BarangPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -50,6 +51,18 @@ class LaporanPage extends StatelessWidget {
                         borderColor: borderColor,
                         imageOffset: const Offset(8, 0),
                         onTap: () {},
+                      ),
+                      const SizedBox(height: 16),
+                      _MenuButton(
+                        svgPath: 'assets/icons/Request Consignment.svg',
+                        label: 'Pengajuan Konsinyasi',
+                        borderColor: borderColor,
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ConsignmentRequestPage(),
+                          ),
+                        ),
                       ),
                       const SizedBox(height: 16),
                       _MenuButton(
