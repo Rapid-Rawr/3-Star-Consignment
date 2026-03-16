@@ -1,10 +1,13 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:image_picker/image_picker.dart';
 import '../controllers/catalog_controller.dart';
 import '../models/catalog_model.dart';
 import '../widgets/search_filter_bar.dart';
 import '../widgets/app_dialog.dart';
 import '../widgets/gradient_button.dart';
+import '../widgets/catalog_image.dart';
 import '../utils/currency_format.dart';
 
 class CatalogPage extends StatefulWidget {
@@ -32,108 +35,155 @@ class _CatalogPageState extends State<CatalogPage> {
     super.dispose();
   }
 
+  static const List<String> _categories = [
+    'Alat',
+    'Alat Tulis',
+    'Seragam',
+    'Kerajinan',
+    'Aksesori',
+    'Lainnya',
+  ];
+
+  Future<XFile?> _pickImage() async {
+    final picker = ImagePicker();
+    final XFile? file = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 800,
+      maxHeight: 800,
+      imageQuality: 80,
+    );
+    return file;
+  }
+
   void _showAddItemDialog() {
     final formKey = GlobalKey<FormState>();
     final nameController = TextEditingController();
     final priceController = TextEditingController();
-    final categoryController = TextEditingController();
+    String selectedCategory = _categories.first;
+    XFile? pickedImage;
 
     showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Tambah Barang'),
-        content: SingleChildScrollView(
-          child: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Nama Barang',
-                    border: OutlineInputBorder(),
-                    hintText: 'Masukkan nama barang',
-                    prefixIcon: Icon(Icons.inventory_2_outlined),
-                  ),
-                  validator: _controller.validateName,
-                  textCapitalization: TextCapitalization.words,
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: priceController,
-                  decoration: const InputDecoration(
-                    labelText: 'Harga (Rp)',
-                    border: OutlineInputBorder(),
-                    hintText: '0',
-                    prefixIcon: Icon(Icons.sell_outlined),
-                  ),
-                  keyboardType: TextInputType.number,
-                  validator: _controller.validatePrice,
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: categoryController,
-                  decoration: const InputDecoration(
-                    labelText: 'Kategori',
-                    border: OutlineInputBorder(),
-                    hintText: 'Contoh: Baju, Celana, Tas...',
-                    prefixIcon: Icon(Icons.category_outlined),
-                  ),
-                  validator: _controller.validateCategory,
-                  textCapitalization: TextCapitalization.words,
-                ),
-              ],
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            style: TextButton.styleFrom(
-              foregroundColor: Theme.of(dialogContext).colorScheme.onSurface,
-              splashFactory: NoSplash.splashFactory,
-              overlayColor: Colors.transparent,
-            ),
-            child: const Text('Batal'),
-          ),
-          GradientButton(
-            label: 'Tambah',
-            onPressed: () async {
-              if (formKey.currentState!.validate()) {
-                final price =
-                    double.tryParse(
-                      priceController.text
-                          .trim()
-                          .replaceAll(',', '')
-                          .replaceAll('.', ''),
-                    ) ??
-                    0.0;
-                Navigator.pop(dialogContext);
-                final result = await _controller.createItem(
-                  name: nameController.text.trim(),
-                  price: price,
-                  category: categoryController.text.trim(),
-                );
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        result['success'] == true
-                            ? 'Barang berhasil ditambahkan'
-                            : (result['error'] ?? 'Terjadi kesalahan'),
-                      ),
-                      backgroundColor: result['success'] == true
-                          ? Colors.green
-                          : Colors.red,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          title: const Text('Tambah Barang'),
+          content: SingleChildScrollView(
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  GestureDetector(
+                    onTap: () async {
+                      final file = await _pickImage();
+                      if (file != null) {
+                        setDialogState(() => pickedImage = file);
+                      }
+                    },
+                    child: _ImagePickerPreview(
+                      pickedImage: pickedImage,
+                      existingPath: null,
+                      onRemove: () => setDialogState(() => pickedImage = null),
                     ),
-                  );
-                }
-              }
-            },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: nameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Nama Barang',
+                      border: OutlineInputBorder(),
+                      hintText: 'Masukkan nama barang',
+                      prefixIcon: Icon(Icons.inventory_2_outlined),
+                    ),
+                    validator: _controller.validateName,
+                    textCapitalization: TextCapitalization.words,
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: priceController,
+                    decoration: const InputDecoration(
+                      labelText: 'Harga (Rp)',
+                      border: OutlineInputBorder(),
+                      hintText: '0',
+                      prefixIcon: Icon(Icons.sell_outlined),
+                    ),
+                    keyboardType: TextInputType.number,
+                    validator: _controller.validatePrice,
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    value: selectedCategory,
+                    decoration: const InputDecoration(
+                      labelText: 'Kategori',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.category_outlined),
+                    ),
+                    items: _categories
+                        .map(
+                          (cat) =>
+                              DropdownMenuItem(value: cat, child: Text(cat)),
+                        )
+                        .toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setDialogState(() => selectedCategory = value);
+                      }
+                    },
+                    validator: _controller.validateCategory,
+                  ),
+                ],
+              ),
+            ),
           ),
-        ],
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              style: TextButton.styleFrom(
+                foregroundColor: Theme.of(dialogContext).colorScheme.onSurface,
+                splashFactory: NoSplash.splashFactory,
+                overlayColor: Colors.transparent,
+              ),
+              child: const Text('Batal'),
+            ),
+            GradientButton(
+              label: 'Tambah',
+              onPressed: () async {
+                if (formKey.currentState!.validate()) {
+                  final price =
+                      double.tryParse(
+                        priceController.text
+                            .trim()
+                            .replaceAll(',', '')
+                            .replaceAll('.', ''),
+                      ) ??
+                      0.0;
+                  Navigator.pop(dialogContext);
+                  final result = await _controller.createItem(
+                    name: nameController.text.trim(),
+                    price: price,
+                    category: selectedCategory,
+                    imageFile: pickedImage,
+                  );
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          result['success'] == true
+                              ? 'Barang berhasil ditambahkan'
+                              : (result['error'] ?? 'Terjadi kesalahan'),
+                        ),
+                        backgroundColor: result['success'] == true
+                            ? Colors.green
+                            : Colors.red,
+                      ),
+                    );
+                  }
+                }
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -144,102 +194,141 @@ class _CatalogPageState extends State<CatalogPage> {
     final priceController = TextEditingController(
       text: item.price == 0 ? '' : item.price.toStringAsFixed(0),
     );
-    final categoryController = TextEditingController(text: item.category);
+    String selectedCategory = _categories.contains(item.category)
+        ? item.category
+        : _categories.first;
+    XFile? pickedImage;
+    bool removeImage = false;
 
     showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Edit Barang'),
-        content: SingleChildScrollView(
-          child: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Nama Barang',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.inventory_2_outlined),
-                  ),
-                  validator: _controller.validateName,
-                  textCapitalization: TextCapitalization.words,
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: priceController,
-                  decoration: const InputDecoration(
-                    labelText: 'Harga (Rp)',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.sell_outlined),
-                  ),
-                  keyboardType: TextInputType.number,
-                  validator: _controller.validatePrice,
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: categoryController,
-                  decoration: const InputDecoration(
-                    labelText: 'Kategori',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.category_outlined),
-                  ),
-                  validator: _controller.validateCategory,
-                  textCapitalization: TextCapitalization.words,
-                ),
-              ],
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            style: TextButton.styleFrom(
-              foregroundColor: Theme.of(dialogContext).colorScheme.onSurface,
-              splashFactory: NoSplash.splashFactory,
-              overlayColor: Colors.transparent,
-            ),
-            child: const Text('Batal'),
-          ),
-          GradientButton(
-            label: 'Simpan',
-            onPressed: () async {
-              if (formKey.currentState!.validate()) {
-                final price =
-                    double.tryParse(
-                      priceController.text
-                          .trim()
-                          .replaceAll(',', '')
-                          .replaceAll('.', ''),
-                    ) ??
-                    0.0;
-                Navigator.pop(dialogContext);
-                final result = await _controller.updateItem(
-                  id: item.id,
-                  name: nameController.text.trim(),
-                  price: price,
-                  category: categoryController.text.trim(),
-                );
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        result['success'] == true
-                            ? 'Barang berhasil diupdate'
-                            : (result['error'] ?? 'Terjadi kesalahan'),
-                      ),
-                      backgroundColor: result['success'] == true
-                          ? Colors.green
-                          : Colors.red,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          title: const Text('Edit Barang'),
+          content: SingleChildScrollView(
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  GestureDetector(
+                    onTap: () async {
+                      final file = await _pickImage();
+                      if (file != null) {
+                        setDialogState(() {
+                          pickedImage = file;
+                          removeImage = false;
+                        });
+                      }
+                    },
+                    child: _ImagePickerPreview(
+                      pickedImage: pickedImage,
+                      existingPath: removeImage ? null : item.imagePath,
+                      onRemove: () => setDialogState(() {
+                        pickedImage = null;
+                        removeImage = true;
+                      }),
                     ),
-                  );
-                }
-              }
-            },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: nameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Nama Barang',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.inventory_2_outlined),
+                    ),
+                    validator: _controller.validateName,
+                    textCapitalization: TextCapitalization.words,
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: priceController,
+                    decoration: const InputDecoration(
+                      labelText: 'Harga (Rp)',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.sell_outlined),
+                    ),
+                    keyboardType: TextInputType.number,
+                    validator: _controller.validatePrice,
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    value: selectedCategory,
+                    decoration: const InputDecoration(
+                      labelText: 'Kategori',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.category_outlined),
+                    ),
+                    items: _categories
+                        .map(
+                          (cat) =>
+                              DropdownMenuItem(value: cat, child: Text(cat)),
+                        )
+                        .toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setDialogState(() => selectedCategory = value);
+                      }
+                    },
+                    validator: _controller.validateCategory,
+                  ),
+                ],
+              ),
+            ),
           ),
-        ],
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              style: TextButton.styleFrom(
+                foregroundColor: Theme.of(dialogContext).colorScheme.onSurface,
+                splashFactory: NoSplash.splashFactory,
+                overlayColor: Colors.transparent,
+              ),
+              child: const Text('Batal'),
+            ),
+            GradientButton(
+              label: 'Simpan',
+              onPressed: () async {
+                if (formKey.currentState!.validate()) {
+                  final price =
+                      double.tryParse(
+                        priceController.text
+                            .trim()
+                            .replaceAll(',', '')
+                            .replaceAll('.', ''),
+                      ) ??
+                      0.0;
+                  Navigator.pop(dialogContext);
+                  final result = await _controller.updateItem(
+                    id: item.id,
+                    name: nameController.text.trim(),
+                    price: price,
+                    category: selectedCategory,
+                    newImageFile: pickedImage,
+                    oldImagePath: item.imagePath,
+                    removeImage: removeImage,
+                  );
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          result['success'] == true
+                              ? 'Barang berhasil diupdate'
+                              : (result['error'] ?? 'Terjadi kesalahan'),
+                        ),
+                        backgroundColor: result['success'] == true
+                            ? Colors.green
+                            : Colors.red,
+                      ),
+                    );
+                  }
+                }
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -483,16 +572,20 @@ class _CatalogPageState extends State<CatalogPage> {
                               ],
                             ),
                             child: Padding(
-                              padding: const EdgeInsets.all(16),
+                              padding: const EdgeInsets.all(12),
                               child: Row(
                                 children: [
-                                  // Info
+                                  CatalogImage(
+                                    imagePath: item.imagePath,
+                                    size: 72,
+                                    borderRadius: 10,
+                                  ),
+                                  const SizedBox(width: 12),
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        // Nama + pending icon
                                         Row(
                                           children: [
                                             Expanded(
@@ -525,7 +618,6 @@ class _CatalogPageState extends State<CatalogPage> {
                                           ],
                                         ),
                                         const SizedBox(height: 4),
-                                        // Harga
                                         Row(
                                           children: [
                                             Icon(
@@ -548,7 +640,6 @@ class _CatalogPageState extends State<CatalogPage> {
                                           ],
                                         ),
                                         const SizedBox(height: 6),
-                                        // Kategori chip
                                         Container(
                                           padding: const EdgeInsets.symmetric(
                                             horizontal: 10,
@@ -585,7 +676,6 @@ class _CatalogPageState extends State<CatalogPage> {
                                     ),
                                   ),
                                   const SizedBox(width: 8),
-                                  // Action buttons
                                   Column(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
@@ -662,6 +752,153 @@ class _CatalogPageState extends State<CatalogPage> {
           child: const Icon(Icons.add),
         ),
       ),
+    );
+  }
+}
+
+class _ImagePickerPreview extends StatefulWidget {
+  final XFile? pickedImage;
+  final String? existingPath;
+  final VoidCallback onRemove;
+
+  const _ImagePickerPreview({
+    required this.pickedImage,
+    required this.existingPath,
+    required this.onRemove,
+  });
+
+  @override
+  State<_ImagePickerPreview> createState() => _ImagePickerPreviewState();
+}
+
+class _ImagePickerPreviewState extends State<_ImagePickerPreview> {
+  Uint8List? _cachedBytes;
+  XFile? _cachedFile;
+
+  Future<Uint8List?> _getBytes() async {
+    final file = widget.pickedImage;
+    if (file == null) return null;
+    if (_cachedFile == file && _cachedBytes != null) return _cachedBytes;
+    _cachedBytes = await file.readAsBytes();
+    _cachedFile = file;
+    return _cachedBytes;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color bg = isDark ? const Color(0xFF3A3540) : const Color(0xFFF3EFF4);
+    final Color iconColor = isDark ? Colors.white38 : const Color(0xFFB0B0B0);
+    final Color borderColor = isDark
+        ? const Color(0xFF49454F)
+        : const Color(0xFFE0E0E0);
+
+    Widget content;
+
+    if (widget.pickedImage != null) {
+      content = Stack(
+        fit: StackFit.expand,
+        children: [
+          FutureBuilder<Uint8List?>(
+            future: _getBytes(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Container(
+                  color: bg,
+                  child: Center(
+                    child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: iconColor,
+                      ),
+                    ),
+                  ),
+                );
+              }
+              final bytes = snapshot.data;
+              if (bytes == null) {
+                return Icon(
+                  Icons.broken_image_outlined,
+                  color: iconColor,
+                  size: 36,
+                );
+              }
+              return Image.memory(bytes, fit: BoxFit.cover);
+            },
+          ),
+          Positioned(
+            top: 4,
+            right: 4,
+            child: GestureDetector(
+              onTap: widget.onRemove,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: const BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.close, size: 14, color: Colors.white),
+              ),
+            ),
+          ),
+        ],
+      );
+    } else if (widget.existingPath != null && widget.existingPath!.isNotEmpty) {
+      content = Stack(
+        fit: StackFit.expand,
+        children: [
+          CatalogImage(
+            imagePath: widget.existingPath,
+            size: 100,
+            borderRadius: 0,
+          ),
+          Positioned(
+            top: 4,
+            right: 4,
+            child: GestureDetector(
+              onTap: widget.onRemove,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: const BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.close, size: 14, color: Colors.white),
+              ),
+            ),
+          ),
+        ],
+      );
+    } else {
+      content = Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.add_photo_alternate_outlined, color: iconColor, size: 32),
+          const SizedBox(height: 6),
+          Text(
+            'Tap untuk pilih foto',
+            style: TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 12,
+              color: iconColor,
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Container(
+      height: 100,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderColor),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: content,
     );
   }
 }

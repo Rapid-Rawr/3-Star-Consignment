@@ -2,9 +2,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'firebase_options.dart';
 import 'controllers/auth_controller.dart';
 import 'utils/theme_notifier.dart';
+import 'utils/supabase_service.dart';
 import 'widgets/login_drawer.dart';
 import 'views/tabbar_page/beranda_page.dart';
 import 'views/tabbar_page/pembayaran_page.dart';
@@ -14,9 +16,15 @@ import 'widgets/custom_bottom_nav.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: '.env');
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await SupabaseService.initialize(
+    url: dotenv.env['PROJECT_URL']!,
+    anonKey: dotenv.env['ANON_KEY']!,
+  );
   runApp(const MyApp());
 }
+
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});

@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:image_picker/image_picker.dart';
 import '../models/catalog_model.dart';
+import '../utils/supabase_service.dart';
 
 class CatalogController {
   final FirebaseFirestore firestore;
@@ -63,14 +65,27 @@ class CatalogController {
     required String name,
     required double price,
     required String category,
+    XFile? imageFile,
   }) async {
     try {
-      await firestore.collection(collectionName).add({
+      final docRef = await firestore.collection(collectionName).add({
         'name': name.trim(),
         'price': price,
         'category': category.trim(),
+        'imagePath': null,
         'createdAt': FieldValue.serverTimestamp(),
       });
+
+      if (imageFile != null) {
+        final path = await SupabaseService.uploadCatalogImage(
+          catalogId: docRef.id,
+          imageFile: imageFile,
+        );
+        if (path != null) {
+          await docRef.update({'imagePath': path});
+        }
+      }
+
       return {'success': true};
     } catch (e) {
       return {'success': false, 'error': e.toString()};
@@ -82,14 +97,37 @@ class CatalogController {
     required String name,
     required double price,
     required String category,
+    XFile? newImageFile,
+    String? oldImagePath,
+    bool removeImage = false,
   }) async {
     try {
+      String? finalImagePath = oldImagePath;
+
+      if (removeImage) {
+        await SupabaseService.deleteCatalogImage(oldImagePath);
+        finalImagePath = null;
+      } else if (newImageFile != null) {
+        final uploaded = await SupabaseService.uploadCatalogImage(
+          catalogId: id,
+          imageFile: newImageFile,
+        );
+        if (uploaded != null) {
+          if (oldImagePath != null && oldImagePath.isNotEmpty) {
+            await SupabaseService.deleteCatalogImage(oldImagePath);
+          }
+          finalImagePath = uploaded;
+        }
+      }
+
       await firestore.collection(collectionName).doc(id).update({
         'name': name.trim(),
         'price': price,
         'category': category.trim(),
+        'imagePath': finalImagePath,
         'updatedAt': FieldValue.serverTimestamp(),
       });
+
       return {'success': true};
     } catch (e) {
       return {'success': false, 'error': e.toString()};
@@ -98,6 +136,7 @@ class CatalogController {
 
   Future<Map<String, dynamic>> deleteItem(String id) async {
     try {
+      await SupabaseService.deleteCatalogFolder(id);
       await firestore.collection(collectionName).doc(id).delete();
       return {'success': true};
     } catch (e) {

@@ -1,6 +1,7 @@
 # 3-Star Consignment
 
 Jangan lupa build ulang dulu sebelum anda mengerjakan atau restart dari vscode agar tau perubahan terbaru
+> **Catatan:** Untuk akses CRUD gambar di Catalog minta file .env dari PM, karena file .env berisi anon key dan url lewat Supabase
 
 ## Untuk Terhubung Ke Firebase 
 1. download dulu file google-services.json dari firebase console

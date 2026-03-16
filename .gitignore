@@ -169,3 +169,7 @@ Xample code/
 android/app/google-services.json
 ios/Runner/GoogleService-Info.plist
 lib/firebase_options.dart
+
+# ── Environment & Config (jangan di-push!) ──
+.env
+sonar-project.properties

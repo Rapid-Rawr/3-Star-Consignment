@@ -110,7 +110,6 @@ class _MenuButton extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // SVG dengan drop shadow + offset posisi opsional
               Transform.translate(
                 offset: imageOffset,
                 child: Padding(
