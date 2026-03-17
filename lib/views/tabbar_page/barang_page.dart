@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../catalog_page.dart';
 import '../consignment_request_page.dart';
+import '../daftar_pengajuan_page.dart';
 
 class BarangPage extends StatelessWidget {
   const BarangPage({super.key});
@@ -50,7 +51,12 @@ class BarangPage extends StatelessWidget {
                         label: 'Daftar Pengajuan',
                         borderColor: borderColor,
                         imageOffset: const Offset(8, 0),
-                        onTap: () {},
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const DaftarPengajuanPage(),
+                          ),
+                        ),
                       ),
                       const SizedBox(height: 16),
                       _MenuButton(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../controllers/catalog_controller.dart';
 import '../controllers/consignment_request_controller.dart';
 import '../models/catalog_model.dart';
@@ -73,18 +74,39 @@ class _ConsignmentRequestPageState extends State<ConsignmentRequestPage> {
   Future<void> _submitRequest() async {
     if (_selected.isEmpty || _isSubmitting) return;
 
+    final user = FirebaseAuth.instance.currentUser;
+    final userId = user?.uid ?? '';
+    final userName =
+        user?.displayName ?? user?.email?.split('@').first ?? 'Unknown';
+    final userEmail = user?.email ?? '';
+
+    String userSchool = '';
+    if (userEmail.isNotEmpty) {
+      try {
+        final clientSnap = await FirebaseFirestore.instance
+            .collection('clients')
+            .where('email', isEqualTo: userEmail)
+            .limit(1)
+            .get();
+        if (clientSnap.docs.isNotEmpty) {
+          userSchool = (clientSnap.docs.first.data()['name'] as String?) ?? '';
+        }
+      } catch (_) {}
+    }
+
     setState(() => _isSubmitting = true);
 
-    bool allSuccess = true;
-    for (final entry in _selected.values) {
-      final result = await _requestController.createRequest(
-        catalog: entry.catalog,
-        quantity: entry.quantity,
-      );
-      if (result['success'] != true) {
-        allSuccess = false;
-      }
-    }
+    final entries = _selected.values.toList();
+    final result = await _requestController.createRequest(
+      catalogItems: entries.map((e) => e.catalog).toList(),
+      quantities: entries.map((e) => e.quantity).toList(),
+      userId: userId,
+      userName: userName,
+      userEmail: userEmail,
+      userSchool: userSchool,
+    );
+
+    final allSuccess = result['success'] == true;
 
     setState(() {
       _isSubmitting = false;
@@ -97,7 +119,7 @@ class _ConsignmentRequestPageState extends State<ConsignmentRequestPage> {
           content: Text(
             allSuccess
                 ? 'Pengajuan konsinyasi berhasil dikirim'
-                : 'Beberapa pengajuan gagal dikirim',
+                : 'Gagal mengirim pengajuan: ${result['error'] ?? ''}',
           ),
           backgroundColor: allSuccess ? Colors.green : Colors.red,
         ),
@@ -323,7 +345,6 @@ class _CatalogItemCard extends StatelessWidget {
     final Color categoryText = isDark
         ? Colors.white70
         : const Color(0xFF49454F);
-
     final Color addBg = isDark
         ? const Color(0xFF1A3A2A)
         : const Color(0xFFE6F4EA);
@@ -523,7 +544,7 @@ class _QuantityStepper extends StatelessWidget {
   }
 }
 
-class _SelectionBottomSheet extends StatelessWidget {
+class _SelectionBottomSheet extends StatefulWidget {
   final List<_SelectedItem> selected;
   final bool isSubmitting;
   final bool isDark;
@@ -541,154 +562,209 @@ class _SelectionBottomSheet extends StatelessWidget {
   });
 
   @override
+  State<_SelectionBottomSheet> createState() => _SelectionBottomSheetState();
+}
+
+class _SelectionBottomSheetState extends State<_SelectionBottomSheet> {
+  final DraggableScrollableController _dragController =
+      DraggableScrollableController();
+
+  @override
+  void dispose() {
+    _dragController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final Color sheetBg = isDark ? const Color(0xFF2B2930) : Colors.white;
-    final Color divider = isDark
+    if (!widget.isVisible) return const SizedBox.shrink();
+
+    final Color sheetBg = widget.isDark
+        ? const Color(0xFF2B2930)
+        : Colors.white;
+    final Color divider = widget.isDark
         ? const Color(0xFF49454F)
         : const Color(0xFFE0E0E0);
-    final Color nameColor = isDark ? Colors.white : const Color(0xFF1D1B20);
-    final Color priceColor = isDark
+    final Color nameColor = widget.isDark
+        ? Colors.white
+        : const Color(0xFF1D1B20);
+    final Color priceColor = widget.isDark
         ? const Color(0xFF80CBC4)
         : const Color(0xFF2E7D32);
 
-    final double totalPrice = selected.fold(
-      0,
+    final double totalPrice = widget.selected.fold(
+      0.0,
       (sum, e) => sum + e.catalog.price * e.quantity,
     );
-    final int totalItems = selected.fold(0, (sum, e) => sum + e.quantity);
+    final int totalItems = widget.selected.fold(
+      0,
+      (sum, e) => sum + e.quantity,
+    );
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 250),
-      curve: Curves.easeInOut,
+    return Container(
       clipBehavior: Clip.hardEdge,
-      constraints: BoxConstraints(maxHeight: isVisible ? 320 : 0),
       decoration: BoxDecoration(
         color: sheetBg,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         border: Border(top: BorderSide(color: divider, width: 1)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.12),
+            color: Colors.black.withValues(alpha: widget.isDark ? 0.35 : 0.10),
             blurRadius: 16,
-            offset: const Offset(0, -4),
+            offset: const Offset(0, -3),
           ),
         ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 10, bottom: 4),
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: divider,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: Row(
-              children: [
-                Text(
-                  'Barang Dipilih',
-                  style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
-                    color: nameColor,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? const Color(0xFF1A3A2A)
-                        : const Color(0xFFE6F4EA),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    '$totalItems item',
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: isDark
-                          ? const Color(0xFF80CBC4)
-                          : const Color(0xFF2E7D32),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
           Flexible(
-            child: ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              shrinkWrap: true,
-              itemCount: selected.length,
-              separatorBuilder: (_, __) => Divider(height: 1, color: divider),
-              itemBuilder: (context, i) {
-                final entry = selected[i];
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: Row(
-                    children: [
-                      CatalogImage(
-                        imagePath: entry.catalog.imagePath,
-                        size: 40,
-                        borderRadius: 8,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              entry.catalog.name,
-                              style: TextStyle(
-                                fontFamily: 'Poppins',
-                                fontWeight: FontWeight.w600,
-                                fontSize: 13,
-                                color: nameColor,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            Text(
-                              formatRupiah(entry.catalog.price),
-                              style: TextStyle(
-                                fontFamily: 'Poppins',
-                                fontSize: 12,
-                                color: priceColor,
-                                fontWeight: FontWeight.w500,
+            child: DraggableScrollableSheet(
+              controller: _dragController,
+              initialChildSize: 0.5,
+              minChildSize: 0.06,
+              maxChildSize: 0.5,
+              snap: true,
+              snapSizes: const [0.06, 0.5],
+              expand: false,
+              builder: (context, scrollController) {
+                return CustomScrollView(
+                  controller: scrollController,
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(top: 10, bottom: 6),
+                            child: Container(
+                              width: 40,
+                              height: 4,
+                              decoration: BoxDecoration(
+                                color: divider,
+                                borderRadius: BorderRadius.circular(2),
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                            child: Row(
+                              children: [
+                                Text(
+                                  'Barang Dipilih',
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 14,
+                                    color: nameColor,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: widget.isDark
+                                        ? const Color(0xFF1A3A2A)
+                                        : const Color(0xFFE6F4EA),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    '$totalItems item',
+                                    style: TextStyle(
+                                      fontFamily: 'Poppins',
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: widget.isDark
+                                          ? const Color(0xFF80CBC4)
+                                          : const Color(0xFF2E7D32),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                      _QuantityStepper(
-                        quantity: entry.quantity,
-                        isDark: isDark,
-                        onDecrement: () => onChangeQty(entry.catalog.id, -1),
-                        onIncrement: () => onChangeQty(entry.catalog.id, 1),
+                    ),
+                    SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, i) {
+                          if (i.isOdd) {
+                            return Divider(height: 1, color: divider);
+                          }
+                          final index = i ~/ 2;
+                          final entry = widget.selected[index];
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            child: Row(
+                              children: [
+                                CatalogImage(
+                                  imagePath: entry.catalog.imagePath,
+                                  size: 42,
+                                  borderRadius: 8,
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        entry.catalog.name,
+                                        style: TextStyle(
+                                          fontFamily: 'Poppins',
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 13,
+                                          color: nameColor,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      Text(
+                                        formatRupiah(entry.catalog.price),
+                                        style: TextStyle(
+                                          fontFamily: 'Poppins',
+                                          fontSize: 12,
+                                          color: priceColor,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                _QuantityStepper(
+                                  quantity: entry.quantity,
+                                  isDark: widget.isDark,
+                                  onDecrement: () =>
+                                      widget.onChangeQty(entry.catalog.id, -1),
+                                  onIncrement: () =>
+                                      widget.onChangeQty(entry.catalog.id, 1),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                        childCount: widget.selected.isNotEmpty
+                            ? (widget.selected.length * 2) - 1
+                            : 0,
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 );
               },
             ),
           ),
+
           Container(
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
             decoration: BoxDecoration(
+              color: sheetBg,
               border: Border(top: BorderSide(color: divider, width: 1)),
             ),
             child: Row(
@@ -702,7 +778,7 @@ class _SelectionBottomSheet extends StatelessWidget {
                         style: TextStyle(
                           fontFamily: 'Poppins',
                           fontSize: 11,
-                          color: isDark ? Colors.white54 : Colors.grey,
+                          color: widget.isDark ? Colors.white54 : Colors.grey,
                         ),
                       ),
                       Text(
@@ -717,7 +793,7 @@ class _SelectionBottomSheet extends StatelessWidget {
                     ],
                   ),
                 ),
-                isSubmitting
+                widget.isSubmitting
                     ? const SizedBox(
                         width: 24,
                         height: 24,
@@ -725,7 +801,7 @@ class _SelectionBottomSheet extends StatelessWidget {
                       )
                     : GradientButton(
                         label: 'Kirim Pengajuan',
-                        onPressed: onSubmit,
+                        onPressed: widget.onSubmit,
                         borderRadius: 12,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 20,
