@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../controllers/consignment_request_controller.dart';
-import '../models/consignment_request_model.dart';
-import '../widgets/catalog_image.dart';
-import '../utils/currency_format.dart';
+import '../../controllers/barang_controllers/pengajuan_konsinyasi_controller.dart';
+import '../../models/barang_models/pengajuan_konsinyasi_model.dart';
+import '../../widgets/search_filter_bar.dart';
+import '../../widgets/catalog_image.dart';
+import '../../widgets/gradient_button.dart';
+import '../../utils/currency_format.dart';
+import '../../widgets/app_dialog.dart';
 
 class DaftarPengajuanPage extends StatefulWidget {
   const DaftarPengajuanPage({super.key});
@@ -16,6 +19,11 @@ class _DaftarPengajuanPageState extends State<DaftarPengajuanPage> {
   late final ConsignmentRequestController _controller;
   late final Stream<QuerySnapshot> _stream;
 
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
+  String _searchQuery = '';
+  ConsignmentBatchStatus? _selectedStatus;
+
   @override
   void initState() {
     super.initState();
@@ -23,6 +31,13 @@ class _DaftarPengajuanPageState extends State<DaftarPengajuanPage> {
       firestore: FirebaseFirestore.instance,
     );
     _stream = _controller.getRequestsStream();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _searchFocusNode.dispose();
+    super.dispose();
   }
 
   Color _batchStatusBg(ConsignmentBatchStatus s, bool isDark) {
@@ -33,6 +48,10 @@ class _DaftarPengajuanPageState extends State<DaftarPengajuanPage> {
         return isDark ? const Color(0xFF1A2A3A) : const Color(0xFFE3F2FD);
       case ConsignmentBatchStatus.packed:
         return isDark ? const Color(0xFF1A3A2A) : const Color(0xFFE6F4EA);
+      case ConsignmentBatchStatus.received:
+        return isDark ? const Color(0xFF1A3A3A) : const Color(0xFFE0F2F1);
+      case ConsignmentBatchStatus.rejected:
+        return isDark ? const Color(0xFF3A1A1A) : const Color(0xFFFCE8E8);
     }
   }
 
@@ -44,6 +63,10 @@ class _DaftarPengajuanPageState extends State<DaftarPengajuanPage> {
         return isDark ? const Color(0xFF90CAF9) : const Color(0xFF1565C0);
       case ConsignmentBatchStatus.packed:
         return isDark ? const Color(0xFF80CBC4) : const Color(0xFF2E7D32);
+      case ConsignmentBatchStatus.received:
+        return isDark ? const Color(0xFF4DB6AC) : const Color(0xFF00796B);
+      case ConsignmentBatchStatus.rejected:
+        return isDark ? const Color(0xFFFF8A8A) : Colors.red;
     }
   }
 
@@ -55,6 +78,10 @@ class _DaftarPengajuanPageState extends State<DaftarPengajuanPage> {
         return Icons.pending_actions_rounded;
       case ConsignmentBatchStatus.packed:
         return Icons.inventory_2_rounded;
+      case ConsignmentBatchStatus.received:
+        return Icons.verified_outlined;
+      case ConsignmentBatchStatus.rejected:
+        return Icons.cancel_outlined;
     }
   }
 
@@ -66,6 +93,10 @@ class _DaftarPengajuanPageState extends State<DaftarPengajuanPage> {
         return 'Diproses';
       case ConsignmentBatchStatus.packed:
         return 'Dikemas';
+      case ConsignmentBatchStatus.received:
+        return 'Diserahkan';
+      case ConsignmentBatchStatus.rejected:
+        return 'Ditolak';
     }
   }
 
@@ -149,57 +180,66 @@ class _DaftarPengajuanPageState extends State<DaftarPengajuanPage> {
     bool isDark,
   ) async {
     final qtyCtrl = TextEditingController();
-    final result = await showDialog<int>(
+    int? result;
+
+    await showAppDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text(
-          'Penuhi Sebagian',
-          style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Masukkan jumlah yang dipenuhi untuk "${item.catalogName}" (max ${item.quantity - 1}):',
-              style: const TextStyle(fontFamily: 'Poppins', fontSize: 13),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: qtyCtrl,
-              keyboardType: TextInputType.number,
-              autofocus: true,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                hintText: 'Jumlah',
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Batal'),
+      title: 'Penuhi Sebagian',
+      contentWidget: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Masukkan jumlah yang dipenuhi untuk "${item.catalogName}" (max ${item.quantity - 1}):',
+            style: const TextStyle(fontFamily: 'Poppins', fontSize: 13),
           ),
-          FilledButton(
-            onPressed: () {
-              final val = int.tryParse(qtyCtrl.text.trim());
-              if (val == null || val <= 0 || val >= item.quantity) {
-                ScaffoldMessenger.of(ctx).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      'Masukkan angka antara 1 dan ${item.quantity - 1}',
-                    ),
-                  ),
-                );
-                return;
-              }
-              Navigator.pop(ctx, val);
-            },
-            child: const Text('Simpan'),
+          const SizedBox(height: 12),
+          TextField(
+            controller: qtyCtrl,
+            keyboardType: TextInputType.number,
+            autofocus: true,
+            cursorColor: isDark ? Colors.white : const Color(0xFF1D1B20),
+            decoration: InputDecoration(
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(
+                  color: isDark ? Colors.white : const Color(0xFF1D1B20),
+                  width: 2,
+                ),
+              ),
+              hintText: 'Jumlah',
+            ),
           ),
         ],
       ),
+      actions: [
+        AppDialogAction(
+          label: 'Batal',
+          onPressed: () => Navigator.pop(context),
+        ),
+        AppDialogAction(
+          label: 'Simpan',
+          type: AppDialogActionType.gradient,
+          onPressed: () {
+            final val = int.tryParse(qtyCtrl.text.trim());
+            if (val == null || val <= 0 || val >= item.quantity) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'Masukkan angka antara 1 dan ${item.quantity - 1}',
+                  ),
+                ),
+              );
+              return;
+            }
+            result = val;
+            Navigator.pop(context);
+          },
+        ),
+      ],
     );
     if (result != null) {
       await _controller.updateItemStatus(
@@ -242,11 +282,57 @@ class _DaftarPengajuanPageState extends State<DaftarPengajuanPage> {
           index,
           ConsignmentItemStatus.rejected,
         ),
+        onCancelItem: (index) => _controller.updateItemStatus(
+          batch.id,
+          index,
+          ConsignmentItemStatus.pending,
+        ),
         onPartialItem: (index) =>
             _partialDialog(context, batch, index, batch.items[index], isDark),
         onPack: () => _controller.packBatch(batch.id),
+        onReceive: () => _controller.receiveBatch(batch.id),
+        onRejectBatch: () => _controller.rejectBatch(batch.id),
+        onCancelAll: () => _controller.cancelAllItems(batch.id),
       ),
     );
+  }
+
+  Future<void> _approveAllThenDetail(
+    BuildContext context,
+    ConsignmentRequestModel batch,
+    bool isDark,
+  ) async {
+    final result = await _controller.approveAllPending(batch.id);
+    if (!context.mounted) return;
+    if (result['success'] == true) {
+      _showDetail(context, batch, isDark);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['error'] ?? 'Terjadi kesalahan'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _rejectAllThenDetail(
+    BuildContext context,
+    ConsignmentRequestModel batch,
+    bool isDark,
+  ) async {
+    final result = await _controller.rejectAllPending(batch.id);
+    if (!context.mounted) return;
+    if (result['success'] == true) {
+      _showDetail(context, batch, isDark);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['error'] ?? 'Terjadi kesalahan'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
@@ -262,90 +348,181 @@ class _DaftarPengajuanPageState extends State<DaftarPengajuanPage> {
           style: TextStyle(fontFamily: 'Poppins'),
         ),
       ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: _stream,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(
-              child: Text(
-                'Error: ${snapshot.error}',
-                style: const TextStyle(
-                  color: Colors.red,
-                  fontFamily: 'Poppins',
-                ),
-              ),
-            );
-          }
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.assignment_outlined, size: 64, color: emptyIcon),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Belum Ada Pengajuan',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: emptyText,
-                      fontFamily: 'Poppins',
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          final batches = snapshot.data!.docs
-              .map(
-                (d) => ConsignmentRequestModel.fromMap(
-                  d.id,
-                  d.data() as Map<String, dynamic>,
-                ),
-              )
-              .toList();
-
-          return ListView.builder(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-            itemCount: batches.length,
-            itemBuilder: (context, i) {
-              final batch = batches[i];
-              final pendingCount = batch.items
-                  .where((it) => it.itemStatus == ConsignmentItemStatus.pending)
-                  .length;
-              final categories = batch.items
-                  .map((it) => it.catalogCategory)
-                  .toSet()
-                  .toList();
-
-              return _BatchCard(
-                batch: batch,
-                pendingCount: pendingCount,
-                categories: categories,
-                isDark: isDark,
-                batchStatusBg: _batchStatusBg,
-                batchStatusFg: _batchStatusFg,
-                batchStatusIcon: _batchStatusIcon,
-                batchStatusLabel: _batchStatusLabel,
-                formatDate: _formatDate,
-                onDetail: () => _showDetail(context, batch, isDark),
-                onApproveAll:
-                    batch.status != ConsignmentBatchStatus.packed &&
-                        pendingCount > 0
-                    ? () => _controller.approveAllPending(batch.id)
-                    : null,
-                onRejectAll:
-                    batch.status != ConsignmentBatchStatus.packed &&
-                        pendingCount > 0
-                    ? () => _controller.rejectAllPending(batch.id)
-                    : null,
-              );
+      body: Column(
+        children: [
+          SearchFilterBar<ConsignmentBatchStatus>(
+            searchController: _searchController,
+            searchFocusNode: _searchFocusNode,
+            hintText: 'Cari nama atau institusi...',
+            onSearchChanged: (val) {
+              setState(() {
+                _searchQuery = val.trim().toLowerCase();
+              });
             },
-          );
-        },
+            filters: const [
+              FilterChipOption(label: 'Semua', value: null),
+              FilterChipOption(
+                label: 'Menunggu',
+                value: ConsignmentBatchStatus.pending,
+              ),
+              FilterChipOption(
+                label: 'Diproses',
+                value: ConsignmentBatchStatus.processing,
+              ),
+              FilterChipOption(
+                label: 'Dikemas',
+                value: ConsignmentBatchStatus.packed,
+              ),
+            ],
+            selectedFilter: _selectedStatus,
+            onFilterSelected: (val) {
+              setState(() {
+                _selectedStatus = val;
+              });
+            },
+          ),
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: _stream,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Text(
+                      'Error: ${snapshot.error}',
+                      style: const TextStyle(
+                        color: Colors.red,
+                        fontFamily: 'Poppins',
+                      ),
+                    ),
+                  );
+                }
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.assignment_outlined,
+                          size: 64,
+                          color: emptyIcon,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Belum Ada Pengajuan',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: emptyText,
+                            fontFamily: 'Poppins',
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                var batches = snapshot.data!.docs
+                    .map(
+                      (d) => ConsignmentRequestModel.fromMap(
+                        d.id,
+                        d.data() as Map<String, dynamic>,
+                      ),
+                    )
+                    .where(
+                      (b) =>
+                          b.status != ConsignmentBatchStatus.received &&
+                          b.status != ConsignmentBatchStatus.rejected,
+                    )
+                    .toList();
+
+                if (_selectedStatus != null) {
+                  batches = batches
+                      .where((b) => b.status == _selectedStatus)
+                      .toList();
+                }
+
+                if (_searchQuery.isNotEmpty) {
+                  batches = batches.where((b) {
+                    final nameMatch = b.userName.toLowerCase().contains(
+                      _searchQuery,
+                    );
+                    final schoolMatch = b.userSchool.toLowerCase().contains(
+                      _searchQuery,
+                    );
+                    return nameMatch || schoolMatch;
+                  }).toList();
+                }
+
+                if (batches.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.search_off_rounded,
+                          size: 64,
+                          color: emptyIcon,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Pengajuan Tidak Ditemukan',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: emptyText,
+                            fontFamily: 'Poppins',
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                  itemCount: batches.length,
+                  itemBuilder: (context, i) {
+                    final batch = batches[i];
+                    final pendingCount = batch.items
+                        .where(
+                          (it) =>
+                              it.itemStatus == ConsignmentItemStatus.pending,
+                        )
+                        .length;
+                    final categories = batch.items
+                        .map((it) => it.catalogCategory)
+                        .toSet()
+                        .toList();
+
+                    return _BatchCard(
+                      batch: batch,
+                      pendingCount: pendingCount,
+                      categories: categories,
+                      isDark: isDark,
+                      batchStatusBg: _batchStatusBg,
+                      batchStatusFg: _batchStatusFg,
+                      batchStatusIcon: _batchStatusIcon,
+                      batchStatusLabel: _batchStatusLabel,
+                      formatDate: _formatDate,
+                      onDetail: () => _showDetail(context, batch, isDark),
+                      onApproveAll:
+                          batch.status != ConsignmentBatchStatus.packed &&
+                              pendingCount > 0
+                          ? () => _approveAllThenDetail(context, batch, isDark)
+                          : null,
+                      onRejectAll:
+                          batch.status != ConsignmentBatchStatus.packed &&
+                              pendingCount > 0
+                          ? () => _rejectAllThenDetail(context, batch, isDark)
+                          : null,
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -362,8 +539,8 @@ class _BatchCard extends StatelessWidget {
   final String Function(ConsignmentBatchStatus) batchStatusLabel;
   final String Function(DateTime?) formatDate;
   final VoidCallback onDetail;
-  final Future<Map<String, dynamic>> Function()? onApproveAll;
-  final Future<Map<String, dynamic>> Function()? onRejectAll;
+  final Future<void> Function()? onApproveAll;
+  final Future<void> Function()? onRejectAll;
 
   const _BatchCard({
     required this.batch,
@@ -600,6 +777,8 @@ class _BatchCard extends StatelessWidget {
                       style: TextStyle(fontFamily: 'Poppins', fontSize: 12),
                     ),
                     style: OutlinedButton.styleFrom(
+                      foregroundColor: nameColor,
+                      side: BorderSide(color: cardBorder),
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
@@ -642,7 +821,7 @@ class _IconActionButton extends StatelessWidget {
   final IconData icon;
   final Color color;
   final Color bgColor;
-  final Future<Map<String, dynamic>> Function() onTap;
+  final Future<void> Function() onTap;
 
   const _IconActionButton({
     required this.icon,
@@ -669,7 +848,7 @@ class _IconActionButton extends StatelessWidget {
   }
 }
 
-class _DetailSheet extends StatelessWidget {
+class _DetailSheet extends StatefulWidget {
   final ConsignmentRequestModel batch;
   final bool isDark;
   final Color Function(ConsignmentItemStatus, bool) itemStatusBg;
@@ -683,8 +862,12 @@ class _DetailSheet extends StatelessWidget {
   final String Function(DateTime?) formatDate;
   final Future<Map<String, dynamic>> Function(int index) onApproveItem;
   final Future<Map<String, dynamic>> Function(int index) onRejectItem;
+  final Future<Map<String, dynamic>> Function(int index) onCancelItem;
   final Future<void> Function(int index) onPartialItem;
   final Future<Map<String, dynamic>> Function() onPack;
+  final Future<Map<String, dynamic>> Function() onReceive;
+  final Future<Map<String, dynamic>> Function() onRejectBatch;
+  final Future<Map<String, dynamic>> Function() onCancelAll;
 
   const _DetailSheet({
     required this.batch,
@@ -700,8 +883,112 @@ class _DetailSheet extends StatelessWidget {
     required this.formatDate,
     required this.onApproveItem,
     required this.onRejectItem,
+    required this.onCancelItem,
     required this.onPartialItem,
     required this.onPack,
+    required this.onReceive,
+    required this.onRejectBatch,
+    required this.onCancelAll,
+  });
+
+  @override
+  State<_DetailSheet> createState() => _DetailSheetState();
+}
+
+class _DetailSheetState extends State<_DetailSheet> {
+  late Stream<DocumentSnapshot> _docStream;
+
+  @override
+  void initState() {
+    super.initState();
+    _docStream = FirebaseFirestore.instance
+        .collection('consignment_requests')
+        .doc(widget.batch.id)
+        .snapshots();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<DocumentSnapshot>(
+      stream: _docStream,
+      builder: (context, snapshot) {
+        final ConsignmentRequestModel batch;
+        if (snapshot.hasData && snapshot.data!.exists) {
+          batch = ConsignmentRequestModel.fromMap(
+            snapshot.data!.id,
+            snapshot.data!.data() as Map<String, dynamic>,
+          );
+        } else {
+          batch = widget.batch;
+        }
+
+        return _DetailSheetBody(
+          batch: batch,
+          isDark: widget.isDark,
+          itemStatusBg: widget.itemStatusBg,
+          itemStatusFg: widget.itemStatusFg,
+          itemStatusIcon: widget.itemStatusIcon,
+          itemStatusLabel: widget.itemStatusLabel,
+          batchStatusBg: widget.batchStatusBg,
+          batchStatusFg: widget.batchStatusFg,
+          batchStatusIcon: widget.batchStatusIcon,
+          batchStatusLabel: widget.batchStatusLabel,
+          formatDate: widget.formatDate,
+          onApproveItem: widget.onApproveItem,
+          onRejectItem: widget.onRejectItem,
+          onCancelItem: widget.onCancelItem,
+          onPartialItem: widget.onPartialItem,
+          onPack: widget.onPack,
+          onReceive: widget.onReceive,
+          onRejectBatch: widget.onRejectBatch,
+          onCancelAll: widget.onCancelAll,
+        );
+      },
+    );
+  }
+}
+
+class _DetailSheetBody extends StatelessWidget {
+  final ConsignmentRequestModel batch;
+  final bool isDark;
+  final Color Function(ConsignmentItemStatus, bool) itemStatusBg;
+  final Color Function(ConsignmentItemStatus, bool) itemStatusFg;
+  final IconData Function(ConsignmentItemStatus) itemStatusIcon;
+  final String Function(ConsignmentItemStatus) itemStatusLabel;
+  final Color Function(ConsignmentBatchStatus, bool) batchStatusBg;
+  final Color Function(ConsignmentBatchStatus, bool) batchStatusFg;
+  final IconData Function(ConsignmentBatchStatus) batchStatusIcon;
+  final String Function(ConsignmentBatchStatus) batchStatusLabel;
+  final String Function(DateTime?) formatDate;
+  final Future<Map<String, dynamic>> Function(int index) onApproveItem;
+  final Future<Map<String, dynamic>> Function(int index) onRejectItem;
+  final Future<Map<String, dynamic>> Function(int index) onCancelItem;
+  final Future<void> Function(int index) onPartialItem;
+  final Future<Map<String, dynamic>> Function() onPack;
+  final Future<Map<String, dynamic>> Function() onReceive;
+  final Future<Map<String, dynamic>> Function() onRejectBatch;
+  final Future<Map<String, dynamic>> Function() onCancelAll;
+
+  const _DetailSheetBody({
+    required this.batch,
+    required this.isDark,
+    required this.itemStatusBg,
+    required this.itemStatusFg,
+    required this.itemStatusIcon,
+    required this.itemStatusLabel,
+    required this.batchStatusBg,
+    required this.batchStatusFg,
+    required this.batchStatusIcon,
+    required this.batchStatusLabel,
+    required this.formatDate,
+    required this.onApproveItem,
+    required this.onRejectItem,
+    required this.onCancelItem,
+    required this.onPartialItem,
+    required this.onPack,
+    required this.onReceive,
+    required this.onRejectBatch,
+    required this.onCancelAll,
   });
 
   @override
@@ -714,7 +1001,42 @@ class _DetailSheet extends StatelessWidget {
         : const Color(0xFFE0E0E0);
 
     final bool isLocked = batch.status == ConsignmentBatchStatus.packed;
-    final bool canPack = batch.status == ConsignmentBatchStatus.processing;
+    final bool hasPendingItems = batch.items.any(
+      (it) => it.itemStatus == ConsignmentItemStatus.pending,
+    );
+    final bool hasNonPendingItems = batch.items.any(
+      (it) => it.itemStatus != ConsignmentItemStatus.pending,
+    );
+    final bool allItemsRejected =
+        batch.items.isNotEmpty &&
+        batch.items.every(
+          (it) => it.itemStatus == ConsignmentItemStatus.rejected,
+        );
+    final bool canRejectBatch =
+        batch.status == ConsignmentBatchStatus.processing && allItemsRejected;
+    final bool canPack =
+        batch.status == ConsignmentBatchStatus.processing &&
+        !hasPendingItems &&
+        !allItemsRejected;
+    final bool canReceive = batch.status == ConsignmentBatchStatus.packed;
+    final bool canCancelAll = !isLocked && hasNonPendingItems;
+
+    int getEffectiveQuantity(ConsignmentItemEntry item) {
+      if (item.itemStatus == ConsignmentItemStatus.rejected) return 0;
+      if (item.itemStatus == ConsignmentItemStatus.approved ||
+          item.itemStatus == ConsignmentItemStatus.partial) {
+        return item.approvedQty ?? item.quantity;
+      }
+      return item.quantity;
+    }
+
+    double overallTotal = 0;
+    for (var item in batch.items) {
+      if (item.itemStatus == ConsignmentItemStatus.approved ||
+          item.itemStatus == ConsignmentItemStatus.partial) {
+        overallTotal += item.catalogPrice * (item.approvedQty ?? item.quantity);
+      }
+    }
 
     return DraggableScrollableSheet(
       initialChildSize: 0.75,
@@ -792,6 +1114,7 @@ class _DetailSheet extends StatelessWidget {
                 ],
               ),
             ),
+
             if (batch.userSchool.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(left: 16, right: 16, bottom: 6),
@@ -839,9 +1162,121 @@ class _DetailSheet extends StatelessWidget {
                       color: subColor,
                     ),
                   ),
+                  const Spacer(),
+                  if (batch.status == ConsignmentBatchStatus.packed &&
+                      batch.packedBy != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? const Color(0xFF1D2F3C)
+                            : const Color(0xFFE3F2FD),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.person_outline,
+                            size: 11,
+                            color: isDark
+                                ? const Color(0xFF64B5F6)
+                                : const Color(0xFF1976D2),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Oleh ${batch.packedBy}',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: isDark
+                                  ? const Color(0xFF64B5F6)
+                                  : const Color(0xFF1976D2),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  if (canCancelAll) ...[
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: () async {
+                        bool confirm = false;
+                        await showAppDialog(
+                          context: context,
+                          title: 'Batal Semua',
+                          contentWidget: const Text(
+                            'Reset semua item ke status Menunggu?',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 13,
+                            ),
+                          ),
+                          actions: [
+                            AppDialogAction(
+                              label: 'Tidak',
+                              onPressed: () => Navigator.pop(context),
+                            ),
+                            AppDialogAction(
+                              label: 'Ya, Reset',
+                              type: AppDialogActionType.gradient,
+                              onPressed: () {
+                                confirm = true;
+                                Navigator.pop(context);
+                              },
+                            ),
+                          ],
+                        );
+                        if (confirm) {
+                          await onCancelAll();
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? const Color(0xFF3A2A2A)
+                              : const Color(0xFFFCE8E8),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.restart_alt_rounded,
+                              size: 12,
+                              color: isDark
+                                  ? const Color(0xFFFF8A8A)
+                                  : Colors.red,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Batal Semua',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: isDark
+                                    ? const Color(0xFFFF8A8A)
+                                    : Colors.red,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
+
             Divider(height: 1, color: divider),
 
             Expanded(
@@ -976,7 +1411,7 @@ class _DetailSheet extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Total: ${formatRupiah(item.catalogPrice * item.quantity)}',
+                          'Subtotal: ${formatRupiah(item.catalogPrice * getEffectiveQuantity(item))}',
                           style: TextStyle(
                             fontFamily: 'Poppins',
                             fontSize: 10,
@@ -1004,7 +1439,6 @@ class _DetailSheet extends StatelessWidget {
                                     : const Color(0xFFE3F2FD),
                                 onTap: () async {
                                   await onPartialItem(i);
-                                  return {'success': true};
                                 },
                               ),
                               const SizedBox(width: 8),
@@ -1030,6 +1464,30 @@ class _DetailSheet extends StatelessWidget {
                             ],
                           ),
                         ],
+                        if (!isLocked && !isPending) ...[
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              _IconActionButton(
+                                icon: Icons.undo_rounded,
+                                color: isDark ? Colors.white70 : Colors.black54,
+                                bgColor: isDark
+                                    ? const Color(0xFF333333)
+                                    : const Color(0xFFE0E0E0),
+                                onTap: () => onCancelItem(i),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Batal',
+                                style: TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 10,
+                                  color: subColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ],
                     ),
                   );
@@ -1037,32 +1495,219 @@ class _DetailSheet extends StatelessWidget {
               ),
             ),
 
-            if (canPack)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    onPressed: () async {
-                      final res = await onPack();
-                      if (res['success'] == true && context.mounted) {
-                        Navigator.pop(context);
-                      }
-                    },
-                    icon: const Icon(Icons.inventory_2_rounded, size: 18),
-                    label: const Text(
-                      'Kemas Pengajuan',
-                      style: TextStyle(fontFamily: 'Poppins'),
-                    ),
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+              decoration: BoxDecoration(
+                color: sheetBg,
+                border: Border(top: BorderSide(color: divider, width: 1)),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Total Disetujui',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 11,
+                            color: subColor,
+                          ),
+                        ),
+                        Text(
+                          formatRupiah(overallTotal),
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                            color: nameColor,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
+
+                  if (canRejectBatch) ...[
+                    const SizedBox(width: 12),
+                    OutlinedButton.icon(
+                      onPressed: () async {
+                        bool confirm = false;
+                        await showAppDialog(
+                          context: context,
+                          title: 'Tolak Pengajuan',
+                          contentWidget: const Text(
+                            'Semua item ditolak. Yakin ingin menolak pengajuan ini secara keseluruhan? Pengajuan akan masuk ke riwayat.',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 13,
+                            ),
+                          ),
+                          actions: [
+                            AppDialogAction(
+                              label: 'Batal',
+                              onPressed: () => Navigator.pop(context),
+                            ),
+                            AppDialogAction(
+                              label: 'Tolak',
+                              type: AppDialogActionType.gradient,
+                              onPressed: () {
+                                confirm = true;
+                                Navigator.pop(context);
+                              },
+                            ),
+                          ],
+                        );
+                        if (confirm) {
+                          final res = await onRejectBatch();
+                          if (res['success'] == true && context.mounted) {
+                            Navigator.pop(context);
+                          }
+                        }
+                      },
+                      icon: Icon(
+                        Icons.cancel_outlined,
+                        size: 18,
+                        color: isDark ? const Color(0xFFFF8A8A) : Colors.red,
+                      ),
+                      label: Text(
+                        'Tolak Pengajuan',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                          color: isDark ? const Color(0xFFFF8A8A) : Colors.red,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(
+                          color: isDark ? const Color(0xFFFF8A8A) : Colors.red,
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ],
+                  if (canPack) ...[
+                    const SizedBox(width: 12),
+                    GradientButton(
+                      onPressed: () async {
+                        bool confirm = false;
+                        await showAppDialog(
+                          context: context,
+                          title: 'Kemas Pengajuan',
+                          contentWidget: const Text(
+                            'Apakah Anda yakin pengajuan ini sudah selesai diproses dan siap dikemas? Tindakan ini tidak dapat dibatalkan.',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 13,
+                            ),
+                          ),
+                          actions: [
+                            AppDialogAction(
+                              label: 'Batal',
+                              onPressed: () => Navigator.pop(context),
+                            ),
+                            AppDialogAction(
+                              label: 'Kemas',
+                              type: AppDialogActionType.gradient,
+                              onPressed: () {
+                                confirm = true;
+                                Navigator.pop(context);
+                              },
+                            ),
+                          ],
+                        );
+
+                        if (confirm) {
+                          final res = await onPack();
+                          if (res['success'] == true && context.mounted) {
+                            Navigator.pop(context);
+                          }
+                        }
+                      },
+                      icon: Icon(
+                        Icons.inventory_2_rounded,
+                        size: 18,
+                        color: isDark ? const Color(0xFF1D1B20) : Colors.white,
+                      ),
+                      label: 'Kemas Pengajuan',
+                      textStyle: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? const Color(0xFF1D1B20) : Colors.white,
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
+                      borderRadius: 12,
+                    ),
+                  ],
+                  if (canReceive) ...[
+                    const SizedBox(width: 12),
+                    GradientButton(
+                      onPressed: () async {
+                        bool confirm = false;
+                        await showAppDialog(
+                          context: context,
+                          title: 'Serahkan Pengajuan',
+                          contentWidget: const Text(
+                            'Apakah Anda yakin barang sudah diserahkan ke klien? Tindakan ini tidak dapat dibatalkan.',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 13,
+                            ),
+                          ),
+                          actions: [
+                            AppDialogAction(
+                              label: 'Batal',
+                              onPressed: () => Navigator.pop(context),
+                            ),
+                            AppDialogAction(
+                              label: 'Serahkan',
+                              type: AppDialogActionType.gradient,
+                              onPressed: () {
+                                confirm = true;
+                                Navigator.pop(context);
+                              },
+                            ),
+                          ],
+                        );
+
+                        if (confirm) {
+                          final res = await onReceive();
+                          if (res['success'] == true && context.mounted) {
+                            Navigator.pop(context);
+                          }
+                        }
+                      },
+                      icon: Icon(
+                        Icons.local_shipping_outlined,
+                        size: 18,
+                        color: isDark ? const Color(0xFF1D1B20) : Colors.white,
+                      ),
+                      label: 'Serahkan Pengajuan',
+                      textStyle: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? const Color(0xFF1D1B20) : Colors.white,
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
+                      borderRadius: 12,
+                    ),
+                  ],
+                ],
               ),
+            ),
           ],
         ),
       ),

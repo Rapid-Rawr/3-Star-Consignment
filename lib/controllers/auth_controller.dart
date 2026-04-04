@@ -24,7 +24,6 @@ class AuthController {
     } catch (_) {}
   }
 
-  /// Sync Google photoURL ke dokumen Firestore user yang emailnya cocok.
   Future<void> syncPhotoUrl(User user) async {
     final photoUrl = user.photoURL;
     final email = user.email?.toLowerCase();
@@ -64,7 +63,6 @@ class AuthController {
         await FirebaseAuth.instance.signInWithCredential(credential);
       }
 
-      // Sync photo URL setelah berhasil login
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) await syncPhotoUrl(user);
     } catch (e) {

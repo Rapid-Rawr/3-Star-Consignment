@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../controllers/operator_controller.dart';
-import '../models/operator_model.dart';
-import '../widgets/search_filter_bar.dart';
-import '../widgets/app_dialog.dart';
-import '../widgets/gradient_button.dart';
+import '../../controllers/pengguna_controllers/operator_controller.dart';
+import '../../models/pengguna_models/operator_model.dart';
+import '../../widgets/search_filter_bar.dart';
+import '../../widgets/app_dialog.dart';
+import '../../widgets/gradient_button.dart';
 
 class OperatorPage extends StatefulWidget {
   const OperatorPage({super.key});
@@ -55,7 +55,6 @@ class _OperatorPageState extends State<OperatorPage> {
     );
   }
 
-  //============DIALOG TAMBAH OPERATOR============\\
   void _showAddOperatorDialog() {
     final formKey = GlobalKey<FormState>();
     final nameController = TextEditingController();
@@ -159,9 +158,7 @@ class _OperatorPageState extends State<OperatorPage> {
       ),
     );
   }
-  //============DIALOG TAMBAH OPERATOR============\\
 
-  //============DIALOG EDIT OPERATOR============\\
   void _showEditOperatorDialog(OperatorModel operator) {
     final formKey = GlobalKey<FormState>();
     final nameController = TextEditingController(text: operator.name);
@@ -266,9 +263,7 @@ class _OperatorPageState extends State<OperatorPage> {
       ),
     );
   }
-  //============DIALOG EDIT OPERATOR============\\
 
-  //============DIALOG HAPUS OPERATOR============\\
   void _showDeleteOperatorDialog(OperatorModel operator) {
     showAppDialog(
       context: context,
@@ -294,8 +289,9 @@ class _OperatorPageState extends State<OperatorPage> {
                         ? '${operator.name} telah dihapus'
                         : (result['error'] ?? 'Terjadi kesalahan'),
                   ),
-                  backgroundColor:
-                      result['success'] == true ? Colors.green : Colors.red,
+                  backgroundColor: result['success'] == true
+                      ? Colors.green
+                      : Colors.red,
                 ),
               );
             }
@@ -304,9 +300,7 @@ class _OperatorPageState extends State<OperatorPage> {
       ],
     );
   }
-  //============DIALOG HAPUS OPERATOR============\\
 
-  //============HALAMAN OPERATOR============\\
   @override
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
@@ -346,7 +340,6 @@ class _OperatorPageState extends State<OperatorPage> {
                   setState(() => _controller.setRoleFilter(val)),
             ),
 
-            // TABEL OPERATOR
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
                 stream: _controller.getOperatorsStream(),
@@ -522,7 +515,6 @@ class _OperatorPageState extends State<OperatorPage> {
                           padding: const EdgeInsets.all(16),
                           child: Row(
                             children: [
-                              // Avatar
                               SizedBox(
                                 width: 52,
                                 height: 52,
@@ -548,7 +540,6 @@ class _OperatorPageState extends State<OperatorPage> {
                                 ),
                               ),
                               const SizedBox(width: 14),
-                              // Info
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -613,7 +604,6 @@ class _OperatorPageState extends State<OperatorPage> {
                                       ],
                                     ),
                                     const SizedBox(height: 8),
-                                    // Role badge
                                     Container(
                                       padding: const EdgeInsets.symmetric(
                                         horizontal: 10,
@@ -637,7 +627,6 @@ class _OperatorPageState extends State<OperatorPage> {
                                 ),
                               ),
                               const SizedBox(width: 8),
-                              // Action buttons
                               Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
@@ -711,6 +700,4 @@ class _OperatorPageState extends State<OperatorPage> {
       ),
     );
   }
-
-  //============HALAMAN OPERATOR============\\
 }

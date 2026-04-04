@@ -2,9 +2,11 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import '../catalog_page.dart';
-import '../consignment_request_page.dart';
-import '../daftar_pengajuan_page.dart';
+import '../barang/katalog_page.dart';
+import '../barang/pengajuan_konsinyasi_page.dart';
+import '../barang/daftar_pengajuan_page.dart';
+import '../barang/riwayat_pengajuan_page.dart';
+import '../barang/barang_konsinyasi_page.dart';
 
 class BarangPage extends StatelessWidget {
   const BarangPage({super.key});
@@ -36,14 +38,24 @@ class BarangPage extends StatelessWidget {
                         svgPath: 'assets/icons/ConsignmentItem.svg',
                         label: 'Barang Konsinyasi',
                         borderColor: borderColor,
-                        onTap: () {},
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const BarangKonsinyasiPage(),
+                          ),
+                        ),
                       ),
                       const SizedBox(height: 16),
                       _MenuButton(
                         svgPath: 'assets/icons/ConsignmentHistory.svg',
                         label: 'Riwayat Pengajuan',
                         borderColor: borderColor,
-                        onTap: () {},
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const RiwayatPengajuanPage(),
+                          ),
+                        ),
                       ),
                       const SizedBox(height: 16),
                       _MenuButton(

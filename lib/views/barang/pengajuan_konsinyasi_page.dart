@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../controllers/catalog_controller.dart';
-import '../controllers/consignment_request_controller.dart';
-import '../models/catalog_model.dart';
-import '../widgets/search_filter_bar.dart';
-import '../widgets/gradient_button.dart';
-import '../widgets/catalog_image.dart';
-import '../utils/currency_format.dart';
+import '../../controllers/barang_controllers/katalog_controller.dart';
+import '../../controllers/barang_controllers/pengajuan_konsinyasi_controller.dart';
+import '../../models/barang_models/katalog_model.dart';
+import '../../widgets/search_filter_bar.dart';
+import '../../widgets/gradient_button.dart';
+import '../../widgets/catalog_image.dart';
+import '../../utils/currency_format.dart';
 
 class _SelectedItem {
   final CatalogModel catalog;
@@ -67,6 +67,17 @@ class _ConsignmentRequestPageState extends State<ConsignmentRequestPage> {
         _selected.remove(id);
       } else {
         _selected[id]!.quantity = newQty;
+      }
+    });
+  }
+
+  void _setQuantity(String id, int qty) {
+    setState(() {
+      if (!_selected.containsKey(id)) return;
+      if (qty <= 0) {
+        _selected.remove(id);
+      } else {
+        _selected[id]!.quantity = qty;
       }
     });
   }
@@ -245,6 +256,14 @@ class _ConsignmentRequestPageState extends State<ConsignmentRequestPage> {
                         allItems,
                       );
 
+                      filtered.sort((a, b) {
+                        final aSelected = _selected.containsKey(a.id);
+                        final bSelected = _selected.containsKey(b.id);
+                        if (aSelected && !bSelected) return -1;
+                        if (!aSelected && bSelected) return 1;
+                        return a.name.compareTo(b.name);
+                      });
+
                       if (filtered.isEmpty) {
                         return Center(
                           child: Column(
@@ -279,16 +298,12 @@ class _ConsignmentRequestPageState extends State<ConsignmentRequestPage> {
                         itemBuilder: (context, index) {
                           final item = filtered[index];
                           final isSelected = _selected.containsKey(item.id);
-                          final qty = _selected[item.id]?.quantity ?? 0;
 
                           return _CatalogItemCard(
                             item: item,
                             isDark: isDark,
                             isSelected: isSelected,
-                            quantity: qty,
                             onAdd: () => _toggleItem(item),
-                            onIncrement: () => _changeQuantity(item.id, 1),
-                            onDecrement: () => _changeQuantity(item.id, -1),
                           );
                         },
                       );
@@ -306,6 +321,7 @@ class _ConsignmentRequestPageState extends State<ConsignmentRequestPage> {
         isDark: isDark,
         isVisible: hasSelection,
         onChangeQty: _changeQuantity,
+        onSetQty: _setQuantity,
         onSubmit: _submitRequest,
       ),
     );
@@ -316,19 +332,13 @@ class _CatalogItemCard extends StatelessWidget {
   final CatalogModel item;
   final bool isDark;
   final bool isSelected;
-  final int quantity;
   final VoidCallback onAdd;
-  final VoidCallback onIncrement;
-  final VoidCallback onDecrement;
 
   const _CatalogItemCard({
     required this.item,
     required this.isDark,
     required this.isSelected,
-    required this.quantity,
     required this.onAdd,
-    required this.onIncrement,
-    required this.onDecrement,
   });
 
   @override
@@ -447,25 +457,22 @@ class _CatalogItemCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            isSelected
-                ? _QuantityStepper(
-                    quantity: quantity,
-                    isDark: isDark,
-                    onDecrement: onDecrement,
-                    onIncrement: onIncrement,
-                  )
-                : InkWell(
-                    onTap: onAdd,
-                    borderRadius: BorderRadius.circular(20),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: addBg,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Icon(Icons.add, color: addIcon, size: 20),
-                    ),
-                  ),
+            InkWell(
+              onTap: onAdd,
+              borderRadius: BorderRadius.circular(20),
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: isSelected ? addBg : addBg.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Icon(
+                  isSelected ? Icons.check : Icons.add,
+                  color: addIcon,
+                  size: 20,
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -473,28 +480,80 @@ class _CatalogItemCard extends StatelessWidget {
   }
 }
 
-class _QuantityStepper extends StatelessWidget {
+class _QuantityStepper extends StatefulWidget {
   final int quantity;
   final bool isDark;
   final VoidCallback onDecrement;
   final VoidCallback onIncrement;
+  final ValueChanged<int>? onChanged;
 
   const _QuantityStepper({
     required this.quantity,
     required this.isDark,
     required this.onDecrement,
     required this.onIncrement,
+    this.onChanged,
   });
 
   @override
+  State<_QuantityStepper> createState() => _QuantityStepperState();
+}
+
+class _QuantityStepperState extends State<_QuantityStepper> {
+  late TextEditingController _ctrl;
+  final FocusNode _focusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = TextEditingController(text: widget.quantity.toString());
+    _focusNode.addListener(() {
+      if (!_focusNode.hasFocus) {
+        _handleSubmitted(_ctrl.text);
+      }
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant _QuantityStepper oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.quantity != widget.quantity) {
+      if (_ctrl.text != widget.quantity.toString()) {
+        _ctrl.text = widget.quantity.toString();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  void _handleSubmitted(String val) {
+    final qty = int.tryParse(val);
+    if (qty != null && qty > 0) {
+      widget.onChanged?.call(qty);
+    } else {
+      _ctrl.text = widget.quantity.toString();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final Color bg = isDark ? const Color(0xFF1A3A2A) : const Color(0xFFE6F4EA);
-    final Color iconColor = isDark
+    final Color bg = widget.isDark
+        ? const Color(0xFF1A3A2A)
+        : const Color(0xFFE6F4EA);
+    final Color iconColor = widget.isDark
         ? const Color(0xFF80CBC4)
         : const Color(0xFF2E7D32);
-    final Color textColor = isDark ? Colors.white : const Color(0xFF1D1B20);
+    final Color textColor = widget.isDark
+        ? Colors.white
+        : const Color(0xFF1D1B20);
 
     return Container(
+      height: 32,
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(20),
@@ -503,33 +562,43 @@ class _QuantityStepper extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           InkWell(
-            onTap: onDecrement,
+            onTap: widget.onDecrement,
             borderRadius: const BorderRadius.horizontal(
               left: Radius.circular(20),
             ),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
               child: Icon(
-                quantity == 1 ? Icons.delete_outline : Icons.remove,
+                widget.quantity <= 1 ? Icons.delete_outline : Icons.remove,
                 size: 18,
-                color: quantity == 1 ? Colors.red.shade400 : iconColor,
+                color: widget.quantity <= 1 ? Colors.red.shade400 : iconColor,
               ),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Text(
-              '$quantity',
+          SizedBox(
+            width: 36,
+            child: TextField(
+              controller: _ctrl,
+              focusNode: _focusNode,
+              keyboardType: TextInputType.number,
+              textAlign: TextAlign.center,
               style: TextStyle(
                 fontFamily: 'Poppins',
                 fontWeight: FontWeight.w700,
                 fontSize: 14,
                 color: textColor,
               ),
+              decoration: const InputDecoration(
+                isDense: true,
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.zero,
+              ),
+              onSubmitted: _handleSubmitted,
+              onTapOutside: (_) => _focusNode.unfocus(),
             ),
           ),
           InkWell(
-            onTap: onIncrement,
+            onTap: widget.onIncrement,
             borderRadius: const BorderRadius.horizontal(
               right: Radius.circular(20),
             ),
@@ -550,6 +619,7 @@ class _SelectionBottomSheet extends StatefulWidget {
   final bool isDark;
   final bool isVisible;
   final void Function(String id, int delta) onChangeQty;
+  final void Function(String id, int exactQty) onSetQty;
   final VoidCallback onSubmit;
 
   const _SelectionBottomSheet({
@@ -558,6 +628,7 @@ class _SelectionBottomSheet extends StatefulWidget {
     required this.isDark,
     required this.isVisible,
     required this.onChangeQty,
+    required this.onSetQty,
     required this.onSubmit,
   });
 
@@ -622,10 +693,10 @@ class _SelectionBottomSheetState extends State<_SelectionBottomSheet> {
             child: DraggableScrollableSheet(
               controller: _dragController,
               initialChildSize: 0.5,
-              minChildSize: 0.06,
+              minChildSize: 0.08,
               maxChildSize: 0.5,
               snap: true,
-              snapSizes: const [0.06, 0.5],
+              snapSizes: const [0.08, 0.5],
               expand: false,
               builder: (context, scrollController) {
                 return CustomScrollView(
@@ -745,6 +816,8 @@ class _SelectionBottomSheetState extends State<_SelectionBottomSheet> {
                                       widget.onChangeQty(entry.catalog.id, -1),
                                   onIncrement: () =>
                                       widget.onChangeQty(entry.catalog.id, 1),
+                                  onChanged: (val) =>
+                                      widget.onSetQty(entry.catalog.id, val),
                                 ),
                               ],
                             ),

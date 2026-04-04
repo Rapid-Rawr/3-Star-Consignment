@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 enum ConsignmentItemStatus { pending, approved, partial, rejected }
 
-enum ConsignmentBatchStatus { pending, processing, packed }
+enum ConsignmentBatchStatus { pending, processing, packed, received, rejected }
 
 class ConsignmentItemEntry {
   final String catalogId;
@@ -37,20 +37,9 @@ class ConsignmentItemEntry {
   };
 
   factory ConsignmentItemEntry.fromMap(Map<String, dynamic> map) {
-    ConsignmentItemStatus status;
-    switch (map['itemStatus'] as String?) {
-      case 'approved':
-        status = ConsignmentItemStatus.approved;
-        break;
-      case 'partial':
-        status = ConsignmentItemStatus.partial;
-        break;
-      case 'rejected':
-        status = ConsignmentItemStatus.rejected;
-        break;
-      default:
-        status = ConsignmentItemStatus.pending;
-    }
+    final status =
+        ConsignmentItemStatus.values.asNameMap()[map['itemStatus'] as String?] ??
+        ConsignmentItemStatus.pending;
     return ConsignmentItemEntry(
       catalogId: map['catalogId'] ?? '',
       catalogName: map['catalogName'] ?? '',
@@ -65,7 +54,7 @@ class ConsignmentItemEntry {
 
   ConsignmentItemEntry copyWith({
     ConsignmentItemStatus? itemStatus,
-    int? approvedQty,
+    Object? approvedQty = _unset,
   }) {
     return ConsignmentItemEntry(
       catalogId: catalogId,
@@ -74,11 +63,15 @@ class ConsignmentItemEntry {
       catalogCategory: catalogCategory,
       catalogImagePath: catalogImagePath,
       quantity: quantity,
-      approvedQty: approvedQty ?? this.approvedQty,
+      approvedQty: approvedQty == _unset
+          ? this.approvedQty
+          : approvedQty as int?,
       itemStatus: itemStatus ?? this.itemStatus,
     );
   }
 }
+
+const Object _unset = Object();
 
 class ConsignmentRequestModel {
   final String id;
@@ -88,6 +81,9 @@ class ConsignmentRequestModel {
   final String userSchool;
   final ConsignmentBatchStatus status;
   final List<ConsignmentItemEntry> items;
+  final String? packedBy;
+  final String? receivedBy;
+  final DateTime? receivedAt;
   final DateTime? createdAt;
 
   const ConsignmentRequestModel({
@@ -98,6 +94,9 @@ class ConsignmentRequestModel {
     this.userSchool = '',
     this.status = ConsignmentBatchStatus.pending,
     required this.items,
+    this.packedBy,
+    this.receivedBy,
+    this.receivedAt,
     this.createdAt,
   });
 
@@ -108,21 +107,16 @@ class ConsignmentRequestModel {
     'userSchool': userSchool,
     'status': status.name,
     'items': items.map((e) => e.toMap()).toList(),
+    'packedBy': packedBy,
+    'receivedBy': receivedBy,
+    'receivedAt': receivedAt != null ? Timestamp.fromDate(receivedAt!) : null,
     'createdAt': FieldValue.serverTimestamp(),
   };
 
   factory ConsignmentRequestModel.fromMap(String id, Map<String, dynamic> map) {
-    ConsignmentBatchStatus batchStatus;
-    switch (map['status'] as String?) {
-      case 'processing':
-        batchStatus = ConsignmentBatchStatus.processing;
-        break;
-      case 'packed':
-        batchStatus = ConsignmentBatchStatus.packed;
-        break;
-      default:
-        batchStatus = ConsignmentBatchStatus.pending;
-    }
+    final batchStatus =
+        ConsignmentBatchStatus.values.asNameMap()[map['status'] as String?] ??
+        ConsignmentBatchStatus.pending;
 
     final rawItems = map['items'] as List<dynamic>? ?? [];
     final items = rawItems
@@ -138,6 +132,9 @@ class ConsignmentRequestModel {
       userSchool: map['userSchool'] ?? '',
       status: batchStatus,
       items: items,
+      packedBy: map['packedBy'] as String?,
+      receivedBy: map['receivedBy'] as String?,
+      receivedAt: (map['receivedAt'] as Timestamp?)?.toDate(),
       createdAt: (map['createdAt'] as Timestamp?)?.toDate(),
     );
   }
@@ -151,6 +148,7 @@ class ConsignmentRequestModel {
       userSchool: userSchool,
       status: status,
       items: newItems,
+      packedBy: packedBy,
       createdAt: createdAt,
     );
   }

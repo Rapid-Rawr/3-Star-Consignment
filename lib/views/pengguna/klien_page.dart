@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../controllers/client_controller.dart';
-import '../models/client_model.dart';
-import '../widgets/search_filter_bar.dart';
-import '../widgets/app_dialog.dart';
-import '../widgets/gradient_button.dart';
-import '../utils/currency_format.dart';
+import '../../controllers/pengguna_controllers/klien_controller.dart';
+import '../../models/pengguna_models/klien_model.dart';
+import '../../widgets/search_filter_bar.dart';
+import '../../widgets/app_dialog.dart';
+import '../../widgets/gradient_button.dart';
+import '../../utils/currency_format.dart';
 
 class ClientPage extends StatefulWidget {
   const ClientPage({super.key});
@@ -18,6 +18,7 @@ class _ClientPageState extends State<ClientPage> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   late ClientController _controller;
+  String _searchQuery = '';
 
   @override
   void initState() {
@@ -31,7 +32,6 @@ class _ClientPageState extends State<ClientPage> {
     _searchFocusNode.dispose();
     super.dispose();
   }
-
 
   void _showAddClientDialog() {
     final formKey = GlobalKey<FormState>();
@@ -132,10 +132,9 @@ class _ClientPageState extends State<ClientPage> {
                             ? 'Klien berhasil ditambahkan'
                             : (result['error'] ?? 'Terjadi kesalahan'),
                       ),
-                      backgroundColor:
-                          result['success'] == true
-                              ? Colors.green
-                              : Colors.red,
+                      backgroundColor: result['success'] == true
+                          ? Colors.green
+                          : Colors.red,
                     ),
                   );
                 }
@@ -147,7 +146,6 @@ class _ClientPageState extends State<ClientPage> {
     );
   }
 
-  // ─── DIALOG EDIT ──────────────────────────────────────────────────────────
   void _showEditClientDialog(ClientModel client) {
     final formKey = GlobalKey<FormState>();
     final nameController = TextEditingController(text: client.name);
@@ -244,10 +242,9 @@ class _ClientPageState extends State<ClientPage> {
                             ? 'Klien berhasil diupdate'
                             : (result['error'] ?? 'Terjadi kesalahan'),
                       ),
-                      backgroundColor:
-                          result['success'] == true
-                              ? Colors.green
-                              : Colors.red,
+                      backgroundColor: result['success'] == true
+                          ? Colors.green
+                          : Colors.red,
                     ),
                   );
                 }
@@ -259,7 +256,6 @@ class _ClientPageState extends State<ClientPage> {
     );
   }
 
-  // ─── DIALOG HAPUS ─────────────────────────────────────────────────────────
   void _showDeleteClientDialog(ClientModel client) {
     showAppDialog(
       context: context,
@@ -285,8 +281,9 @@ class _ClientPageState extends State<ClientPage> {
                         ? '${client.name} telah dihapus'
                         : (result['error'] ?? 'Terjadi kesalahan'),
                   ),
-                  backgroundColor:
-                      result['success'] == true ? Colors.green : Colors.red,
+                  backgroundColor: result['success'] == true
+                      ? Colors.green
+                      : Colors.red,
                 ),
               );
             }
@@ -296,7 +293,6 @@ class _ClientPageState extends State<ClientPage> {
     );
   }
 
-  // ─── BUILD ────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
@@ -329,7 +325,7 @@ class _ClientPageState extends State<ClientPage> {
               searchFocusNode: _searchFocusNode,
               hintText: 'Cari nama, telepon, atau alamat...',
               onSearchChanged: (value) =>
-                  setState(() => _controller.setSearchQuery(value)),
+                  setState(() => _searchQuery = value.trim().toLowerCase()),
               filters: const [],
               selectedFilter: null,
               onFilterSelected: (_) {},
@@ -403,9 +399,22 @@ class _ClientPageState extends State<ClientPage> {
                       .toList();
 
                   final allClients = clients.map((e) => e.client).toList();
-                  final filteredClients = _controller.filteredClients(allClients);
+                  final filtered = _searchQuery.isEmpty
+                      ? allClients
+                      : allClients
+                            .where(
+                              (c) =>
+                                  c.name.toLowerCase().contains(_searchQuery) ||
+                                  c.phone.toLowerCase().contains(
+                                    _searchQuery,
+                                  ) ||
+                                  c.address.toLowerCase().contains(
+                                    _searchQuery,
+                                  ),
+                            )
+                            .toList();
                   final filteredWithMeta = clients
-                      .where((e) => filteredClients.any((c) => c.id == e.client.id))
+                      .where((e) => filtered.any((c) => c.id == e.client.id))
                       .toList();
 
                   if (filteredWithMeta.isEmpty) {
@@ -482,12 +491,10 @@ class _ClientPageState extends State<ClientPage> {
                           padding: const EdgeInsets.all(16),
                           child: Row(
                             children: [
-                              // Info
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    // Name
                                     Row(
                                       children: [
                                         Expanded(
@@ -503,24 +510,22 @@ class _ClientPageState extends State<ClientPage> {
                                             overflow: TextOverflow.ellipsis,
                                           ),
                                         ),
-                                        if (isPending) ...
-                                          [
-                                            const SizedBox(width: 4),
-                                            Tooltip(
-                                              message: 'Menunggu sinkronisasi...',
-                                              child: Icon(
-                                                Icons.access_time_rounded,
-                                                size: 14,
-                                                color: isDark
-                                                    ? Colors.amber.shade300
-                                                    : Colors.orange,
-                                              ),
+                                        if (isPending) ...[
+                                          const SizedBox(width: 4),
+                                          Tooltip(
+                                            message: 'Menunggu sinkronisasi...',
+                                            child: Icon(
+                                              Icons.access_time_rounded,
+                                              size: 14,
+                                              color: isDark
+                                                  ? Colors.amber.shade300
+                                                  : Colors.orange,
                                             ),
-                                          ],
+                                          ),
+                                        ],
                                       ],
                                     ),
                                     const SizedBox(height: 3),
-                                    // Phone
                                     Row(
                                       children: [
                                         Icon(
@@ -540,10 +545,11 @@ class _ClientPageState extends State<ClientPage> {
                                       ],
                                     ),
                                     const SizedBox(height: 2),
-                                    // Email (jika ada)
                                     if (client.email.isNotEmpty)
                                       Padding(
-                                        padding: const EdgeInsets.only(bottom: 2),
+                                        padding: const EdgeInsets.only(
+                                          bottom: 2,
+                                        ),
                                         child: Row(
                                           children: [
                                             Icon(
@@ -568,7 +574,6 @@ class _ClientPageState extends State<ClientPage> {
                                         ),
                                       ),
                                     const SizedBox(height: 2),
-                                    // Address
                                     Row(
                                       children: [
                                         Icon(
@@ -592,7 +597,6 @@ class _ClientPageState extends State<ClientPage> {
                                       ],
                                     ),
                                     const SizedBox(height: 8),
-                                    // Debt badge
                                     Container(
                                       padding: const EdgeInsets.symmetric(
                                         horizontal: 10,
@@ -631,7 +635,6 @@ class _ClientPageState extends State<ClientPage> {
                                 ),
                               ),
                               const SizedBox(width: 8),
-                              // Action buttons
                               Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [

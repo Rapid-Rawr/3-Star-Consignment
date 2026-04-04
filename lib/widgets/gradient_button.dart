@@ -12,18 +12,23 @@ import 'package:flutter/material.dart';
 /// ```
 class GradientButton extends StatelessWidget {
   final String label;
+  final Widget? icon;
   final VoidCallback onPressed;
   final double borderRadius;
   final EdgeInsetsGeometry padding;
   final TextStyle? textStyle;
+  /// Jika [true], tombol akan memenuhi lebar parent (seperti full-width button).
+  final bool expand;
 
   const GradientButton({
     super.key,
     required this.label,
+    this.icon,
     required this.onPressed,
     this.borderRadius = 20,
     this.padding = const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
     this.textStyle,
+    this.expand = false,
   });
 
   @override
@@ -38,7 +43,7 @@ class GradientButton extends StatelessWidget {
 
     final Color splashColor = isDark ? const Color(0xFF1D1B20) : Colors.white;
 
-    return TextButton(
+    final button = TextButton(
       onPressed: onPressed,
       style: TextButton.styleFrom(
         padding: EdgeInsets.zero,
@@ -48,6 +53,7 @@ class GradientButton extends StatelessWidget {
         ),
       ),
       child: Ink(
+        width: expand ? double.infinity : null,
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.bottomLeft,
@@ -58,14 +64,29 @@ class GradientButton extends StatelessWidget {
         ),
         child: Padding(
           padding: padding,
-          child: Text(
-            label,
-            style:
-                textStyle ??
-                TextStyle(color: textColor, fontWeight: FontWeight.w600),
+          child: Row(
+            mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (icon != null) ...[
+                icon!,
+                const SizedBox(width: 8),
+              ],
+              Text(
+                label,
+                style:
+                    textStyle ??
+                    TextStyle(color: textColor, fontWeight: FontWeight.w600),
+              ),
+            ],
           ),
         ),
       ),
     );
+
+    if (expand) {
+      return SizedBox(width: double.infinity, child: button);
+    }
+    return button;
   }
 }

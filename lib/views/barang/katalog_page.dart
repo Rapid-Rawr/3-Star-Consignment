@@ -2,13 +2,13 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
-import '../controllers/catalog_controller.dart';
-import '../models/catalog_model.dart';
-import '../widgets/search_filter_bar.dart';
-import '../widgets/app_dialog.dart';
-import '../widgets/gradient_button.dart';
-import '../widgets/catalog_image.dart';
-import '../utils/currency_format.dart';
+import '../../controllers/barang_controllers/katalog_controller.dart';
+import '../../models/barang_models/katalog_model.dart';
+import '../../widgets/search_filter_bar.dart';
+import '../../widgets/app_dialog.dart';
+import '../../widgets/gradient_button.dart';
+import '../../widgets/catalog_image.dart';
+import '../../utils/currency_format.dart';
 
 class CatalogPage extends StatefulWidget {
   const CatalogPage({super.key});

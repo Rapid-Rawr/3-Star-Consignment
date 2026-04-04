@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
-import '../models/catalog_model.dart';
-import '../utils/supabase_service.dart';
+import '../../models/barang_models/katalog_model.dart';
+import '../../utils/supabase_service.dart';
 
 class CatalogController {
   final FirebaseFirestore firestore;

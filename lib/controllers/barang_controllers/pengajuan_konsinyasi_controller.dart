@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../models/catalog_model.dart';
-import '../models/consignment_request_model.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../models/barang_models/katalog_model.dart';
+import '../../models/barang_models/pengajuan_konsinyasi_model.dart';
 
 class ConsignmentRequestController {
   final FirebaseFirestore firestore;
@@ -8,7 +9,6 @@ class ConsignmentRequestController {
 
   ConsignmentRequestController({required this.firestore});
 
-  /// Stream semua pengajuan (batch), terbaru di atas
   Stream<QuerySnapshot> getRequestsStream() {
     return firestore
         .collection(collectionName)
@@ -16,7 +16,6 @@ class ConsignmentRequestController {
         .snapshots();
   }
 
-  /// Stream pengajuan milik user tertentu
   Stream<QuerySnapshot> getRequestsStreamForUser(String userId) {
     return firestore
         .collection(collectionName)
@@ -25,7 +24,6 @@ class ConsignmentRequestController {
         .snapshots();
   }
 
-  /// Buat satu dokumen pengajuan dari semua item yang dipilih sekaligus
   Future<Map<String, dynamic>> createRequest({
     required List<CatalogModel> catalogItems,
     required List<int> quantities,
@@ -64,8 +62,6 @@ class ConsignmentRequestController {
     }
   }
 
-  /// Update status satu item di dalam array.
-  /// Otomatis set batch status ke `processing` jika masih `pending`.
   Future<Map<String, dynamic>> updateItemStatus(
     String docId,
     int itemIndex,
@@ -95,9 +91,12 @@ class ConsignmentRequestController {
             : null,
       );
 
-      final newBatchStatus = model.status == ConsignmentBatchStatus.pending
-          ? ConsignmentBatchStatus.processing
-          : model.status;
+      final isAllPending = updatedItems.every(
+        (i) => i.itemStatus == ConsignmentItemStatus.pending,
+      );
+      final newBatchStatus = isAllPending
+          ? ConsignmentBatchStatus.pending
+          : ConsignmentBatchStatus.processing;
 
       await ref.update({
         'items': updatedItems.map((e) => e.toMap()).toList(),
@@ -111,7 +110,6 @@ class ConsignmentRequestController {
     }
   }
 
-  /// Approve semua item pending dalam satu batch
   Future<Map<String, dynamic>> approveAllPending(String docId) async {
     try {
       final ref = firestore.collection(collectionName).doc(docId);
@@ -146,7 +144,6 @@ class ConsignmentRequestController {
     }
   }
 
-  /// Tolak semua item pending dalam satu batch
   Future<Map<String, dynamic>> rejectAllPending(String docId) async {
     try {
       final ref = firestore.collection(collectionName).doc(docId);
@@ -181,11 +178,34 @@ class ConsignmentRequestController {
     }
   }
 
-  /// Kemas: kunci batch, tidak bisa diedit lagi
-  Future<Map<String, dynamic>> packBatch(String docId) async {
+  Future<Map<String, dynamic>> cancelAllItems(String docId) async {
     try {
-      await firestore.collection(collectionName).doc(docId).update({
-        'status': ConsignmentBatchStatus.packed.name,
+      final ref = firestore.collection(collectionName).doc(docId);
+      final snap = await ref.get();
+      if (!snap.exists)
+        return {'success': false, 'error': 'Dokumen tidak ditemukan'};
+
+      final model = ConsignmentRequestModel.fromMap(
+        snap.id,
+        snap.data() as Map<String, dynamic>,
+      );
+
+      if (model.status == ConsignmentBatchStatus.packed) {
+        return {'success': false, 'error': 'Pengajuan sudah dikemas'};
+      }
+
+      final updatedItems = model.items
+          .map(
+            (item) => item.copyWith(
+              itemStatus: ConsignmentItemStatus.pending,
+              approvedQty: null,
+            ),
+          )
+          .toList();
+
+      await ref.update({
+        'items': updatedItems.map((e) => e.toMap()).toList(),
+        'status': ConsignmentBatchStatus.pending.name,
         'updatedAt': FieldValue.serverTimestamp(),
       });
       return {'success': true};
@@ -194,7 +214,136 @@ class ConsignmentRequestController {
     }
   }
 
-  /// Hapus seluruh batch
+  Future<Map<String, dynamic>> packBatch(String docId) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      final packerName = user?.displayName ?? user?.email ?? 'Operator';
+
+      await firestore.collection(collectionName).doc(docId).update({
+        'status': ConsignmentBatchStatus.packed.name,
+        'packedBy': packerName,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      return {'success': true};
+    } catch (e) {
+      return {'success': false, 'error': e.toString()};
+    }
+  }
+
+  Future<Map<String, dynamic>> rejectBatch(String docId) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      final rejectorName = user?.displayName ?? user?.email ?? 'Operator';
+      final now = FieldValue.serverTimestamp();
+
+      await firestore.collection(collectionName).doc(docId).update({
+        'status': ConsignmentBatchStatus.rejected.name,
+        'rejectedBy': rejectorName,
+        'receivedAt': now,
+        'updatedAt': now,
+      });
+      return {'success': true};
+    } catch (e) {
+      return {'success': false, 'error': e.toString()};
+    }
+  }
+
+  Future<Map<String, dynamic>> receiveBatch(String docId) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      final receiverName = user?.displayName ?? user?.email ?? 'Operator';
+      final now = Timestamp.now();
+
+      final batchSnap = await firestore
+          .collection(collectionName)
+          .doc(docId)
+          .get();
+      if (!batchSnap.exists) {
+        return {'success': false, 'error': 'Batch tidak ditemukan'};
+      }
+      final batch = ConsignmentRequestModel.fromMap(
+        batchSnap.id,
+        batchSnap.data() as Map<String, dynamic>,
+      );
+
+      final approvedItems = batch.items
+          .where(
+            (item) =>
+                item.itemStatus == ConsignmentItemStatus.approved ||
+                item.itemStatus == ConsignmentItemStatus.partial,
+          )
+          .toList();
+
+      if (batch.userEmail.isNotEmpty && approvedItems.isNotEmpty) {
+        final clientQuery = await firestore
+            .collection('clients')
+            .where('email', isEqualTo: batch.userEmail)
+            .limit(1)
+            .get();
+
+        if (clientQuery.docs.isEmpty) {
+          return {'success': false, 'error': 'Klien tidak ditemukan'};
+        }
+
+        final clientRef = clientQuery.docs.first.reference;
+
+        await firestore.runTransaction((tx) async {
+          final clientSnap = await tx.get(clientRef);
+          final data = clientSnap.data();
+          final rawBorrowed = (data?['borrowedItems'] as List<dynamic>?) ?? [];
+
+          String mergeKey(Map<String, dynamic> raw) {
+            final id = raw['catalogId'] as String? ?? '';
+            final price = (raw['catalogPrice'] as num?)?.toDouble() ?? 0.0;
+            return '${id}_$price';
+          }
+
+          final Map<String, Map<String, dynamic>> mergedMap = {
+            for (final raw in rawBorrowed.whereType<Map<String, dynamic>>())
+              mergeKey(raw): raw,
+          };
+
+          for (final item in approvedItems) {
+            final qty = item.approvedQty ?? item.quantity;
+            final key = '${item.catalogId}_${item.catalogPrice}';
+            if (mergedMap.containsKey(key)) {
+              final existing = mergedMap[key]!;
+              mergedMap[key] = {
+                ...existing,
+                'quantity':
+                    ((existing['quantity'] as num?)?.toInt() ?? 0) + qty,
+                'lastReceivedAt': now,
+              };
+            } else {
+              mergedMap[key] = {
+                'catalogId': item.catalogId,
+                'catalogName': item.catalogName,
+                'catalogPrice': item.catalogPrice,
+                'catalogCategory': item.catalogCategory,
+                'catalogImagePath': item.catalogImagePath,
+                'quantity': qty,
+                'lastReceivedAt': now,
+              };
+            }
+          }
+
+          tx.update(clientRef, {'borrowedItems': mergedMap.values.toList()});
+        });
+      }
+
+      await firestore.collection(collectionName).doc(docId).update({
+        'status': ConsignmentBatchStatus.received.name,
+        'receivedBy': receiverName,
+        'receivedAt': now,
+        'updatedAt': now,
+      });
+
+      return {'success': true};
+    } catch (e) {
+      return {'success': false, 'error': e.toString()};
+    }
+  }
+
   Future<Map<String, dynamic>> deleteRequest(String id) async {
     try {
       await firestore.collection(collectionName).doc(id).delete();

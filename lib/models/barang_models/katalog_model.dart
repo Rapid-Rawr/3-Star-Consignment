@@ -28,7 +28,6 @@ class CatalogModel {
       name: map['name'] ?? '',
       price: (map['price'] as num?)?.toDouble() ?? 0.0,
       category: map['category'] ?? '',
-      // Backward-compat: baca imagePath dulu, fallback ke imageUrl lama
       imagePath: (map['imagePath'] ?? map['imageUrl']) as String?,
     );
   }

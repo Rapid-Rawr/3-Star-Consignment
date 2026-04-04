@@ -1,11 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../models/client_model.dart';
 
 class ClientController {
   final FirebaseFirestore firestore;
   final String collectionName = 'clients';
-
-  String searchQuery = '';
 
   ClientController({required this.firestore});
 
@@ -13,20 +10,6 @@ class ClientController {
     return firestore
         .collection(collectionName)
         .snapshots(includeMetadataChanges: true);
-  }
-
-  void setSearchQuery(String query) {
-    searchQuery = query;
-  }
-
-  List<ClientModel> filteredClients(List<ClientModel> clients) {
-    if (searchQuery.isEmpty) return clients;
-    final query = searchQuery.toLowerCase();
-    return clients.where((c) {
-      return c.name.toLowerCase().contains(query) ||
-          c.phone.toLowerCase().contains(query) ||
-          c.address.toLowerCase().contains(query);
-    }).toList();
   }
 
   String? validateName(String? value) {
@@ -52,7 +35,7 @@ class ClientController {
   }
 
   String? validateDebt(String? value) {
-    if (value == null || value.isEmpty) return null; // debt boleh 0
+    if (value == null || value.isEmpty) return null;
     final parsed = double.tryParse(
       value.replaceAll(',', '').replaceAll('.', ''),
     );

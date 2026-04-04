@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../models/operator_model.dart';
+import '../../models/pengguna_models/operator_model.dart';
 
 class OperatorController {
   final FirebaseFirestore firestore;

@@ -2,8 +2,8 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import '../operator_page.dart';
-import '../client_page.dart';
+import '../pengguna/operator_page.dart';
+import '../pengguna/klien_page.dart';
 
 class PenggunaPage extends StatelessWidget {
   const PenggunaPage({super.key});
@@ -123,7 +123,6 @@ class _UserMenuButton extends StatelessWidget {
                         ),
                       ),
                     ),
-                    // SVG asli di atas
                     SvgPicture.asset(svgPath, width: 96, height: 96),
                   ],
                 ),
