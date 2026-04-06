@@ -62,6 +62,42 @@ class ConsignmentRequestController {
     }
   }
 
+  Future<Map<String, dynamic>> createDirectReceivedRequest({
+    required String userId,
+    required String userName,
+    required String userEmail,
+    required String userSchool,
+    required List<ConsignmentItemEntry> items,
+  }) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      final processorName = user?.displayName ?? user?.email ?? 'Operator';
+      final now = DateTime.now();
+
+      final model = ConsignmentRequestModel(
+        id: '',
+        userId: userId,
+        userName: userName,
+        userEmail: userEmail,
+        userSchool: userSchool,
+        status: ConsignmentBatchStatus.received,
+        items: items,
+        packedBy: processorName,
+        receivedBy: processorName,
+        receivedAt: now,
+      );
+
+      final docData = model.toMap();
+      // Ensure createdAt uses serverTimestamp over explicit DateTime.now() for consistency
+      docData['createdAt'] = FieldValue.serverTimestamp();
+
+      await firestore.collection(collectionName).add(docData);
+      return {'success': true};
+    } catch (e) {
+      return {'success': false, 'error': e.toString()};
+    }
+  }
+
   Future<Map<String, dynamic>> updateItemStatus(
     String docId,
     int itemIndex,

@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../controllers/pengguna_controllers/klien_controller.dart';
+import '../../controllers/barang_controllers/katalog_controller.dart';
+import '../../controllers/barang_controllers/pengajuan_konsinyasi_controller.dart';
 import '../../models/pengguna_models/klien_model.dart';
+import '../../models/barang_models/katalog_model.dart';
+import '../../models/barang_models/pengajuan_konsinyasi_model.dart';
 import '../../widgets/search_filter_bar.dart';
 import '../../widgets/catalog_image.dart';
+import '../../widgets/gradient_button.dart';
 import '../../utils/currency_format.dart';
 
 class BarangKonsinyasiPage extends StatefulWidget {
@@ -70,6 +75,23 @@ class _BarangKonsinyasiPageState extends State<BarangKonsinyasiPage> {
     );
   }
 
+  void _showSerahkanSheet(
+    BuildContext context,
+    List<ClientModel> clients,
+    bool isDark,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _SerahkanBottomSheet(
+        clients: clients,
+        clientController: _controller,
+        isDark: isDark,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
@@ -82,6 +104,26 @@ class _BarangKonsinyasiPageState extends State<BarangKonsinyasiPage> {
           'Barang Konsinyasi',
           style: TextStyle(fontFamily: 'Poppins'),
         ),
+      ),
+      floatingActionButton: StreamBuilder<QuerySnapshot>(
+        stream: _stream,
+        builder: (context, snap) {
+          final clients = (snap.data?.docs ?? [])
+              .map((d) => ClientModel.fromMap(
+                    d.id, d.data() as Map<String, dynamic>))
+              .toList();
+          return FloatingActionButton.extended(
+            onPressed: () => _showSerahkanSheet(context, clients, isDark),
+            icon: const Icon(Icons.add_rounded),
+            label: const Text(
+              'Serahkan',
+              style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600),
+            ),
+            backgroundColor:
+                isDark ? const Color(0xFF4DB6AC) : const Color(0xFF00796B),
+            foregroundColor: Colors.white,
+          );
+        },
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: _stream,
@@ -183,7 +225,7 @@ class _BarangKonsinyasiPageState extends State<BarangKonsinyasiPage> {
                       );
                     }
                     return ListView.builder(
-                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
                       itemCount: clients.length,
                       itemBuilder: (context, i) {
                         final client = clients[i];
@@ -904,3 +946,597 @@ class _ClientDetailSheetState extends State<_ClientDetailSheet> {
     );
   }
 }
+
+// ─── Serahkan Bottom Sheet ────────────────────────────────────────────────────
+
+class _SelectedItem {
+  final CatalogModel catalog;
+  int quantity;
+  _SelectedItem({required this.catalog}) : quantity = 1;
+}
+
+class _SerahkanBottomSheet extends StatefulWidget {
+  final List<ClientModel> clients;
+  final ClientController clientController;
+  final bool isDark;
+
+  const _SerahkanBottomSheet({
+    required this.clients,
+    required this.clientController,
+    required this.isDark,
+  });
+
+  @override
+  State<_SerahkanBottomSheet> createState() => _SerahkanBottomSheetState();
+}
+
+class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
+  late final CatalogController _catalogController;
+  late final ConsignmentRequestController _consignmentRequestController;
+  late final Stream<QuerySnapshot> _catalogStream;
+
+  final TextEditingController _searchController = TextEditingController();
+  final Map<String, _SelectedItem> _selected = {};
+
+  ClientModel? _selectedClient;
+  bool _isSubmitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _catalogController =
+        CatalogController(firestore: FirebaseFirestore.instance);
+    _consignmentRequestController =
+        ConsignmentRequestController(firestore: FirebaseFirestore.instance);
+    _catalogStream = _catalogController.getCatalogStream();
+    if (widget.clients.isNotEmpty) _selectedClient = widget.clients.first;
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _toggle(CatalogModel item) {
+    setState(() {
+      if (_selected.containsKey(item.id)) {
+        _selected.remove(item.id);
+      } else {
+        _selected[item.id] = _SelectedItem(catalog: item);
+      }
+    });
+  }
+
+  void _changeQty(String id, int delta) {
+    setState(() {
+      if (!_selected.containsKey(id)) return;
+      final newQty = _selected[id]!.quantity + delta;
+      if (newQty <= 0) {
+        _selected.remove(id);
+      } else {
+        _selected[id]!.quantity = newQty;
+      }
+    });
+  }
+
+  Future<void> _serahkan() async {
+    if (_selectedClient == null || _selected.isEmpty || _isSubmitting) return;
+    setState(() => _isSubmitting = true);
+
+    final newItems = _selected.values
+        .map((si) => {
+              'catalogId': si.catalog.id,
+              'catalogName': si.catalog.name,
+              'catalogPrice': si.catalog.price,
+              'catalogCategory': si.catalog.category,
+              'catalogImagePath': si.catalog.imagePath,
+              'quantity': si.quantity,
+            })
+        .toList();
+
+    // 1. Tambah ke borrowedItems klien
+    final result = await widget.clientController.addBorrowedItemsDirect(
+      clientId: _selectedClient!.id,
+      newItems: newItems,
+    );
+
+    // 2. Simpan record ke consignment_requests sebagai direct received
+    if (result['success'] == true) {
+      final consignmentItems = _selected.values
+          .map((si) => ConsignmentItemEntry(
+                catalogId: si.catalog.id,
+                catalogName: si.catalog.name,
+                catalogCategory: si.catalog.category,
+                catalogImagePath: si.catalog.imagePath,
+                catalogPrice: si.catalog.price,
+                quantity: si.quantity,
+                approvedQty: si.quantity,
+                itemStatus: ConsignmentItemStatus.approved,
+              ))
+          .toList();
+
+      await _consignmentRequestController.createDirectReceivedRequest(
+        userId: _selectedClient!.id,
+        userName: _selectedClient!.name,
+        userEmail: _selectedClient!.email,
+        userSchool: _selectedClient!.address,
+        items: consignmentItems,
+      );
+    }
+
+    setState(() => _isSubmitting = false);
+
+    if (mounted) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            result['success'] == true
+                ? 'Barang berhasil diserahkan ke ${_selectedClient!.name}'
+                : 'Gagal: ${result['error'] ?? 'Terjadi kesalahan'}',
+          ),
+          backgroundColor:
+              result['success'] == true ? Colors.green : Colors.red,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final Color sheetBg =
+        widget.isDark ? const Color(0xFF2B2930) : Colors.white;
+    final Color divider =
+        widget.isDark ? const Color(0xFF49454F) : const Color(0xFFE0E0E0);
+    final Color nameColor =
+        widget.isDark ? Colors.white : const Color(0xFF1D1B20);
+    final Color subColor =
+        widget.isDark ? Colors.white54 : const Color(0xFF757575);
+    final Color tealFg =
+        widget.isDark ? const Color(0xFF4DB6AC) : const Color(0xFF00796B);
+    final Color tealBg =
+        widget.isDark ? const Color(0xFF1A3A3A) : const Color(0xFFE0F2F1);
+    final Color priceColor =
+        widget.isDark ? const Color(0xFF80CBC4) : const Color(0xFF2E7D32);
+    final Color chipBg =
+        widget.isDark ? const Color(0xFF3A3740) : Colors.grey[100]!;
+    final Color chipBorder =
+        widget.isDark ? const Color(0xFF49454F) : const Color(0xFFE0E0E0);
+
+    final selectedList = _selected.values.toList();
+    final double totalEst =
+        selectedList.fold(0.0, (s, e) => s + e.catalog.price * e.quantity);
+    final int totalQty = selectedList.fold(0, (s, e) => s + e.quantity);
+
+    return Container(
+      clipBehavior: Clip.hardEdge,
+      decoration: BoxDecoration(
+        color: sheetBg,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        border: Border(top: BorderSide(color: divider, width: 1)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: widget.isDark ? 0.35 : 0.10),
+            blurRadius: 16,
+            offset: const Offset(0, -3),
+          ),
+        ],
+      ),
+      child: DraggableScrollableSheet(
+        initialChildSize: 0.90,
+        minChildSize: 0.5,
+        maxChildSize: 0.97,
+        expand: false,
+        builder: (context, sc) => Column(
+          children: [
+            // Handle
+            Padding(
+              padding: const EdgeInsets.only(top: 10, bottom: 6),
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: divider,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            // Header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 2, 8, 10),
+              child: Row(
+                children: [
+                  Icon(Icons.local_shipping_outlined, color: tealFg, size: 22),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Serahkan Barang Langsung',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                        color: nameColor,
+                      ),
+                    ),
+                  ),
+                  if (totalQty > 0)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: tealBg,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '$totalQty item dipilih',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: tealFg,
+                        ),
+                      ),
+                    ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            ),
+            // Client dropdown
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                decoration: BoxDecoration(
+                  border: Border.all(color: divider),
+                  borderRadius: BorderRadius.circular(12),
+                  color: chipBg,
+                ),
+                child: DropdownButton<ClientModel>(
+                  value: _selectedClient,
+                  isExpanded: true,
+                  underline: const SizedBox(),
+                  dropdownColor: sheetBg,
+                  icon: Icon(Icons.keyboard_arrow_down, color: tealFg),
+                  hint: Text(
+                    'Pilih Klien',
+                    style: TextStyle(
+                        fontFamily: 'Poppins', fontSize: 13, color: subColor),
+                  ),
+                  items: widget.clients
+                      .map((c) => DropdownMenuItem(
+                            value: c,
+                            child: Text(
+                              c.name.isNotEmpty ? c.name : 'Klien Tanpa Nama',
+                              style: TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 13,
+                                  color: nameColor),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ))
+                      .toList(),
+                  onChanged: (val) => setState(() => _selectedClient = val),
+                ),
+              ),
+            ),
+            // Search katalog
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: TextField(
+                controller: _searchController,
+                onChanged: (_) => setState(() {}),
+                decoration: InputDecoration(
+                  hintText: 'Cari katalog...',
+                  hintStyle: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 13,
+                    color: widget.isDark ? Colors.white38 : Colors.black38,
+                  ),
+                  prefixIcon: const Icon(Icons.search, size: 20),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: divider),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: divider),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: tealFg),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 10),
+                  isDense: true,
+                ),
+              ),
+            ),
+            Divider(height: 1, color: divider),
+            // Catalog list
+            Expanded(
+              child: StreamBuilder<QuerySnapshot>(
+                stream: _catalogStream,
+                builder: (ctx, snap) {
+                  if (snap.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  final query =
+                      _searchController.text.trim().toLowerCase();
+                  final allItems = (snap.data?.docs ?? [])
+                      .map((d) => CatalogModel.fromMap(
+                          d.id, d.data() as Map<String, dynamic>))
+                      .where((c) =>
+                          query.isEmpty ||
+                          c.name.toLowerCase().contains(query) ||
+                          c.category.toLowerCase().contains(query))
+                      .toList();
+
+                  if (allItems.isEmpty) {
+                    return Center(
+                      child: Text(
+                        'Katalog tidak ditemukan',
+                        style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 13,
+                            color: subColor),
+                      ),
+                    );
+                  }
+
+                  return ListView.separated(
+                    controller: sc,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 8),
+                    itemCount: allItems.length,
+                    separatorBuilder: (_, __) =>
+                        Divider(height: 1, color: divider),
+                    itemBuilder: (_, i) {
+                      final catalog = allItems[i];
+                      final isSelected = _selected.containsKey(catalog.id);
+                      final selItem = _selected[catalog.id];
+
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: Row(
+                          children: [
+                            GestureDetector(
+                              onTap: () => _toggle(catalog),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 160),
+                                width: 24,
+                                height: 24,
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? tealFg
+                                      : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                    color: isSelected ? tealFg : divider,
+                                    width: 1.5,
+                                  ),
+                                ),
+                                child: isSelected
+                                    ? const Icon(Icons.check,
+                                        size: 16, color: Colors.white)
+                                    : null,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            CatalogImage(
+                              imagePath: catalog.imagePath,
+                              size: 46,
+                              borderRadius: 10,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    catalog.name,
+                                    style: TextStyle(
+                                      fontFamily: 'Poppins',
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: nameColor,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  Text(
+                                    catalog.category,
+                                    style: TextStyle(
+                                      fontFamily: 'Poppins',
+                                      fontSize: 11,
+                                      color: subColor,
+                                    ),
+                                  ),
+                                  Text(
+                                    formatRupiah(catalog.price),
+                                    style: TextStyle(
+                                      fontFamily: 'Poppins',
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                      color: priceColor,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            if (isSelected && selItem != null)
+                              _InlineQtyStepper(
+                                quantity: selItem.quantity,
+                                isDark: widget.isDark,
+                                onDecrement: () =>
+                                    _changeQty(catalog.id, -1),
+                                onIncrement: () =>
+                                    _changeQty(catalog.id, 1),
+                              )
+                            else
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: chipBg,
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: chipBorder),
+                                ),
+                                child: Text(
+                                  'Pilih untuk serahkan',
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 11,
+                                    color: subColor,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+            // Footer
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 20),
+              decoration: BoxDecoration(
+                color: sheetBg,
+                border: Border(top: BorderSide(color: divider, width: 1)),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Total Estimasi',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 11,
+                            color: subColor,
+                          ),
+                        ),
+                        Text(
+                          formatRupiah(totalEst),
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                            color: nameColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  _isSubmitting
+                      ? const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 16),
+                          child: SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        )
+                      : GradientButton(
+                          label: 'Serahkan',
+                          onPressed: (_selectedClient == null ||
+                                  _selected.isEmpty)
+                              ? () {}
+                              : _serahkan,
+                          borderRadius: 12,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 28, vertical: 12),
+                        ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _InlineQtyStepper extends StatelessWidget {
+  final int quantity;
+  final bool isDark;
+  final VoidCallback onDecrement;
+  final VoidCallback onIncrement;
+
+  const _InlineQtyStepper({
+    required this.quantity,
+    required this.isDark,
+    required this.onDecrement,
+    required this.onIncrement,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final Color iconColor =
+        isDark ? const Color(0xFF80CBC4) : const Color(0xFF2E7D32);
+    final Color textColor =
+        isDark ? Colors.white : const Color(0xFF1D1B20);
+    final Color bg = isDark ? const Color(0xFF3A3740) : Colors.grey[100]!;
+    final Color border =
+        isDark ? const Color(0xFF49454F) : const Color(0xFFE0E0E0);
+
+    return Container(
+      height: 32,
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          InkWell(
+            onTap: onDecrement,
+            borderRadius:
+                const BorderRadius.horizontal(left: Radius.circular(20)),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              child: Icon(
+                quantity <= 1 ? Icons.delete_outline : Icons.remove,
+                size: 16,
+                color: iconColor,
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            child: Text(
+              '$quantity',
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: textColor,
+              ),
+            ),
+          ),
+          InkWell(
+            onTap: onIncrement,
+            borderRadius:
+                const BorderRadius.horizontal(right: Radius.circular(20)),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              child: Icon(Icons.add, size: 16, color: iconColor),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+

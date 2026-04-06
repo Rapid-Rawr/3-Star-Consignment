@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../controllers/pembayaran_controllers/pembayaran_controller.dart';
+import '../../controllers/pembayaran_controllers/penyerahan_controller.dart';
 import '../../models/pembayaran_models/pembayaran_model.dart';
 import '../../widgets/catalog_image.dart';
 import '../../utils/currency_format.dart';
 
-class HistoryPembayaranPage extends StatefulWidget {
-  const HistoryPembayaranPage({super.key});
+class HistoryPenyerahanPage extends StatefulWidget {
+  const HistoryPenyerahanPage({super.key});
 
   @override
-  State<HistoryPembayaranPage> createState() => _HistoryPembayaranPageState();
+  State<HistoryPenyerahanPage> createState() => _HistoryPenyerahanPageState();
 }
 
-class _HistoryPembayaranPageState extends State<HistoryPembayaranPage> {
-  late final PembayaranController _controller;
+class _HistoryPenyerahanPageState extends State<HistoryPenyerahanPage> {
+  late final PenyerahanController _controller;
   late final Stream<QuerySnapshot> _stream;
 
   final TextEditingController _searchController = TextEditingController();
@@ -25,8 +25,8 @@ class _HistoryPembayaranPageState extends State<HistoryPembayaranPage> {
   @override
   void initState() {
     super.initState();
-    _controller = PembayaranController(firestore: FirebaseFirestore.instance);
-    _stream = _controller.getPaymentsStream();
+    _controller = PenyerahanController(firestore: FirebaseFirestore.instance);
+    _stream = _controller.getDeliveriesStream();
   }
 
   @override
@@ -89,30 +89,38 @@ class _HistoryPembayaranPageState extends State<HistoryPembayaranPage> {
   String _formatDate(DateTime? dt) {
     if (dt == null) return '-';
     const m = [
-      '',
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'Mei',
-      'Jun',
-      'Jul',
-      'Agu',
-      'Sep',
-      'Okt',
-      'Nov',
-      'Des',
+      '', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+      'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des',
     ];
     return '${dt.day} ${m[dt.month]} ${dt.year}';
   }
 
-  void _showDetail(BuildContext context, PembayaranModel payment, bool isDark) {
+  /// Build a PembayaranModel-like object from the delivery_history doc.
+  /// We re-use PembayaranModel with paymentMethod = 'serahkan' for convenience.
+  PembayaranModel _fromDeliveryDoc(String id, Map<String, dynamic> m) {
+    final rawItems = m['items'] as List<dynamic>? ?? [];
+    return PembayaranModel(
+      id: id,
+      clientId: m['clientId'] ?? '',
+      clientName: m['clientName'] ?? '',
+      clientAddress: m['clientAddress'] ?? '',
+      paymentMethod: 'serahkan',
+      items: rawItems
+          .whereType<Map<String, dynamic>>()
+          .map(PaidItem.fromMap)
+          .toList(),
+      totalAmount: (m['totalAmount'] as num?)?.toDouble() ?? 0.0,
+      paidAt: (m['deliveredAt'] as dynamic)?.toDate() as DateTime?,
+    );
+  }
+
+  void _showDetail(BuildContext context, PembayaranModel record, bool isDark) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _PaymentDetailSheet(
-        payment: payment,
+      builder: (_) => _DeliveryDetailSheet(
+        record: record,
         isDark: isDark,
         formatDate: _formatDate,
       ),
@@ -132,13 +140,13 @@ class _HistoryPembayaranPageState extends State<HistoryPembayaranPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'History Pembayaran',
+          'Riwayat Penyerahan',
           style: TextStyle(fontFamily: 'Poppins'),
         ),
       ),
       body: Column(
         children: [
-          // ── Search bar ─────────────────────────────────────────
+          // Search bar
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
             child: TextField(
@@ -166,14 +174,13 @@ class _HistoryPembayaranPageState extends State<HistoryPembayaranPage> {
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(color: borderActive),
                 ),
-                contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 10),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 isDense: true,
               ),
             ),
           ),
-
-          // ── Date filter ────────────────────────────────────────
+          // Date filter
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
             child: Row(
@@ -208,9 +215,7 @@ class _HistoryPembayaranPageState extends State<HistoryPembayaranPage> {
                                   ? (isDark
                                         ? Colors.white
                                         : const Color(0xFF1D1B20))
-                                  : (isDark
-                                        ? Colors.white38
-                                        : Colors.black38),
+                                  : (isDark ? Colors.white38 : Colors.black38),
                             ),
                           ),
                         ],
@@ -250,9 +255,7 @@ class _HistoryPembayaranPageState extends State<HistoryPembayaranPage> {
                                     ? (isDark
                                           ? Colors.white
                                           : const Color(0xFF1D1B20))
-                                    : (isDark
-                                          ? Colors.white38
-                                          : Colors.black38),
+                                    : (isDark ? Colors.white38 : Colors.black38),
                               ),
                             ),
                           ),
@@ -276,8 +279,7 @@ class _HistoryPembayaranPageState extends State<HistoryPembayaranPage> {
               ],
             ),
           ),
-
-          // ── List ───────────────────────────────────────────────
+          // List
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: _stream,
@@ -299,11 +301,11 @@ class _HistoryPembayaranPageState extends State<HistoryPembayaranPage> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.receipt_long_outlined,
+                        Icon(Icons.local_shipping_outlined,
                             size: 64, color: emptyIcon),
                         const SizedBox(height: 16),
                         Text(
-                          'Belum Ada History Pembayaran',
+                          'Belum Ada Riwayat Penyerahan',
                           style: TextStyle(
                               fontSize: 16,
                               color: emptyText,
@@ -314,29 +316,33 @@ class _HistoryPembayaranPageState extends State<HistoryPembayaranPage> {
                   );
                 }
 
-                var payments = snapshot.data!.docs
-                    .map((d) => PembayaranModel.fromMap(
+                var records = snapshot.data!.docs
+                    .map((d) => _fromDeliveryDoc(
                         d.id, d.data() as Map<String, dynamic>))
                     .toList();
 
                 if (_searchQuery.isNotEmpty) {
-                  payments = payments
-                      .where((p) =>
-                          p.clientName.toLowerCase().contains(_searchQuery) ||
-                          p.clientAddress.toLowerCase().contains(_searchQuery))
+                  records = records
+                      .where((r) =>
+                          r.clientName
+                              .toLowerCase()
+                              .contains(_searchQuery) ||
+                          r.clientAddress
+                              .toLowerCase()
+                              .contains(_searchQuery))
                       .toList();
                 }
 
                 if (_dateFrom != null && _dateTo != null) {
-                  payments = payments.where((p) {
-                    final date = p.paidAt;
+                  records = records.where((r) {
+                    final date = r.paidAt;
                     if (date == null) return false;
                     return !date.isBefore(_dateFrom!) &&
                         !date.isAfter(_dateTo!);
                   }).toList();
                 }
 
-                if (payments.isEmpty) {
+                if (records.isEmpty) {
                   return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -345,7 +351,7 @@ class _HistoryPembayaranPageState extends State<HistoryPembayaranPage> {
                             size: 64, color: emptyIcon),
                         const SizedBox(height: 16),
                         Text(
-                          'History Tidak Ditemukan',
+                          'Riwayat Tidak Ditemukan',
                           style: TextStyle(
                               fontSize: 16,
                               color: emptyText,
@@ -358,19 +364,19 @@ class _HistoryPembayaranPageState extends State<HistoryPembayaranPage> {
 
                 return ListView.builder(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                  itemCount: payments.length,
+                  itemCount: records.length,
                   itemBuilder: (context, i) {
-                    final payment = payments[i];
-                    final categories = payment.items
+                    final record = records[i];
+                    final categories = record.items
                         .map((it) => it.catalogCategory)
                         .toSet()
                         .toList();
-                    return _PaymentHistoryCard(
-                      payment: payment,
+                    return _DeliveryCard(
+                      record: record,
                       categories: categories,
                       isDark: isDark,
                       formatDate: _formatDate,
-                      onDetail: () => _showDetail(context, payment, isDark),
+                      onDetail: () => _showDetail(context, record, isDark),
                     );
                   },
                 );
@@ -383,44 +389,22 @@ class _HistoryPembayaranPageState extends State<HistoryPembayaranPage> {
   }
 }
 
-// ─── History Card ─────────────────────────────────────────────────────────────
+// ─── Delivery Card ─────────────────────────────────────────────────────────────
 
-class _PaymentHistoryCard extends StatelessWidget {
-  final PembayaranModel payment;
+class _DeliveryCard extends StatelessWidget {
+  final PembayaranModel record;
   final List<String> categories;
   final bool isDark;
   final String Function(DateTime?) formatDate;
   final VoidCallback onDetail;
 
-  const _PaymentHistoryCard({
-    required this.payment,
+  const _DeliveryCard({
+    required this.record,
     required this.categories,
     required this.isDark,
     required this.formatDate,
     required this.onDetail,
   });
-
-  String _methodLabel(String method) {
-    switch (method.toLowerCase()) {
-      case 'cash':
-        return 'Cash';
-      case 'transfer':
-        return 'Transfer';
-      default:
-        return method;
-    }
-  }
-
-  IconData _methodIcon(String method) {
-    switch (method.toLowerCase()) {
-      case 'cash':
-        return Icons.payments_outlined;
-      case 'transfer':
-        return Icons.account_balance_outlined;
-      default:
-        return Icons.payment_outlined;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -435,12 +419,12 @@ class _PaymentHistoryCard extends StatelessWidget {
         isDark ? const Color(0xFF4DB6AC) : const Color(0xFF00796B);
     final Color tealBg =
         isDark ? const Color(0xFF1A3A3A) : const Color(0xFFE0F2F1);
-    final Color cashBg =
-        isDark ? const Color(0xFF1A2A3A) : const Color(0xFFE3F2FD);
-    final Color cashFg =
-        isDark ? const Color(0xFF90CAF9) : const Color(0xFF1565C0);
+    final Color shipBg =
+        isDark ? const Color(0xFF1A3020) : const Color(0xFFE8F5E9);
+    final Color shipFg =
+        isDark ? const Color(0xFF80CBC4) : const Color(0xFF2E7D32);
 
-    final totalItems = payment.items.fold(0, (s, i) => s + i.quantity);
+    final totalItems = record.items.fold(0, (s, i) => s + i.quantity);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -463,7 +447,6 @@ class _PaymentHistoryCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ── Header: nama klien + jenis pembayaran + jumlah barang ──
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -472,8 +455,8 @@ class _PaymentHistoryCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        payment.clientName.isNotEmpty
-                            ? payment.clientName
+                        record.clientName.isNotEmpty
+                            ? record.clientName
                             : 'Klien Tidak Dikenal',
                         style: TextStyle(
                           fontFamily: 'Poppins',
@@ -482,7 +465,7 @@ class _PaymentHistoryCard extends StatelessWidget {
                           color: nameColor,
                         ),
                       ),
-                      if (payment.clientAddress.isNotEmpty) ...[
+                      if (record.clientAddress.isNotEmpty) ...[
                         const SizedBox(height: 2),
                         Row(
                           children: [
@@ -491,7 +474,7 @@ class _PaymentHistoryCard extends StatelessWidget {
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
-                                payment.clientAddress,
+                                record.clientAddress,
                                 style: TextStyle(
                                   fontFamily: 'Poppins',
                                   fontSize: 12,
@@ -510,27 +493,27 @@ class _PaymentHistoryCard extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    // Jenis pembayaran
+                    // Label penyerahan
                     Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: cashBg,
+                        color: shipBg,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(_methodIcon(payment.paymentMethod),
-                              size: 12, color: cashFg),
+                          Icon(Icons.local_shipping_outlined,
+                              size: 12, color: shipFg),
                           const SizedBox(width: 4),
                           Text(
-                            _methodLabel(payment.paymentMethod),
+                            'Diserahkan',
                             style: TextStyle(
                               fontFamily: 'Poppins',
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
-                              color: cashFg,
+                              color: shipFg,
                             ),
                           ),
                         ],
@@ -559,16 +542,13 @@ class _PaymentHistoryCard extends StatelessWidget {
                 ),
               ],
             ),
-
             const SizedBox(height: 12),
-
-            // ── Tanggal bayar ──────────────────────────────────────
             Row(
               children: [
                 Icon(Icons.calendar_month, size: 14, color: subColor),
                 const SizedBox(width: 6),
                 Text(
-                  'Dibayar: ${formatDate(payment.paidAt)}',
+                  'Diserahkan: ${formatDate(record.paidAt)}',
                   style: TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 12,
@@ -577,7 +557,7 @@ class _PaymentHistoryCard extends StatelessWidget {
                 ),
                 const Spacer(),
                 Text(
-                  formatRupiah(payment.totalAmount),
+                  formatRupiah(record.totalAmount),
                   style: TextStyle(
                     fontFamily: 'Poppins',
                     fontWeight: FontWeight.w700,
@@ -587,8 +567,6 @@ class _PaymentHistoryCard extends StatelessWidget {
                 ),
               ],
             ),
-
-            // ── Category chips ─────────────────────────────────────
             if (categories.isNotEmpty) ...[
               const SizedBox(height: 10),
               Wrap(
@@ -616,10 +594,7 @@ class _PaymentHistoryCard extends StatelessWidget {
                 }).toList(),
               ),
             ],
-
             const SizedBox(height: 12),
-
-            // ── Detail button ──────────────────────────────────────
             OutlinedButton.icon(
               onPressed: onDetail,
               icon: const Icon(Icons.visibility_outlined, size: 16),
@@ -645,13 +620,13 @@ class _PaymentHistoryCard extends StatelessWidget {
 
 // ─── Detail Sheet ─────────────────────────────────────────────────────────────
 
-class _PaymentDetailSheet extends StatelessWidget {
-  final PembayaranModel payment;
+class _DeliveryDetailSheet extends StatelessWidget {
+  final PembayaranModel record;
   final bool isDark;
   final String Function(DateTime?) formatDate;
 
-  const _PaymentDetailSheet({
-    required this.payment,
+  const _DeliveryDetailSheet({
+    required this.record,
     required this.isDark,
     required this.formatDate,
   });
@@ -669,15 +644,14 @@ class _PaymentDetailSheet extends StatelessWidget {
         isDark ? const Color(0xFF4DB6AC) : const Color(0xFF00796B);
     final Color tealBg =
         isDark ? const Color(0xFF1A3A3A) : const Color(0xFFE0F2F1);
-    final Color cashBg =
-        isDark ? const Color(0xFF1A2A3A) : const Color(0xFFE3F2FD);
-    final Color cashFg =
-        isDark ? const Color(0xFF90CAF9) : const Color(0xFF1565C0);
+    final Color shipBg =
+        isDark ? const Color(0xFF1A3020) : const Color(0xFFE8F5E9);
+    final Color shipFg =
+        isDark ? const Color(0xFF80CBC4) : const Color(0xFF2E7D32);
     final Color priceColor =
         isDark ? const Color(0xFF80CBC4) : const Color(0xFF2E7D32);
 
-    final totalItems =
-        payment.items.fold(0, (s, i) => s + i.quantity);
+    final totalItems = record.items.fold(0, (s, i) => s + i.quantity);
 
     return DraggableScrollableSheet(
       initialChildSize: 0.88,
@@ -703,7 +677,6 @@ class _PaymentDetailSheet extends StatelessWidget {
                 ),
               ),
             ),
-
             // Header
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
@@ -712,10 +685,10 @@ class _PaymentDetailSheet extends StatelessWidget {
                   Container(
                     width: 38,
                     height: 38,
-                    decoration: BoxDecoration(
-                        color: tealBg, shape: BoxShape.circle),
-                    child:
-                        Icon(Icons.store_outlined, color: tealFg, size: 20),
+                    decoration:
+                        BoxDecoration(color: tealBg, shape: BoxShape.circle),
+                    child: Icon(Icons.store_outlined,
+                        color: tealFg, size: 20),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -723,7 +696,7 @@ class _PaymentDetailSheet extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          payment.clientName,
+                          record.clientName,
                           style: TextStyle(
                             fontFamily: 'Poppins',
                             fontWeight: FontWeight.w700,
@@ -733,9 +706,9 @@ class _PaymentDetailSheet extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        if (payment.clientAddress.isNotEmpty)
+                        if (record.clientAddress.isNotEmpty)
                           Text(
-                            payment.clientAddress,
+                            record.clientAddress,
                             style: TextStyle(
                               fontFamily: 'Poppins',
                               fontSize: 11,
@@ -747,36 +720,33 @@ class _PaymentDetailSheet extends StatelessWidget {
                       ],
                     ),
                   ),
-                  // Jenis pembayaran
+                  // Diserahkan badge
                   Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: cashBg,
+                      color: shipBg,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.payments_outlined,
-                            size: 12, color: cashFg),
+                        Icon(Icons.local_shipping_outlined,
+                            size: 12, color: shipFg),
                         const SizedBox(width: 4),
                         Text(
-                          payment.paymentMethod == 'cash'
-                              ? 'Cash'
-                              : payment.paymentMethod,
+                          'Diserahkan',
                           style: TextStyle(
                             fontFamily: 'Poppins',
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
-                            color: cashFg,
+                            color: shipFg,
                           ),
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(width: 4),
-                  // Jumlah barang
                   Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 10, vertical: 4),
@@ -802,10 +772,7 @@ class _PaymentDetailSheet extends StatelessWidget {
                 ],
               ),
             ),
-
             Divider(height: 1, color: divider),
-
-            // Tanggal & total
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 10, 20, 6),
               child: Row(
@@ -813,7 +780,7 @@ class _PaymentDetailSheet extends StatelessWidget {
                   Icon(Icons.calendar_month, size: 14, color: subColor),
                   const SizedBox(width: 6),
                   Text(
-                    'Dibayar: ${formatDate(payment.paidAt)}',
+                    'Diserahkan: ${formatDate(record.paidAt)}',
                     style: TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 12,
@@ -823,14 +790,12 @@ class _PaymentDetailSheet extends StatelessWidget {
                 ],
               ),
             ),
-
-            // Item count label
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 4, 20, 6),
               child: Row(
                 children: [
                   Text(
-                    'Barang Dibayar',
+                    'Barang Diserahkan',
                     style: TextStyle(
                       fontFamily: 'Poppins',
                       fontWeight: FontWeight.w600,
@@ -847,7 +812,7 @@ class _PaymentDetailSheet extends StatelessWidget {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      '${payment.items.length} item',
+                      '${record.items.length} item',
                       style: TextStyle(
                         fontFamily: 'Poppins',
                         fontSize: 11,
@@ -860,20 +825,19 @@ class _PaymentDetailSheet extends StatelessWidget {
               ),
             ),
             Divider(height: 1, color: divider),
-
-            // Items list
             Expanded(
               child: ListView.separated(
                 controller: sc,
                 padding: const EdgeInsets.symmetric(
                     horizontal: 20, vertical: 8),
-                itemCount: payment.items.length,
+                itemCount: record.items.length,
                 separatorBuilder: (_, __) =>
                     Divider(height: 1, color: divider),
                 itemBuilder: (_, i) {
-                  final item = payment.items[i];
+                  final item = record.items[i];
                   return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    padding:
+                        const EdgeInsets.symmetric(vertical: 12),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -885,7 +849,8 @@ class _PaymentDetailSheet extends StatelessWidget {
                         const SizedBox(width: 12),
                         Expanded(
                           child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            crossAxisAlignment:
+                                CrossAxisAlignment.start,
                             children: [
                               Text(
                                 item.catalogName,
@@ -919,7 +884,8 @@ class _PaymentDetailSheet extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          formatRupiah(item.catalogPrice * item.quantity),
+                          formatRupiah(
+                              item.catalogPrice * item.quantity),
                           style: TextStyle(
                             fontFamily: 'Poppins',
                             fontWeight: FontWeight.w700,
@@ -933,8 +899,6 @@ class _PaymentDetailSheet extends StatelessWidget {
                 },
               ),
             ),
-
-            // Footer total
             Container(
               padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
               decoration: BoxDecoration(
@@ -944,7 +908,7 @@ class _PaymentDetailSheet extends StatelessWidget {
               child: Row(
                 children: [
                   Text(
-                    'Total Pembayaran',
+                    'Total Estimasi',
                     style: TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 12,
@@ -953,7 +917,7 @@ class _PaymentDetailSheet extends StatelessWidget {
                   ),
                   const Spacer(),
                   Text(
-                    formatRupiah(payment.totalAmount),
+                    formatRupiah(record.totalAmount),
                     style: TextStyle(
                       fontFamily: 'Poppins',
                       fontWeight: FontWeight.w700,

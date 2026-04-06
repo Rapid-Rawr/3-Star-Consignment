@@ -92,10 +92,97 @@ class ClientController {
       return {'success': false, 'error': e.toString()};
     }
   }
-
   Future<Map<String, dynamic>> deleteClient(String id) async {
     try {
       await firestore.collection(collectionName).doc(id).delete();
+      return {'success': true};
+    } catch (e) {
+      return {'success': false, 'error': e.toString()};
+    }
+  }
+
+  /// Mengurangi kuantitas [borrowedItems] klien berdasarkan pembayaran.
+  /// [deductions] adalah map index → jumlah yang dibayar.
+  /// Item yang qty-nya menjadi 0 atau kurang akan dihapus dari list.
+  Future<Map<String, dynamic>> deductBorrowedItems({
+    required String clientId,
+    required List<Map<String, dynamic>> currentItems,
+    required Map<int, int> deductions,
+  }) async {
+    try {
+      final updated = <Map<String, dynamic>>[];
+      for (int i = 0; i < currentItems.length; i++) {
+        final item = Map<String, dynamic>.from(currentItems[i]);
+        final deduct = deductions[i] ?? 0;
+        final currentQty = (item['quantity'] as num?)?.toInt() ?? 0;
+        final newQty = currentQty - deduct;
+        if (newQty > 0) {
+          item['quantity'] = newQty;
+          updated.add(item);
+        }
+        // jika newQty <= 0, item dihapus (tidak dimasukkan ke updated)
+      }
+
+      await firestore.collection(collectionName).doc(clientId).update({
+        'borrowedItems': updated,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      return {'success': true};
+    } catch (e) {
+      return {'success': false, 'error': e.toString()};
+    }
+  }
+
+  /// Menambah barang langsung ke [borrowedItems] klien tanpa melalui pengajuan.
+  /// Menggunakan merge key [catalogId_price] agar item yang sama diakumulasi.
+  Future<Map<String, dynamic>> addBorrowedItemsDirect({
+    required String clientId,
+    required List<Map<String, dynamic>> newItems, // [{catalogId, catalogName, catalogPrice, catalogCategory, catalogImagePath, quantity}]
+  }) async {
+    try {
+      final clientRef = firestore.collection(collectionName).doc(clientId);
+      final now = Timestamp.now();
+
+      await firestore.runTransaction((tx) async {
+        final snap = await tx.get(clientRef);
+        final data = snap.data();
+        final rawBorrowed = (data?['borrowedItems'] as List<dynamic>?) ?? [];
+
+        String mergeKey(Map<String, dynamic> raw) {
+          final id = raw['catalogId'] as String? ?? '';
+          final price = (raw['catalogPrice'] as num?)?.toDouble() ?? 0.0;
+          return '${id}_$price';
+        }
+
+        final Map<String, Map<String, dynamic>> mergedMap = {
+          for (final raw in rawBorrowed.whereType<Map<String, dynamic>>())
+            mergeKey(raw): Map<String, dynamic>.from(raw),
+        };
+
+        for (final item in newItems) {
+          final key = mergeKey(item);
+          final qty = (item['quantity'] as num?)?.toInt() ?? 1;
+          if (mergedMap.containsKey(key)) {
+            final existing = mergedMap[key]!;
+            mergedMap[key] = {
+              ...existing,
+              'quantity': ((existing['quantity'] as num?)?.toInt() ?? 0) + qty,
+              'lastReceivedAt': now,
+            };
+          } else {
+            mergedMap[key] = {
+              ...item,
+              'lastReceivedAt': now,
+            };
+          }
+        }
+
+        tx.update(clientRef, {
+          'borrowedItems': mergedMap.values.toList(),
+          'updatedAt': now,
+        });
+      });
+
       return {'success': true};
     } catch (e) {
       return {'success': false, 'error': e.toString()};
