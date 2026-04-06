@@ -16,12 +16,38 @@ import 'widgets/custom_bottom_nav.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load(fileName: '.env');
+
+  try {
+    await dotenv.load(fileName: '.env');
+  } catch (e) {
+    debugPrint(
+      'Warning: .env file not found or failed to load. Supabase features may be unavailable.',
+    );
+  }
+
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  await SupabaseService.initialize(
-    url: dotenv.env['PROJECT_URL']!,
-    anonKey: dotenv.env['ANON_KEY']!,
-  );
+
+  final supabaseUrl = dotenv.env['PROJECT_URL'];
+  final supabaseAnonKey = dotenv.env['ANON_KEY'];
+
+  if (supabaseUrl != null &&
+      supabaseAnonKey != null &&
+      supabaseUrl.isNotEmpty &&
+      supabaseAnonKey.isNotEmpty) {
+    try {
+      await SupabaseService.initialize(
+        url: supabaseUrl,
+        anonKey: supabaseAnonKey,
+      );
+    } catch (e) {
+      debugPrint('Warning: Failed to initialize Supabase: $e');
+    }
+  } else {
+    debugPrint(
+      'Warning: Supabase keys are missing, skipping Supabase intialization.',
+    );
+  }
+
   runApp(const MyApp());
 }
 
