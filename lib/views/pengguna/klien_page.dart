@@ -444,7 +444,7 @@ class _ClientPageState extends State<ClientPage> {
                       final client = filteredWithMeta[index].client;
                       final isPending = filteredWithMeta[index].isPending;
 
-                      final hasDebt = client.debt > 0;
+                      final hasDebt = client.computedDebt > 0;
                       final debtBg = hasDebt
                           ? (isDark
                                 ? const Color(0xFF4D2B2B)
@@ -619,7 +619,7 @@ class _ClientPageState extends State<ClientPage> {
                                           const SizedBox(width: 4),
                                           Text(
                                             hasDebt
-                                                ? formatRupiah(client.debt)
+                                                ? formatRupiah(client.computedDebt)
                                                 : 'Lunas',
                                             style: TextStyle(
                                               fontFamily: 'Poppins',

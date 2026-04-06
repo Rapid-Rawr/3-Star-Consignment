@@ -98,22 +98,56 @@ class _BarangKonsinyasiPageState extends State<BarangKonsinyasiPage> {
     final Color emptyIcon = isDark ? Colors.white24 : Colors.black26;
     final Color emptyText = isDark ? Colors.white38 : const Color(0xFF9E9E9E);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Barang Konsinyasi',
-          style: TextStyle(fontFamily: 'Poppins'),
-        ),
-      ),
-      floatingActionButton: StreamBuilder<QuerySnapshot>(
-        stream: _stream,
-        builder: (context, snap) {
-          final clients = (snap.data?.docs ?? [])
-              .map((d) => ClientModel.fromMap(
-                    d.id, d.data() as Map<String, dynamic>))
+    return StreamBuilder<QuerySnapshot>(
+      stream: _stream,
+      builder: (context, snap) {
+        final allClients = (snap.data?.docs ?? [])
+            .map((d) =>
+                ClientModel.fromMap(d.id, d.data() as Map<String, dynamic>))
+            .toList();
+
+        final allCats =
+            allClients
+                .expand((c) => c.borrowedItems.map((b) => b.catalogCategory))
+                .toSet()
+                .toList()
+              ..sort();
+
+        var clients = List<ClientModel>.from(allClients);
+        if (_searchQuery.isNotEmpty) {
+          clients = clients
+              .where(
+                (c) =>
+                    c.name.toLowerCase().contains(_searchQuery) ||
+                    c.address.toLowerCase().contains(_searchQuery) ||
+                    c.phone.toLowerCase().contains(_searchQuery),
+              )
               .toList();
-          return FloatingActionButton.extended(
-            onPressed: () => _showSerahkanSheet(context, clients, isDark),
+        }
+        if (_selectedCategory != null) {
+          clients = clients
+              .where(
+                (c) => c.borrowedItems.any(
+                  (b) => b.catalogCategory == _selectedCategory,
+                ),
+              )
+              .toList();
+        }
+
+        final filterOptions = <FilterChipOption<String>>[
+          const FilterChipOption(label: 'Semua', value: null),
+          ...allCats.map((c) => FilterChipOption(label: c, value: c)),
+        ];
+
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text(
+              'Barang Konsinyasi',
+              style: TextStyle(fontFamily: 'Poppins'),
+            ),
+          ),
+          floatingActionButton: FloatingActionButton.extended(
+            onPressed: () => _showSerahkanSheet(context, allClients, isDark),
             icon: const Icon(Icons.add_rounded),
             label: const Text(
               'Serahkan',
@@ -122,53 +156,8 @@ class _BarangKonsinyasiPageState extends State<BarangKonsinyasiPage> {
             backgroundColor:
                 isDark ? const Color(0xFF4DB6AC) : const Color(0xFF00796B),
             foregroundColor: Colors.white,
-          );
-        },
-      ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: _stream,
-        builder: (context, snap) {
-          final allClients = (snap.data?.docs ?? [])
-              .map(
-                (d) =>
-                    ClientModel.fromMap(d.id, d.data() as Map<String, dynamic>),
-              )
-              .toList();
-
-          final allCats =
-              allClients
-                  .expand((c) => c.borrowedItems.map((b) => b.catalogCategory))
-                  .toSet()
-                  .toList()
-                ..sort();
-
-          var clients = List<ClientModel>.from(allClients);
-          if (_searchQuery.isNotEmpty) {
-            clients = clients
-                .where(
-                  (c) =>
-                      c.name.toLowerCase().contains(_searchQuery) ||
-                      c.address.toLowerCase().contains(_searchQuery) ||
-                      c.phone.toLowerCase().contains(_searchQuery),
-                )
-                .toList();
-          }
-          if (_selectedCategory != null) {
-            clients = clients
-                .where(
-                  (c) => c.borrowedItems.any(
-                    (b) => b.catalogCategory == _selectedCategory,
-                  ),
-                )
-                .toList();
-          }
-
-          final filterOptions = <FilterChipOption<String>>[
-            const FilterChipOption(label: 'Semua', value: null),
-            ...allCats.map((c) => FilterChipOption(label: c, value: c)),
-          ];
-
-          return Column(
+          ),
+          body: Column(
             children: [
               SearchFilterBar<String>(
                 searchController: _searchController,
@@ -250,9 +239,9 @@ class _BarangKonsinyasiPageState extends State<BarangKonsinyasiPage> {
                 ),
               ),
             ],
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 }

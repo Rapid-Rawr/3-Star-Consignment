@@ -13,7 +13,7 @@ class OperatorController {
   Stream<QuerySnapshot> getOperatorsStream() {
     return firestore
         .collection(collectionName)
-        .snapshots(includeMetadataChanges: true);
+        .snapshots();
   }
 
   void setRoleFilter(String? role) {

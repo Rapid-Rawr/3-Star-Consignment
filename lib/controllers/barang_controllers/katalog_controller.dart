@@ -15,7 +15,7 @@ class CatalogController {
   Stream<QuerySnapshot> getCatalogStream() {
     return firestore
         .collection(collectionName)
-        .snapshots(includeMetadataChanges: true);
+        .snapshots();
   }
 
   void setSearchQuery(String query) => searchQuery = query;

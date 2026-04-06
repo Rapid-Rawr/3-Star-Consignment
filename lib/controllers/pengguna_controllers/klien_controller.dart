@@ -9,7 +9,7 @@ class ClientController {
   Stream<QuerySnapshot> getClientsStream() {
     return firestore
         .collection(collectionName)
-        .snapshots(includeMetadataChanges: true);
+        .snapshots();
   }
 
   String? validateName(String? value) {
