@@ -78,8 +78,9 @@ class _BarangKonsinyasiPageState extends State<BarangKonsinyasiPage> {
   void _showSerahkanSheet(
     BuildContext context,
     List<ClientModel> clients,
-    bool isDark,
-  ) {
+    bool isDark, {
+    ClientModel? initialClient,
+  }) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -88,6 +89,7 @@ class _BarangKonsinyasiPageState extends State<BarangKonsinyasiPage> {
         clients: clients,
         clientController: _controller,
         isDark: isDark,
+        initialClient: initialClient,
       ),
     );
   }
@@ -102,8 +104,10 @@ class _BarangKonsinyasiPageState extends State<BarangKonsinyasiPage> {
       stream: _stream,
       builder: (context, snap) {
         final allClients = (snap.data?.docs ?? [])
-            .map((d) =>
-                ClientModel.fromMap(d.id, d.data() as Map<String, dynamic>))
+            .map(
+              (d) =>
+                  ClientModel.fromMap(d.id, d.data() as Map<String, dynamic>),
+            )
             .toList();
 
         final allCats =
@@ -150,11 +154,15 @@ class _BarangKonsinyasiPageState extends State<BarangKonsinyasiPage> {
             onPressed: () => _showSerahkanSheet(context, allClients, isDark),
             icon: const Icon(Icons.add_rounded),
             label: const Text(
-              'Serahkan',
-              style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600),
+              'Konsinyasi',
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontWeight: FontWeight.w600,
+              ),
             ),
-            backgroundColor:
-                isDark ? const Color(0xFF4DB6AC) : const Color(0xFF00796B),
+            backgroundColor: isDark
+                ? const Color(0xFF4DB6AC)
+                : const Color(0xFF00796B),
             foregroundColor: Colors.white,
           ),
           body: Column(
@@ -232,6 +240,12 @@ class _BarangKonsinyasiPageState extends State<BarangKonsinyasiPage> {
                           isDark: isDark,
                           formatDate: _formatDate,
                           onDetail: () => _showDetail(context, client, isDark),
+                          onSerahkan: () => _showSerahkanSheet(
+                            context,
+                            allClients,
+                            isDark,
+                            initialClient: client,
+                          ),
                         );
                       },
                     );
@@ -252,6 +266,7 @@ class _ClientCard extends StatelessWidget {
   final bool isDark;
   final String Function(DateTime?) formatDate;
   final VoidCallback onDetail;
+  final VoidCallback onSerahkan;
 
   const _ClientCard({
     required this.client,
@@ -259,6 +274,7 @@ class _ClientCard extends StatelessWidget {
     required this.isDark,
     required this.formatDate,
     required this.onDetail,
+    required this.onSerahkan,
   });
 
   @override
@@ -510,6 +526,26 @@ class _ClientCard extends StatelessWidget {
                     ],
                   ),
                   const Spacer(),
+                  Material(
+                    color: tealBg,
+                    shape: const CircleBorder(),
+                    clipBehavior: Clip.hardEdge,
+                    child: Tooltip(
+                      message: 'Tambah Konsinyasi',
+                      child: InkWell(
+                        onTap: onSerahkan,
+                        child: Container(
+                          padding: const EdgeInsets.all(10),
+                          child: Icon(
+                            Icons.add_rounded,
+                            color: tealFg,
+                            size: 22,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
                   OutlinedButton.icon(
                     onPressed: onDetail,
                     icon: const Icon(Icons.list_alt_rounded, size: 15),
@@ -539,15 +575,38 @@ class _ClientCard extends StatelessWidget {
                   color: isDark ? const Color(0xFF3A3740) : Colors.grey[50],
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Center(
-                  child: Text(
-                    'Belum ada barang konsinyasi',
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 12,
-                      color: subColor,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Belum ada barang konsinyasi',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 12,
+                        color: subColor,
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 12),
+                    Material(
+                      color: tealBg,
+                      shape: const CircleBorder(),
+                      clipBehavior: Clip.hardEdge,
+                      child: Tooltip(
+                        message: 'Tambah Konsinyasi',
+                        child: InkWell(
+                          onTap: onSerahkan,
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            child: Icon(
+                              Icons.add_rounded,
+                              color: tealFg,
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -936,8 +995,6 @@ class _ClientDetailSheetState extends State<_ClientDetailSheet> {
   }
 }
 
-// ─── Serahkan Bottom Sheet ────────────────────────────────────────────────────
-
 class _SelectedItem {
   final CatalogModel catalog;
   int quantity;
@@ -948,11 +1005,13 @@ class _SerahkanBottomSheet extends StatefulWidget {
   final List<ClientModel> clients;
   final ClientController clientController;
   final bool isDark;
+  final ClientModel? initialClient;
 
   const _SerahkanBottomSheet({
     required this.clients,
     required this.clientController,
     required this.isDark,
+    this.initialClient,
   });
 
   @override
@@ -965,6 +1024,8 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
   late final Stream<QuerySnapshot> _catalogStream;
 
   final TextEditingController _searchController = TextEditingController();
+  final TextEditingController _clientSearchController = TextEditingController();
+  final FocusNode _clientFocusNode = FocusNode();
   final Map<String, _SelectedItem> _selected = {};
 
   ClientModel? _selectedClient;
@@ -973,17 +1034,24 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
   @override
   void initState() {
     super.initState();
-    _catalogController =
-        CatalogController(firestore: FirebaseFirestore.instance);
-    _consignmentRequestController =
-        ConsignmentRequestController(firestore: FirebaseFirestore.instance);
+    _catalogController = CatalogController(
+      firestore: FirebaseFirestore.instance,
+    );
+    _consignmentRequestController = ConsignmentRequestController(
+      firestore: FirebaseFirestore.instance,
+    );
     _catalogStream = _catalogController.getCatalogStream();
-    if (widget.clients.isNotEmpty) _selectedClient = widget.clients.first;
+    if (widget.initialClient != null) {
+      _selectedClient = widget.initialClient;
+      _clientSearchController.text = widget.initialClient!.name;
+    }
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _clientSearchController.dispose();
+    _clientFocusNode.dispose();
     super.dispose();
   }
 
@@ -1014,35 +1082,37 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
     setState(() => _isSubmitting = true);
 
     final newItems = _selected.values
-        .map((si) => {
-              'catalogId': si.catalog.id,
-              'catalogName': si.catalog.name,
-              'catalogPrice': si.catalog.price,
-              'catalogCategory': si.catalog.category,
-              'catalogImagePath': si.catalog.imagePath,
-              'quantity': si.quantity,
-            })
+        .map(
+          (si) => {
+            'catalogId': si.catalog.id,
+            'catalogName': si.catalog.name,
+            'catalogPrice': si.catalog.price,
+            'catalogCategory': si.catalog.category,
+            'catalogImagePath': si.catalog.imagePath,
+            'quantity': si.quantity,
+          },
+        )
         .toList();
 
-    // 1. Tambah ke borrowedItems klien
     final result = await widget.clientController.addBorrowedItemsDirect(
       clientId: _selectedClient!.id,
       newItems: newItems,
     );
 
-    // 2. Simpan record ke consignment_requests sebagai direct received
     if (result['success'] == true) {
       final consignmentItems = _selected.values
-          .map((si) => ConsignmentItemEntry(
-                catalogId: si.catalog.id,
-                catalogName: si.catalog.name,
-                catalogCategory: si.catalog.category,
-                catalogImagePath: si.catalog.imagePath,
-                catalogPrice: si.catalog.price,
-                quantity: si.quantity,
-                approvedQty: si.quantity,
-                itemStatus: ConsignmentItemStatus.approved,
-              ))
+          .map(
+            (si) => ConsignmentItemEntry(
+              catalogId: si.catalog.id,
+              catalogName: si.catalog.name,
+              catalogCategory: si.catalog.category,
+              catalogImagePath: si.catalog.imagePath,
+              catalogPrice: si.catalog.price,
+              quantity: si.quantity,
+              approvedQty: si.quantity,
+              itemStatus: ConsignmentItemStatus.approved,
+            ),
+          )
           .toList();
 
       await _consignmentRequestController.createDirectReceivedRequest(
@@ -1065,8 +1135,9 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
                 ? 'Barang berhasil diserahkan ke ${_selectedClient!.name}'
                 : 'Gagal: ${result['error'] ?? 'Terjadi kesalahan'}',
           ),
-          backgroundColor:
-              result['success'] == true ? Colors.green : Colors.red,
+          backgroundColor: result['success'] == true
+              ? Colors.green
+              : Colors.red,
         ),
       );
     }
@@ -1074,28 +1145,33 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final Color sheetBg =
-        widget.isDark ? const Color(0xFF2B2930) : Colors.white;
-    final Color divider =
-        widget.isDark ? const Color(0xFF49454F) : const Color(0xFFE0E0E0);
-    final Color nameColor =
-        widget.isDark ? Colors.white : const Color(0xFF1D1B20);
-    final Color subColor =
-        widget.isDark ? Colors.white54 : const Color(0xFF757575);
-    final Color tealFg =
-        widget.isDark ? const Color(0xFF4DB6AC) : const Color(0xFF00796B);
-    final Color tealBg =
-        widget.isDark ? const Color(0xFF1A3A3A) : const Color(0xFFE0F2F1);
-    final Color priceColor =
-        widget.isDark ? const Color(0xFF80CBC4) : const Color(0xFF2E7D32);
-    final Color chipBg =
-        widget.isDark ? const Color(0xFF3A3740) : Colors.grey[100]!;
-    final Color chipBorder =
-        widget.isDark ? const Color(0xFF49454F) : const Color(0xFFE0E0E0);
+    final Color sheetBg = widget.isDark
+        ? const Color(0xFF2B2930)
+        : Colors.white;
+    final Color divider = widget.isDark
+        ? const Color(0xFF49454F)
+        : const Color(0xFFE0E0E0);
+    final Color nameColor = widget.isDark
+        ? Colors.white
+        : const Color(0xFF1D1B20);
+    final Color subColor = widget.isDark
+        ? Colors.white54
+        : const Color(0xFF757575);
+    final Color tealFg = widget.isDark
+        ? const Color(0xFF4DB6AC)
+        : const Color(0xFF00796B);
+    final Color tealBg = widget.isDark
+        ? const Color(0xFF1A3A3A)
+        : const Color(0xFFE0F2F1);
+    final Color priceColor = widget.isDark
+        ? const Color(0xFF80CBC4)
+        : const Color(0xFF2E7D32);
 
     final selectedList = _selected.values.toList();
-    final double totalEst =
-        selectedList.fold(0.0, (s, e) => s + e.catalog.price * e.quantity);
+    final double totalEst = selectedList.fold(
+      0.0,
+      (s, e) => s + e.catalog.price * e.quantity,
+    );
     final int totalQty = selectedList.fold(0, (s, e) => s + e.quantity);
 
     return Container(
@@ -1119,7 +1195,6 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
         expand: false,
         builder: (context, sc) => Column(
           children: [
-            // Handle
             Padding(
               padding: const EdgeInsets.only(top: 10, bottom: 6),
               child: Container(
@@ -1131,7 +1206,6 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
                 ),
               ),
             ),
-            // Header
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 2, 8, 10),
               child: Row(
@@ -1140,7 +1214,7 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'Serahkan Barang Langsung',
+                      'Tambah Barang Konsinyasi',
                       style: TextStyle(
                         fontFamily: 'Poppins',
                         fontWeight: FontWeight.w700,
@@ -1152,7 +1226,9 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
                   if (totalQty > 0)
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: tealBg,
                         borderRadius: BorderRadius.circular(20),
@@ -1174,46 +1250,183 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
                 ],
               ),
             ),
-            // Client dropdown
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-                decoration: BoxDecoration(
-                  border: Border.all(color: divider),
-                  borderRadius: BorderRadius.circular(12),
-                  color: chipBg,
-                ),
-                child: DropdownButton<ClientModel>(
-                  value: _selectedClient,
-                  isExpanded: true,
-                  underline: const SizedBox(),
-                  dropdownColor: sheetBg,
-                  icon: Icon(Icons.keyboard_arrow_down, color: tealFg),
-                  hint: Text(
-                    'Pilih Klien',
-                    style: TextStyle(
-                        fontFamily: 'Poppins', fontSize: 13, color: subColor),
-                  ),
-                  items: widget.clients
-                      .map((c) => DropdownMenuItem(
-                            value: c,
-                            child: Text(
-                              c.name.isNotEmpty ? c.name : 'Klien Tanpa Nama',
-                              style: TextStyle(
+              child: _selectedClient == null
+                  ? Autocomplete<ClientModel>(
+                      optionsBuilder: (TextEditingValue textValue) {
+                        if (textValue.text.isEmpty) {
+                          return widget.clients;
+                        }
+                        final q = textValue.text.toLowerCase();
+                        return widget.clients.where(
+                          (c) =>
+                              c.name.toLowerCase().contains(q) ||
+                              c.address.toLowerCase().contains(q) ||
+                              c.phone.toLowerCase().contains(q),
+                        );
+                      },
+                      displayStringForOption: (c) => c.name,
+                      fieldViewBuilder:
+                          (
+                            context,
+                            textEditingController,
+                            focusNode,
+                            onFieldSubmitted,
+                          ) {
+                            return TextField(
+                              controller: textEditingController,
+                              focusNode: focusNode,
+                              decoration: InputDecoration(
+                                hintText: 'Cari nama klien...',
+                                hintStyle: TextStyle(
                                   fontFamily: 'Poppins',
                                   fontSize: 13,
-                                  color: nameColor),
-                              overflow: TextOverflow.ellipsis,
+                                  color: widget.isDark
+                                      ? Colors.white38
+                                      : Colors.black38,
+                                ),
+                                prefixIcon: const Icon(
+                                  Icons.person_search_outlined,
+                                  size: 20,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: divider),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: divider),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: tealFg),
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 10,
+                                ),
+                                isDense: true,
+                              ),
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 13,
+                                color: nameColor,
+                              ),
+                            );
+                          },
+                      optionsViewBuilder: (context, onSelected, options) {
+                        return Align(
+                          alignment: Alignment.topLeft,
+                          child: Material(
+                            elevation: 4,
+                            borderRadius: BorderRadius.circular(12),
+                            color: sheetBg,
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(
+                                maxHeight: 200,
+                                maxWidth: 380,
+                              ),
+                              child: ListView.builder(
+                                padding: EdgeInsets.zero,
+                                shrinkWrap: true,
+                                itemCount: options.length,
+                                itemBuilder: (context, index) {
+                                  final client = options.elementAt(index);
+                                  return InkWell(
+                                    onTap: () => onSelected(client),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 12,
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            Icons.store_outlined,
+                                            size: 16,
+                                            color: tealFg,
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  client.name.isNotEmpty
+                                                      ? client.name
+                                                      : 'Klien Tanpa Nama',
+                                                  style: TextStyle(
+                                                    fontFamily: 'Poppins',
+                                                    fontSize: 13,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: nameColor,
+                                                  ),
+                                                ),
+                                                if (client.address.isNotEmpty)
+                                                  Text(
+                                                    client.address,
+                                                    style: TextStyle(
+                                                      fontFamily: 'Poppins',
+                                                      fontSize: 11,
+                                                      color: subColor,
+                                                    ),
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                  ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
                             ),
-                          ))
-                      .toList(),
-                  onChanged: (val) => setState(() => _selectedClient = val),
-                ),
-              ),
+                          ),
+                        );
+                      },
+                      onSelected: (client) =>
+                          setState(() => _selectedClient = client),
+                    )
+                  : Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: tealFg),
+                        borderRadius: BorderRadius.circular(12),
+                        color: tealBg,
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.store_outlined, color: tealFg, size: 18),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              _selectedClient!.name.isNotEmpty
+                                  ? _selectedClient!.name
+                                  : 'Klien Tanpa Nama',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: tealFg,
+                              ),
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap: () => setState(() => _selectedClient = null),
+                            child: Icon(Icons.close, size: 18, color: tealFg),
+                          ),
+                        ],
+                      ),
+                    ),
             ),
-            // Search katalog
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
               child: TextField(
@@ -1240,13 +1453,14 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
                     borderSide: BorderSide(color: tealFg),
                   ),
                   contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 10),
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
                   isDense: true,
                 ),
               ),
             ),
             Divider(height: 1, color: divider),
-            // Catalog list
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
                 stream: _catalogStream,
@@ -1254,15 +1468,20 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
                   if (snap.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
                   }
-                  final query =
-                      _searchController.text.trim().toLowerCase();
+                  final query = _searchController.text.trim().toLowerCase();
                   final allItems = (snap.data?.docs ?? [])
-                      .map((d) => CatalogModel.fromMap(
-                          d.id, d.data() as Map<String, dynamic>))
-                      .where((c) =>
-                          query.isEmpty ||
-                          c.name.toLowerCase().contains(query) ||
-                          c.category.toLowerCase().contains(query))
+                      .map(
+                        (d) => CatalogModel.fromMap(
+                          d.id,
+                          d.data() as Map<String, dynamic>,
+                        ),
+                      )
+                      .where(
+                        (c) =>
+                            query.isEmpty ||
+                            c.name.toLowerCase().contains(query) ||
+                            c.category.toLowerCase().contains(query),
+                      )
                       .toList();
 
                   if (allItems.isEmpty) {
@@ -1270,9 +1489,10 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
                       child: Text(
                         'Katalog tidak ditemukan',
                         style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 13,
-                            color: subColor),
+                          fontFamily: 'Poppins',
+                          fontSize: 13,
+                          color: subColor,
+                        ),
                       ),
                     );
                   }
@@ -1280,7 +1500,9 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
                   return ListView.separated(
                     controller: sc,
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 8),
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     itemCount: allItems.length,
                     separatorBuilder: (_, __) =>
                         Divider(height: 1, color: divider),
@@ -1310,8 +1532,11 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
                                   ),
                                 ),
                                 child: isSelected
-                                    ? const Icon(Icons.check,
-                                        size: 16, color: Colors.white)
+                                    ? const Icon(
+                                        Icons.check,
+                                        size: 16,
+                                        color: Colors.white,
+                                      )
                                     : null,
                               ),
                             ),
@@ -1324,8 +1549,7 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
                             const SizedBox(width: 10),
                             Expanded(
                               child: Column(
-                                crossAxisAlignment:
-                                    CrossAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
                                     catalog.name,
@@ -1363,28 +1587,8 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
                               _InlineQtyStepper(
                                 quantity: selItem.quantity,
                                 isDark: widget.isDark,
-                                onDecrement: () =>
-                                    _changeQty(catalog.id, -1),
-                                onIncrement: () =>
-                                    _changeQty(catalog.id, 1),
-                              )
-                            else
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: chipBg,
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(color: chipBorder),
-                                ),
-                                child: Text(
-                                  'Pilih untuk serahkan',
-                                  style: TextStyle(
-                                    fontFamily: 'Poppins',
-                                    fontSize: 11,
-                                    color: subColor,
-                                  ),
-                                ),
+                                onDecrement: () => _changeQty(catalog.id, -1),
+                                onIncrement: () => _changeQty(catalog.id, 1),
                               ),
                           ],
                         ),
@@ -1394,7 +1598,6 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
                 },
               ),
             ),
-            // Footer
             Container(
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 20),
               decoration: BoxDecoration(
@@ -1438,13 +1641,15 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
                         )
                       : GradientButton(
                           label: 'Serahkan',
-                          onPressed: (_selectedClient == null ||
-                                  _selected.isEmpty)
+                          onPressed:
+                              (_selectedClient == null || _selected.isEmpty)
                               ? () {}
                               : _serahkan,
                           borderRadius: 12,
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 28, vertical: 12),
+                            horizontal: 28,
+                            vertical: 12,
+                          ),
                         ),
                 ],
               ),
@@ -1471,13 +1676,14 @@ class _InlineQtyStepper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color iconColor =
-        isDark ? const Color(0xFF80CBC4) : const Color(0xFF2E7D32);
-    final Color textColor =
-        isDark ? Colors.white : const Color(0xFF1D1B20);
+    final Color iconColor = isDark
+        ? const Color(0xFF80CBC4)
+        : const Color(0xFF2E7D32);
+    final Color textColor = isDark ? Colors.white : const Color(0xFF1D1B20);
     final Color bg = isDark ? const Color(0xFF3A3740) : Colors.grey[100]!;
-    final Color border =
-        isDark ? const Color(0xFF49454F) : const Color(0xFFE0E0E0);
+    final Color border = isDark
+        ? const Color(0xFF49454F)
+        : const Color(0xFFE0E0E0);
 
     return Container(
       height: 32,
@@ -1491,8 +1697,9 @@ class _InlineQtyStepper extends StatelessWidget {
         children: [
           InkWell(
             onTap: onDecrement,
-            borderRadius:
-                const BorderRadius.horizontal(left: Radius.circular(20)),
+            borderRadius: const BorderRadius.horizontal(
+              left: Radius.circular(20),
+            ),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
               child: Icon(
@@ -1516,8 +1723,9 @@ class _InlineQtyStepper extends StatelessWidget {
           ),
           InkWell(
             onTap: onIncrement,
-            borderRadius:
-                const BorderRadius.horizontal(right: Radius.circular(20)),
+            borderRadius: const BorderRadius.horizontal(
+              right: Radius.circular(20),
+            ),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
               child: Icon(Icons.add, size: 16, color: iconColor),
@@ -1528,4 +1736,3 @@ class _InlineQtyStepper extends StatelessWidget {
     );
   }
 }
-

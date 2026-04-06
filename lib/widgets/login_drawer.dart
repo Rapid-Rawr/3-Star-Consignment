@@ -19,7 +19,6 @@ class LoginDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Baca mode tema sekali di sini → dipakai di seluruh widget
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final Color bgColor = isDark ? const Color(0xFF1D1B20) : Colors.white;
     final Color contentColor = isDark ? Colors.white : const Color(0xFF49454F);
@@ -207,7 +206,7 @@ class LoginDrawer extends StatelessWidget {
                           );
                           if (confirmed && context.mounted) {
                             onSignOut();
-                            Navigator.pop(context); // tutup drawer
+                            Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text('Anda telah berhasil keluar'),
@@ -256,15 +255,14 @@ class LoginDrawer extends StatelessWidget {
                                 ),
                               ),
                               onTap: () {
-                                // Navigator.pop(context);
                                 onSignIn();
                               },
                             ),
                   ],
-                ), // close Column
-              ), // close Material
-            ), // close Theme
-          ), // close Container
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );

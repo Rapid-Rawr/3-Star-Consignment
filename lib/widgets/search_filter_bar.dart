@@ -59,7 +59,6 @@ class SearchFilterBar<T> extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Search bar
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: TextField(
@@ -86,7 +85,6 @@ class SearchFilterBar<T> extends StatelessWidget {
             onChanged: onSearchChanged,
           ),
         ),
-        // Filter chips
         if (filters.isNotEmpty)
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
@@ -123,8 +121,6 @@ class SearchFilterBar<T> extends StatelessWidget {
   }
 }
 
-/// Custom chip dengan gradient saat selected di light mode,
-/// warna gelap solid di dark mode.
 class _AppFilterChip extends StatelessWidget {
   final String label;
   final bool isSelected;
@@ -138,7 +134,6 @@ class _AppFilterChip extends StatelessWidget {
     required this.onTap,
   });
 
-  // Gradient sama seperti drawer & FAB
   static const List<Color> _lightGradient = [
     Color(0xFF67636D),
     Color(0xFF1D1B20),
@@ -191,7 +186,6 @@ class _AppFilterChip extends StatelessWidget {
       );
     }
 
-    // Unselected — chip biasa tanpa border / background mencolok
     final unselectedColor = isDark ? Colors.white70 : const Color(0xFF49454F);
     final unselectedBg = isDark
         ? const Color(0xFF2C2A30)

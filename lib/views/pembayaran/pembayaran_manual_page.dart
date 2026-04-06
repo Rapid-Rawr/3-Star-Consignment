@@ -7,6 +7,7 @@ import '../../models/pembayaran_models/pembayaran_model.dart';
 import '../../widgets/search_filter_bar.dart';
 import '../../widgets/catalog_image.dart';
 import '../../widgets/gradient_button.dart';
+import '../../widgets/app_dialog.dart';
 import '../../utils/currency_format.dart';
 
 class _PayItem {
@@ -534,7 +535,9 @@ class _PaymentBottomSheetState extends State<_PaymentBottomSheet> {
   void initState() {
     super.initState();
     _controller = ClientController(firestore: FirebaseFirestore.instance);
-    _payController = PembayaranController(firestore: FirebaseFirestore.instance);
+    _payController = PembayaranController(
+      firestore: FirebaseFirestore.instance,
+    );
     _selected = {};
   }
 
@@ -581,32 +584,32 @@ class _PaymentBottomSheetState extends State<_PaymentBottomSheet> {
     if (_selected.isEmpty || _isPaying) return;
     setState(() => _isPaying = true);
 
-    // Siapkan raw maps dari borrowedItems saat ini
     final currentItems = widget.client.borrowedItems
         .map((b) => b.toMap())
         .toList();
 
-    // Buat map index → qty yang dibayar
     final deductions = _selected.map(
       (index, payItem) => MapEntry(index, payItem.qty),
     );
 
-    // 1. Kurangi borrowed items di Firestore
     final result = await _controller.deductBorrowedItems(
       clientId: widget.client.id,
       currentItems: currentItems,
       deductions: deductions,
     );
 
-    // 2. Simpan record history pembayaran
     if (result['success'] == true) {
-      final paidItems = _selected.values.map((p) => PaidItem(
-        catalogName: p.item.catalogName,
-        catalogCategory: p.item.catalogCategory,
-        catalogImagePath: p.item.catalogImagePath,
-        catalogPrice: p.item.catalogPrice,
-        quantity: p.qty,
-      )).toList();
+      final paidItems = _selected.values
+          .map(
+            (p) => PaidItem(
+              catalogName: p.item.catalogName,
+              catalogCategory: p.item.catalogCategory,
+              catalogImagePath: p.item.catalogImagePath,
+              catalogPrice: p.item.catalogPrice,
+              quantity: p.qty,
+            ),
+          )
+          .toList();
 
       final totalAmount = paidItems.fold(
         0.0,
@@ -634,8 +637,9 @@ class _PaymentBottomSheetState extends State<_PaymentBottomSheet> {
                 ? 'Pembayaran manual berhasil dicatat'
                 : 'Gagal: ${result['error'] ?? 'Terjadi kesalahan'}',
           ),
-          backgroundColor:
-              result['success'] == true ? Colors.green : Colors.red,
+          backgroundColor: result['success'] == true
+              ? Colors.green
+              : Colors.red,
         ),
       );
     }
@@ -980,7 +984,31 @@ class _PaymentBottomSheetState extends State<_PaymentBottomSheet> {
                         )
                       : GradientButton(
                           label: 'Bayar',
-                          onPressed: _selected.isEmpty ? () {} : _pay,
+                          onPressed: _selected.isEmpty
+                              ? () {}
+                              : () => showAppDialog(
+                                  context: context,
+                                  titleIcon: const Icon(
+                                    Icons.warning_amber_rounded,
+                                  ),
+                                  title: 'Pembayaran',
+                                  content:
+                                      'Bayar ${_selected.length} item senilai ${formatRupiah(totalPrice)} untuk ${widget.client.name}?',
+                                  actions: [
+                                    AppDialogAction(
+                                      label: 'Batal',
+                                      onPressed: () => Navigator.pop(context),
+                                    ),
+                                    AppDialogAction(
+                                      label: 'Bayar',
+                                      type: AppDialogActionType.gradient,
+                                      onPressed: () {
+                                        Navigator.pop(context);
+                                        _pay();
+                                      },
+                                    ),
+                                  ],
+                                ),
                           borderRadius: 12,
                           padding: const EdgeInsets.symmetric(
                             horizontal: 28,

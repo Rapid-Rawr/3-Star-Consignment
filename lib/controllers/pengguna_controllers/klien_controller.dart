@@ -7,9 +7,7 @@ class ClientController {
   ClientController({required this.firestore});
 
   Stream<QuerySnapshot> getClientsStream() {
-    return firestore
-        .collection(collectionName)
-        .snapshots();
+    return firestore.collection(collectionName).snapshots();
   }
 
   String? validateName(String? value) {
@@ -92,6 +90,7 @@ class ClientController {
       return {'success': false, 'error': e.toString()};
     }
   }
+
   Future<Map<String, dynamic>> deleteClient(String id) async {
     try {
       await firestore.collection(collectionName).doc(id).delete();
@@ -101,9 +100,6 @@ class ClientController {
     }
   }
 
-  /// Mengurangi kuantitas [borrowedItems] klien berdasarkan pembayaran.
-  /// [deductions] adalah map index → jumlah yang dibayar.
-  /// Item yang qty-nya menjadi 0 atau kurang akan dihapus dari list.
   Future<Map<String, dynamic>> deductBorrowedItems({
     required String clientId,
     required List<Map<String, dynamic>> currentItems,
@@ -120,7 +116,6 @@ class ClientController {
           item['quantity'] = newQty;
           updated.add(item);
         }
-        // jika newQty <= 0, item dihapus (tidak dimasukkan ke updated)
       }
 
       await firestore.collection(collectionName).doc(clientId).update({
@@ -133,11 +128,9 @@ class ClientController {
     }
   }
 
-  /// Menambah barang langsung ke [borrowedItems] klien tanpa melalui pengajuan.
-  /// Menggunakan merge key [catalogId_price] agar item yang sama diakumulasi.
   Future<Map<String, dynamic>> addBorrowedItemsDirect({
     required String clientId,
-    required List<Map<String, dynamic>> newItems, // [{catalogId, catalogName, catalogPrice, catalogCategory, catalogImagePath, quantity}]
+    required List<Map<String, dynamic>> newItems,
   }) async {
     try {
       final clientRef = firestore.collection(collectionName).doc(clientId);
@@ -170,10 +163,7 @@ class ClientController {
               'lastReceivedAt': now,
             };
           } else {
-            mergedMap[key] = {
-              ...item,
-              'lastReceivedAt': now,
-            };
+            mergedMap[key] = {...item, 'lastReceivedAt': now};
           }
         }
 

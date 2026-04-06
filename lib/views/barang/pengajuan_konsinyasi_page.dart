@@ -7,6 +7,7 @@ import '../../models/barang_models/katalog_model.dart';
 import '../../widgets/search_filter_bar.dart';
 import '../../widgets/gradient_button.dart';
 import '../../widgets/catalog_image.dart';
+import '../../widgets/app_dialog.dart';
 import '../../utils/currency_format.dart';
 
 class _SelectedItem {
@@ -874,7 +875,29 @@ class _SelectionBottomSheetState extends State<_SelectionBottomSheet> {
                       )
                     : GradientButton(
                         label: 'Kirim Pengajuan',
-                        onPressed: widget.onSubmit,
+                        onPressed: () => showAppDialog(
+                          context: context,
+                          titleIcon: const Icon(
+                            Icons.warning_amber_rounded,
+                          ),
+                          title: 'Kirim Pengajuan',
+                          content:
+                              'Kirim pengajuan ${widget.selected.length} item dengan total estimasi ${formatRupiah(totalPrice)}?',
+                          actions: [
+                            AppDialogAction(
+                              label: 'Batal',
+                              onPressed: () => Navigator.pop(context),
+                            ),
+                            AppDialogAction(
+                              label: 'Kirim',
+                              type: AppDialogActionType.gradient,
+                              onPressed: () {
+                                Navigator.pop(context);
+                                widget.onSubmit();
+                              },
+                            ),
+                          ],
+                        ),
                         borderRadius: 12,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 20,

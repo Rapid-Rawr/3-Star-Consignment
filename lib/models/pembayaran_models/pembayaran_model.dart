@@ -37,7 +37,7 @@ class PembayaranModel {
   final String clientId;
   final String clientName;
   final String clientAddress;
-  final String paymentMethod; // 'cash', 'transfer', dll
+  final String paymentMethod;
   final List<PaidItem> items;
   final double totalAmount;
   final DateTime? paidAt;

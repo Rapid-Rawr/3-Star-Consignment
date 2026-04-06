@@ -1,8 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/pembayaran_models/pembayaran_model.dart';
 
-/// Handles delivery history records in the [delivery_history] Firestore collection.
-/// Reuses [PembayaranModel] and [PaidItem] as the data shape is identical.
 class PenyerahanController {
   final FirebaseFirestore firestore;
   final String collectionName = 'delivery_history';

@@ -119,10 +119,8 @@ class ClientModel {
     );
   }
 
-  /// Total hutang dihitung otomatis dari borrowedItems.
-  /// Ini selalu sinkron tanpa perlu update field terpisah di Firestore.
   double get computedDebt => borrowedItems.fold(
-        0.0,
-        (sum, item) => sum + item.catalogPrice * item.quantity,
-      );
+    0.0,
+    (sum, item) => sum + item.catalogPrice * item.quantity,
+  );
 }

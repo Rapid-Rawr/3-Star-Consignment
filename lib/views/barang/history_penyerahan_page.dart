@@ -89,14 +89,23 @@ class _HistoryPenyerahanPageState extends State<HistoryPenyerahanPage> {
   String _formatDate(DateTime? dt) {
     if (dt == null) return '-';
     const m = [
-      '', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
-      'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des',
+      '',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'Mei',
+      'Jun',
+      'Jul',
+      'Agu',
+      'Sep',
+      'Okt',
+      'Nov',
+      'Des',
     ];
     return '${dt.day} ${m[dt.month]} ${dt.year}';
   }
 
-  /// Build a PembayaranModel-like object from the delivery_history doc.
-  /// We re-use PembayaranModel with paymentMethod = 'serahkan' for convenience.
   PembayaranModel _fromDeliveryDoc(String id, Map<String, dynamic> m) {
     final rawItems = m['items'] as List<dynamic>? ?? [];
     return PembayaranModel(
@@ -132,10 +141,12 @@ class _HistoryPenyerahanPageState extends State<HistoryPenyerahanPage> {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final Color emptyIcon = isDark ? Colors.white24 : Colors.black26;
     final Color emptyText = isDark ? Colors.white38 : const Color(0xFF9E9E9E);
-    final Color borderActive =
-        isDark ? const Color(0xFF4DB6AC) : const Color(0xFF00796B);
-    final Color borderDim =
-        isDark ? const Color(0xFF49454F) : const Color(0xFFE0E0E0);
+    final Color borderActive = isDark
+        ? const Color(0xFF4DB6AC)
+        : const Color(0xFF00796B);
+    final Color borderDim = isDark
+        ? const Color(0xFF49454F)
+        : const Color(0xFFE0E0E0);
 
     return Scaffold(
       appBar: AppBar(
@@ -146,7 +157,6 @@ class _HistoryPenyerahanPageState extends State<HistoryPenyerahanPage> {
       ),
       body: Column(
         children: [
-          // Search bar
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
             child: TextField(
@@ -174,13 +184,14 @@ class _HistoryPenyerahanPageState extends State<HistoryPenyerahanPage> {
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(color: borderActive),
                 ),
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
                 isDense: true,
               ),
             ),
           ),
-          // Date filter
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
             child: Row(
@@ -191,7 +202,9 @@ class _HistoryPenyerahanPageState extends State<HistoryPenyerahanPage> {
                     borderRadius: BorderRadius.circular(8),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 10),
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
                       decoration: BoxDecoration(
                         border: Border.all(
                           color: _dateFrom != null ? borderActive : borderDim,
@@ -200,9 +213,11 @@ class _HistoryPenyerahanPageState extends State<HistoryPenyerahanPage> {
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.calendar_today,
-                              size: 16,
-                              color: isDark ? Colors.white54 : Colors.black54),
+                          Icon(
+                            Icons.calendar_today,
+                            size: 16,
+                            color: isDark ? Colors.white54 : Colors.black54,
+                          ),
                           const SizedBox(width: 8),
                           Text(
                             _dateFrom == null
@@ -230,7 +245,9 @@ class _HistoryPenyerahanPageState extends State<HistoryPenyerahanPage> {
                     borderRadius: BorderRadius.circular(8),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 10),
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
                       decoration: BoxDecoration(
                         border: Border.all(
                           color: _dateTo != null ? borderActive : borderDim,
@@ -239,9 +256,11 @@ class _HistoryPenyerahanPageState extends State<HistoryPenyerahanPage> {
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.calendar_today,
-                              size: 16,
-                              color: isDark ? Colors.white54 : Colors.black54),
+                          Icon(
+                            Icons.calendar_today,
+                            size: 16,
+                            color: isDark ? Colors.white54 : Colors.black54,
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
@@ -255,7 +274,9 @@ class _HistoryPenyerahanPageState extends State<HistoryPenyerahanPage> {
                                     ? (isDark
                                           ? Colors.white
                                           : const Color(0xFF1D1B20))
-                                    : (isDark ? Colors.white38 : Colors.black38),
+                                    : (isDark
+                                          ? Colors.white38
+                                          : Colors.black38),
                               ),
                             ),
                           ),
@@ -265,11 +286,11 @@ class _HistoryPenyerahanPageState extends State<HistoryPenyerahanPage> {
                                 _dateFrom = null;
                                 _dateTo = null;
                               }),
-                              child: Icon(Icons.close_rounded,
-                                  size: 16,
-                                  color: isDark
-                                      ? Colors.white38
-                                      : Colors.black38),
+                              child: Icon(
+                                Icons.close_rounded,
+                                size: 16,
+                                color: isDark ? Colors.white38 : Colors.black38,
+                              ),
                             ),
                         ],
                       ),
@@ -279,7 +300,6 @@ class _HistoryPenyerahanPageState extends State<HistoryPenyerahanPage> {
               ],
             ),
           ),
-          // List
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: _stream,
@@ -292,7 +312,9 @@ class _HistoryPenyerahanPageState extends State<HistoryPenyerahanPage> {
                     child: Text(
                       'Error: ${snapshot.error}',
                       style: const TextStyle(
-                          color: Colors.red, fontFamily: 'Poppins'),
+                        color: Colors.red,
+                        fontFamily: 'Poppins',
+                      ),
                     ),
                   );
                 }
@@ -301,15 +323,19 @@ class _HistoryPenyerahanPageState extends State<HistoryPenyerahanPage> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.local_shipping_outlined,
-                            size: 64, color: emptyIcon),
+                        Icon(
+                          Icons.local_shipping_outlined,
+                          size: 64,
+                          color: emptyIcon,
+                        ),
                         const SizedBox(height: 16),
                         Text(
                           'Belum Ada Riwayat Penyerahan',
                           style: TextStyle(
-                              fontSize: 16,
-                              color: emptyText,
-                              fontFamily: 'Poppins'),
+                            fontSize: 16,
+                            color: emptyText,
+                            fontFamily: 'Poppins',
+                          ),
                         ),
                       ],
                     ),
@@ -317,19 +343,23 @@ class _HistoryPenyerahanPageState extends State<HistoryPenyerahanPage> {
                 }
 
                 var records = snapshot.data!.docs
-                    .map((d) => _fromDeliveryDoc(
-                        d.id, d.data() as Map<String, dynamic>))
+                    .map(
+                      (d) => _fromDeliveryDoc(
+                        d.id,
+                        d.data() as Map<String, dynamic>,
+                      ),
+                    )
                     .toList();
 
                 if (_searchQuery.isNotEmpty) {
                   records = records
-                      .where((r) =>
-                          r.clientName
-                              .toLowerCase()
-                              .contains(_searchQuery) ||
-                          r.clientAddress
-                              .toLowerCase()
-                              .contains(_searchQuery))
+                      .where(
+                        (r) =>
+                            r.clientName.toLowerCase().contains(_searchQuery) ||
+                            r.clientAddress.toLowerCase().contains(
+                              _searchQuery,
+                            ),
+                      )
                       .toList();
                 }
 
@@ -347,15 +377,19 @@ class _HistoryPenyerahanPageState extends State<HistoryPenyerahanPage> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.search_off_rounded,
-                            size: 64, color: emptyIcon),
+                        Icon(
+                          Icons.search_off_rounded,
+                          size: 64,
+                          color: emptyIcon,
+                        ),
                         const SizedBox(height: 16),
                         Text(
                           'Riwayat Tidak Ditemukan',
                           style: TextStyle(
-                              fontSize: 16,
-                              color: emptyText,
-                              fontFamily: 'Poppins'),
+                            fontSize: 16,
+                            color: emptyText,
+                            fontFamily: 'Poppins',
+                          ),
                         ),
                       ],
                     ),
@@ -389,8 +423,6 @@ class _HistoryPenyerahanPageState extends State<HistoryPenyerahanPage> {
   }
 }
 
-// ─── Delivery Card ─────────────────────────────────────────────────────────────
-
 class _DeliveryCard extends StatelessWidget {
   final PembayaranModel record;
   final List<String> categories;
@@ -409,20 +441,23 @@ class _DeliveryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Color cardBg = isDark ? const Color(0xFF2B2930) : Colors.white;
-    final Color cardBorder =
-        isDark ? const Color(0xFF49454F) : const Color(0xFFE0E0E0);
-    final Color nameColor =
-        isDark ? Colors.white : const Color(0xFF1D1B20);
-    final Color subColor =
-        isDark ? Colors.white54 : const Color(0xFF757575);
-    final Color tealFg =
-        isDark ? const Color(0xFF4DB6AC) : const Color(0xFF00796B);
-    final Color tealBg =
-        isDark ? const Color(0xFF1A3A3A) : const Color(0xFFE0F2F1);
-    final Color shipBg =
-        isDark ? const Color(0xFF1A3020) : const Color(0xFFE8F5E9);
-    final Color shipFg =
-        isDark ? const Color(0xFF80CBC4) : const Color(0xFF2E7D32);
+    final Color cardBorder = isDark
+        ? const Color(0xFF49454F)
+        : const Color(0xFFE0E0E0);
+    final Color nameColor = isDark ? Colors.white : const Color(0xFF1D1B20);
+    final Color subColor = isDark ? Colors.white54 : const Color(0xFF757575);
+    final Color tealFg = isDark
+        ? const Color(0xFF4DB6AC)
+        : const Color(0xFF00796B);
+    final Color tealBg = isDark
+        ? const Color(0xFF1A3A3A)
+        : const Color(0xFFE0F2F1);
+    final Color shipBg = isDark
+        ? const Color(0xFF1A3020)
+        : const Color(0xFFE8F5E9);
+    final Color shipFg = isDark
+        ? const Color(0xFF80CBC4)
+        : const Color(0xFF2E7D32);
 
     final totalItems = record.items.fold(0, (s, i) => s + i.quantity);
 
@@ -469,8 +504,11 @@ class _DeliveryCard extends StatelessWidget {
                         const SizedBox(height: 2),
                         Row(
                           children: [
-                            Icon(Icons.location_on_outlined,
-                                size: 12, color: subColor),
+                            Icon(
+                              Icons.location_on_outlined,
+                              size: 12,
+                              color: subColor,
+                            ),
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
@@ -493,10 +531,11 @@ class _DeliveryCard extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    // Label penyerahan
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: shipBg,
                         borderRadius: BorderRadius.circular(20),
@@ -504,8 +543,11 @@ class _DeliveryCard extends StatelessWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.local_shipping_outlined,
-                              size: 12, color: shipFg),
+                          Icon(
+                            Icons.local_shipping_outlined,
+                            size: 12,
+                            color: shipFg,
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             'Diserahkan',
@@ -520,10 +562,11 @@ class _DeliveryCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 6),
-                    // Jumlah barang
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: tealBg,
                         borderRadius: BorderRadius.circular(20),
@@ -575,7 +618,9 @@ class _DeliveryCard extends StatelessWidget {
                 children: categories.map((cat) {
                   return Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 2),
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: isDark
                           ? const Color(0xFF333138)
@@ -618,8 +663,6 @@ class _DeliveryCard extends StatelessWidget {
   }
 }
 
-// ─── Detail Sheet ─────────────────────────────────────────────────────────────
-
 class _DeliveryDetailSheet extends StatelessWidget {
   final PembayaranModel record;
   final bool isDark;
@@ -634,22 +677,26 @@ class _DeliveryDetailSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Color sheetBg = isDark ? const Color(0xFF2B2930) : Colors.white;
-    final Color divider =
-        isDark ? const Color(0xFF49454F) : const Color(0xFFE0E0E0);
-    final Color nameColor =
-        isDark ? Colors.white : const Color(0xFF1D1B20);
-    final Color subColor =
-        isDark ? Colors.white54 : const Color(0xFF757575);
-    final Color tealFg =
-        isDark ? const Color(0xFF4DB6AC) : const Color(0xFF00796B);
-    final Color tealBg =
-        isDark ? const Color(0xFF1A3A3A) : const Color(0xFFE0F2F1);
-    final Color shipBg =
-        isDark ? const Color(0xFF1A3020) : const Color(0xFFE8F5E9);
-    final Color shipFg =
-        isDark ? const Color(0xFF80CBC4) : const Color(0xFF2E7D32);
-    final Color priceColor =
-        isDark ? const Color(0xFF80CBC4) : const Color(0xFF2E7D32);
+    final Color divider = isDark
+        ? const Color(0xFF49454F)
+        : const Color(0xFFE0E0E0);
+    final Color nameColor = isDark ? Colors.white : const Color(0xFF1D1B20);
+    final Color subColor = isDark ? Colors.white54 : const Color(0xFF757575);
+    final Color tealFg = isDark
+        ? const Color(0xFF4DB6AC)
+        : const Color(0xFF00796B);
+    final Color tealBg = isDark
+        ? const Color(0xFF1A3A3A)
+        : const Color(0xFFE0F2F1);
+    final Color shipBg = isDark
+        ? const Color(0xFF1A3020)
+        : const Color(0xFFE8F5E9);
+    final Color shipFg = isDark
+        ? const Color(0xFF80CBC4)
+        : const Color(0xFF2E7D32);
+    final Color priceColor = isDark
+        ? const Color(0xFF80CBC4)
+        : const Color(0xFF2E7D32);
 
     final totalItems = record.items.fold(0, (s, i) => s + i.quantity);
 
@@ -660,12 +707,10 @@ class _DeliveryDetailSheet extends StatelessWidget {
       builder: (context, sc) => Container(
         decoration: BoxDecoration(
           color: sheetBg,
-          borderRadius:
-              const BorderRadius.vertical(top: Radius.circular(20)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
           children: [
-            // Handle
             Padding(
               padding: const EdgeInsets.only(top: 10, bottom: 6),
               child: Container(
@@ -677,7 +722,6 @@ class _DeliveryDetailSheet extends StatelessWidget {
                 ),
               ),
             ),
-            // Header
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
               child: Row(
@@ -685,10 +729,11 @@ class _DeliveryDetailSheet extends StatelessWidget {
                   Container(
                     width: 38,
                     height: 38,
-                    decoration:
-                        BoxDecoration(color: tealBg, shape: BoxShape.circle),
-                    child: Icon(Icons.store_outlined,
-                        color: tealFg, size: 20),
+                    decoration: BoxDecoration(
+                      color: tealBg,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.store_outlined, color: tealFg, size: 20),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -720,10 +765,11 @@ class _DeliveryDetailSheet extends StatelessWidget {
                       ],
                     ),
                   ),
-                  // Diserahkan badge
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: shipBg,
                       borderRadius: BorderRadius.circular(20),
@@ -731,8 +777,11 @@ class _DeliveryDetailSheet extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.local_shipping_outlined,
-                            size: 12, color: shipFg),
+                        Icon(
+                          Icons.local_shipping_outlined,
+                          size: 12,
+                          color: shipFg,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           'Diserahkan',
@@ -749,7 +798,9 @@ class _DeliveryDetailSheet extends StatelessWidget {
                   const SizedBox(width: 4),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: tealBg,
                       borderRadius: BorderRadius.circular(20),
@@ -806,7 +857,9 @@ class _DeliveryDetailSheet extends StatelessWidget {
                   const Spacer(),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 3),
+                      horizontal: 10,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: tealBg,
                       borderRadius: BorderRadius.circular(20),
@@ -829,15 +882,15 @@ class _DeliveryDetailSheet extends StatelessWidget {
               child: ListView.separated(
                 controller: sc,
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 20, vertical: 8),
+                  horizontal: 20,
+                  vertical: 8,
+                ),
                 itemCount: record.items.length,
-                separatorBuilder: (_, __) =>
-                    Divider(height: 1, color: divider),
+                separatorBuilder: (_, __) => Divider(height: 1, color: divider),
                 itemBuilder: (_, i) {
                   final item = record.items[i];
                   return Padding(
-                    padding:
-                        const EdgeInsets.symmetric(vertical: 12),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -849,8 +902,7 @@ class _DeliveryDetailSheet extends StatelessWidget {
                         const SizedBox(width: 12),
                         Expanded(
                           child: Column(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 item.catalogName,
@@ -884,8 +936,7 @@ class _DeliveryDetailSheet extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          formatRupiah(
-                              item.catalogPrice * item.quantity),
+                          formatRupiah(item.catalogPrice * item.quantity),
                           style: TextStyle(
                             fontFamily: 'Poppins',
                             fontWeight: FontWeight.w700,

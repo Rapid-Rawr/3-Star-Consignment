@@ -124,10 +124,12 @@ class _HistoryPembayaranPageState extends State<HistoryPembayaranPage> {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final Color emptyIcon = isDark ? Colors.white24 : Colors.black26;
     final Color emptyText = isDark ? Colors.white38 : const Color(0xFF9E9E9E);
-    final Color borderActive =
-        isDark ? const Color(0xFF4DB6AC) : const Color(0xFF00796B);
-    final Color borderDim =
-        isDark ? const Color(0xFF49454F) : const Color(0xFFE0E0E0);
+    final Color borderActive = isDark
+        ? const Color(0xFF4DB6AC)
+        : const Color(0xFF00796B);
+    final Color borderDim = isDark
+        ? const Color(0xFF49454F)
+        : const Color(0xFFE0E0E0);
 
     return Scaffold(
       appBar: AppBar(
@@ -138,7 +140,6 @@ class _HistoryPembayaranPageState extends State<HistoryPembayaranPage> {
       ),
       body: Column(
         children: [
-          // ── Search bar ─────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
             child: TextField(
@@ -167,13 +168,14 @@ class _HistoryPembayaranPageState extends State<HistoryPembayaranPage> {
                   borderSide: BorderSide(color: borderActive),
                 ),
                 contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 10),
+                  horizontal: 12,
+                  vertical: 10,
+                ),
                 isDense: true,
               ),
             ),
           ),
 
-          // ── Date filter ────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
             child: Row(
@@ -184,7 +186,9 @@ class _HistoryPembayaranPageState extends State<HistoryPembayaranPage> {
                     borderRadius: BorderRadius.circular(8),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 10),
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
                       decoration: BoxDecoration(
                         border: Border.all(
                           color: _dateFrom != null ? borderActive : borderDim,
@@ -193,9 +197,11 @@ class _HistoryPembayaranPageState extends State<HistoryPembayaranPage> {
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.calendar_today,
-                              size: 16,
-                              color: isDark ? Colors.white54 : Colors.black54),
+                          Icon(
+                            Icons.calendar_today,
+                            size: 16,
+                            color: isDark ? Colors.white54 : Colors.black54,
+                          ),
                           const SizedBox(width: 8),
                           Text(
                             _dateFrom == null
@@ -208,9 +214,7 @@ class _HistoryPembayaranPageState extends State<HistoryPembayaranPage> {
                                   ? (isDark
                                         ? Colors.white
                                         : const Color(0xFF1D1B20))
-                                  : (isDark
-                                        ? Colors.white38
-                                        : Colors.black38),
+                                  : (isDark ? Colors.white38 : Colors.black38),
                             ),
                           ),
                         ],
@@ -225,7 +229,9 @@ class _HistoryPembayaranPageState extends State<HistoryPembayaranPage> {
                     borderRadius: BorderRadius.circular(8),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 10),
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
                       decoration: BoxDecoration(
                         border: Border.all(
                           color: _dateTo != null ? borderActive : borderDim,
@@ -234,9 +240,11 @@ class _HistoryPembayaranPageState extends State<HistoryPembayaranPage> {
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.calendar_today,
-                              size: 16,
-                              color: isDark ? Colors.white54 : Colors.black54),
+                          Icon(
+                            Icons.calendar_today,
+                            size: 16,
+                            color: isDark ? Colors.white54 : Colors.black54,
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
@@ -262,11 +270,11 @@ class _HistoryPembayaranPageState extends State<HistoryPembayaranPage> {
                                 _dateFrom = null;
                                 _dateTo = null;
                               }),
-                              child: Icon(Icons.close_rounded,
-                                  size: 16,
-                                  color: isDark
-                                      ? Colors.white38
-                                      : Colors.black38),
+                              child: Icon(
+                                Icons.close_rounded,
+                                size: 16,
+                                color: isDark ? Colors.white38 : Colors.black38,
+                              ),
                             ),
                         ],
                       ),
@@ -277,7 +285,6 @@ class _HistoryPembayaranPageState extends State<HistoryPembayaranPage> {
             ),
           ),
 
-          // ── List ───────────────────────────────────────────────
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: _stream,
@@ -290,7 +297,9 @@ class _HistoryPembayaranPageState extends State<HistoryPembayaranPage> {
                     child: Text(
                       'Error: ${snapshot.error}',
                       style: const TextStyle(
-                          color: Colors.red, fontFamily: 'Poppins'),
+                        color: Colors.red,
+                        fontFamily: 'Poppins',
+                      ),
                     ),
                   );
                 }
@@ -299,15 +308,19 @@ class _HistoryPembayaranPageState extends State<HistoryPembayaranPage> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.receipt_long_outlined,
-                            size: 64, color: emptyIcon),
+                        Icon(
+                          Icons.receipt_long_outlined,
+                          size: 64,
+                          color: emptyIcon,
+                        ),
                         const SizedBox(height: 16),
                         Text(
                           'Belum Ada History Pembayaran',
                           style: TextStyle(
-                              fontSize: 16,
-                              color: emptyText,
-                              fontFamily: 'Poppins'),
+                            fontSize: 16,
+                            color: emptyText,
+                            fontFamily: 'Poppins',
+                          ),
                         ),
                       ],
                     ),
@@ -315,15 +328,23 @@ class _HistoryPembayaranPageState extends State<HistoryPembayaranPage> {
                 }
 
                 var payments = snapshot.data!.docs
-                    .map((d) => PembayaranModel.fromMap(
-                        d.id, d.data() as Map<String, dynamic>))
+                    .map(
+                      (d) => PembayaranModel.fromMap(
+                        d.id,
+                        d.data() as Map<String, dynamic>,
+                      ),
+                    )
                     .toList();
 
                 if (_searchQuery.isNotEmpty) {
                   payments = payments
-                      .where((p) =>
-                          p.clientName.toLowerCase().contains(_searchQuery) ||
-                          p.clientAddress.toLowerCase().contains(_searchQuery))
+                      .where(
+                        (p) =>
+                            p.clientName.toLowerCase().contains(_searchQuery) ||
+                            p.clientAddress.toLowerCase().contains(
+                              _searchQuery,
+                            ),
+                      )
                       .toList();
                 }
 
@@ -341,15 +362,19 @@ class _HistoryPembayaranPageState extends State<HistoryPembayaranPage> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.search_off_rounded,
-                            size: 64, color: emptyIcon),
+                        Icon(
+                          Icons.search_off_rounded,
+                          size: 64,
+                          color: emptyIcon,
+                        ),
                         const SizedBox(height: 16),
                         Text(
                           'History Tidak Ditemukan',
                           style: TextStyle(
-                              fontSize: 16,
-                              color: emptyText,
-                              fontFamily: 'Poppins'),
+                            fontSize: 16,
+                            color: emptyText,
+                            fontFamily: 'Poppins',
+                          ),
                         ),
                       ],
                     ),
@@ -382,8 +407,6 @@ class _HistoryPembayaranPageState extends State<HistoryPembayaranPage> {
     );
   }
 }
-
-// ─── History Card ─────────────────────────────────────────────────────────────
 
 class _PaymentHistoryCard extends StatelessWidget {
   final PembayaranModel payment;
@@ -425,20 +448,23 @@ class _PaymentHistoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Color cardBg = isDark ? const Color(0xFF2B2930) : Colors.white;
-    final Color cardBorder =
-        isDark ? const Color(0xFF49454F) : const Color(0xFFE0E0E0);
-    final Color nameColor =
-        isDark ? Colors.white : const Color(0xFF1D1B20);
-    final Color subColor =
-        isDark ? Colors.white54 : const Color(0xFF757575);
-    final Color tealFg =
-        isDark ? const Color(0xFF4DB6AC) : const Color(0xFF00796B);
-    final Color tealBg =
-        isDark ? const Color(0xFF1A3A3A) : const Color(0xFFE0F2F1);
-    final Color cashBg =
-        isDark ? const Color(0xFF1A2A3A) : const Color(0xFFE3F2FD);
-    final Color cashFg =
-        isDark ? const Color(0xFF90CAF9) : const Color(0xFF1565C0);
+    final Color cardBorder = isDark
+        ? const Color(0xFF49454F)
+        : const Color(0xFFE0E0E0);
+    final Color nameColor = isDark ? Colors.white : const Color(0xFF1D1B20);
+    final Color subColor = isDark ? Colors.white54 : const Color(0xFF757575);
+    final Color tealFg = isDark
+        ? const Color(0xFF4DB6AC)
+        : const Color(0xFF00796B);
+    final Color tealBg = isDark
+        ? const Color(0xFF1A3A3A)
+        : const Color(0xFFE0F2F1);
+    final Color cashBg = isDark
+        ? const Color(0xFF1A2A3A)
+        : const Color(0xFFE3F2FD);
+    final Color cashFg = isDark
+        ? const Color(0xFF90CAF9)
+        : const Color(0xFF1565C0);
 
     final totalItems = payment.items.fold(0, (s, i) => s + i.quantity);
 
@@ -463,7 +489,6 @@ class _PaymentHistoryCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ── Header: nama klien + jenis pembayaran + jumlah barang ──
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -486,8 +511,11 @@ class _PaymentHistoryCard extends StatelessWidget {
                         const SizedBox(height: 2),
                         Row(
                           children: [
-                            Icon(Icons.location_on_outlined,
-                                size: 12, color: subColor),
+                            Icon(
+                              Icons.location_on_outlined,
+                              size: 12,
+                              color: subColor,
+                            ),
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
@@ -510,10 +538,11 @@ class _PaymentHistoryCard extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    // Jenis pembayaran
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: cashBg,
                         borderRadius: BorderRadius.circular(20),
@@ -521,8 +550,11 @@ class _PaymentHistoryCard extends StatelessWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(_methodIcon(payment.paymentMethod),
-                              size: 12, color: cashFg),
+                          Icon(
+                            _methodIcon(payment.paymentMethod),
+                            size: 12,
+                            color: cashFg,
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             _methodLabel(payment.paymentMethod),
@@ -537,10 +569,11 @@ class _PaymentHistoryCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 6),
-                    // Jumlah barang
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: tealBg,
                         borderRadius: BorderRadius.circular(20),
@@ -562,7 +595,6 @@ class _PaymentHistoryCard extends StatelessWidget {
 
             const SizedBox(height: 12),
 
-            // ── Tanggal bayar ──────────────────────────────────────
             Row(
               children: [
                 Icon(Icons.calendar_month, size: 14, color: subColor),
@@ -588,7 +620,6 @@ class _PaymentHistoryCard extends StatelessWidget {
               ],
             ),
 
-            // ── Category chips ─────────────────────────────────────
             if (categories.isNotEmpty) ...[
               const SizedBox(height: 10),
               Wrap(
@@ -597,7 +628,9 @@ class _PaymentHistoryCard extends StatelessWidget {
                 children: categories.map((cat) {
                   return Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 2),
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: isDark
                           ? const Color(0xFF333138)
@@ -619,7 +652,6 @@ class _PaymentHistoryCard extends StatelessWidget {
 
             const SizedBox(height: 12),
 
-            // ── Detail button ──────────────────────────────────────
             OutlinedButton.icon(
               onPressed: onDetail,
               icon: const Icon(Icons.visibility_outlined, size: 16),
@@ -643,8 +675,6 @@ class _PaymentHistoryCard extends StatelessWidget {
   }
 }
 
-// ─── Detail Sheet ─────────────────────────────────────────────────────────────
-
 class _PaymentDetailSheet extends StatelessWidget {
   final PembayaranModel payment;
   final bool isDark;
@@ -659,25 +689,28 @@ class _PaymentDetailSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Color sheetBg = isDark ? const Color(0xFF2B2930) : Colors.white;
-    final Color divider =
-        isDark ? const Color(0xFF49454F) : const Color(0xFFE0E0E0);
-    final Color nameColor =
-        isDark ? Colors.white : const Color(0xFF1D1B20);
-    final Color subColor =
-        isDark ? Colors.white54 : const Color(0xFF757575);
-    final Color tealFg =
-        isDark ? const Color(0xFF4DB6AC) : const Color(0xFF00796B);
-    final Color tealBg =
-        isDark ? const Color(0xFF1A3A3A) : const Color(0xFFE0F2F1);
-    final Color cashBg =
-        isDark ? const Color(0xFF1A2A3A) : const Color(0xFFE3F2FD);
-    final Color cashFg =
-        isDark ? const Color(0xFF90CAF9) : const Color(0xFF1565C0);
-    final Color priceColor =
-        isDark ? const Color(0xFF80CBC4) : const Color(0xFF2E7D32);
+    final Color divider = isDark
+        ? const Color(0xFF49454F)
+        : const Color(0xFFE0E0E0);
+    final Color nameColor = isDark ? Colors.white : const Color(0xFF1D1B20);
+    final Color subColor = isDark ? Colors.white54 : const Color(0xFF757575);
+    final Color tealFg = isDark
+        ? const Color(0xFF4DB6AC)
+        : const Color(0xFF00796B);
+    final Color tealBg = isDark
+        ? const Color(0xFF1A3A3A)
+        : const Color(0xFFE0F2F1);
+    final Color cashBg = isDark
+        ? const Color(0xFF1A2A3A)
+        : const Color(0xFFE3F2FD);
+    final Color cashFg = isDark
+        ? const Color(0xFF90CAF9)
+        : const Color(0xFF1565C0);
+    final Color priceColor = isDark
+        ? const Color(0xFF80CBC4)
+        : const Color(0xFF2E7D32);
 
-    final totalItems =
-        payment.items.fold(0, (s, i) => s + i.quantity);
+    final totalItems = payment.items.fold(0, (s, i) => s + i.quantity);
 
     return DraggableScrollableSheet(
       initialChildSize: 0.88,
@@ -686,12 +719,10 @@ class _PaymentDetailSheet extends StatelessWidget {
       builder: (context, sc) => Container(
         decoration: BoxDecoration(
           color: sheetBg,
-          borderRadius:
-              const BorderRadius.vertical(top: Radius.circular(20)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
           children: [
-            // Handle
             Padding(
               padding: const EdgeInsets.only(top: 10, bottom: 6),
               child: Container(
@@ -704,7 +735,6 @@ class _PaymentDetailSheet extends StatelessWidget {
               ),
             ),
 
-            // Header
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
               child: Row(
@@ -713,9 +743,10 @@ class _PaymentDetailSheet extends StatelessWidget {
                     width: 38,
                     height: 38,
                     decoration: BoxDecoration(
-                        color: tealBg, shape: BoxShape.circle),
-                    child:
-                        Icon(Icons.store_outlined, color: tealFg, size: 20),
+                      color: tealBg,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.store_outlined, color: tealFg, size: 20),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -747,10 +778,11 @@ class _PaymentDetailSheet extends StatelessWidget {
                       ],
                     ),
                   ),
-                  // Jenis pembayaran
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: cashBg,
                       borderRadius: BorderRadius.circular(20),
@@ -758,8 +790,7 @@ class _PaymentDetailSheet extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.payments_outlined,
-                            size: 12, color: cashFg),
+                        Icon(Icons.payments_outlined, size: 12, color: cashFg),
                         const SizedBox(width: 4),
                         Text(
                           payment.paymentMethod == 'cash'
@@ -776,10 +807,11 @@ class _PaymentDetailSheet extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 4),
-                  // Jumlah barang
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: tealBg,
                       borderRadius: BorderRadius.circular(20),
@@ -805,7 +837,6 @@ class _PaymentDetailSheet extends StatelessWidget {
 
             Divider(height: 1, color: divider),
 
-            // Tanggal & total
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 10, 20, 6),
               child: Row(
@@ -824,7 +855,6 @@ class _PaymentDetailSheet extends StatelessWidget {
               ),
             ),
 
-            // Item count label
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 4, 20, 6),
               child: Row(
@@ -841,7 +871,9 @@ class _PaymentDetailSheet extends StatelessWidget {
                   const Spacer(),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 3),
+                      horizontal: 10,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: tealBg,
                       borderRadius: BorderRadius.circular(20),
@@ -861,15 +893,15 @@ class _PaymentDetailSheet extends StatelessWidget {
             ),
             Divider(height: 1, color: divider),
 
-            // Items list
             Expanded(
               child: ListView.separated(
                 controller: sc,
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 20, vertical: 8),
+                  horizontal: 20,
+                  vertical: 8,
+                ),
                 itemCount: payment.items.length,
-                separatorBuilder: (_, __) =>
-                    Divider(height: 1, color: divider),
+                separatorBuilder: (_, __) => Divider(height: 1, color: divider),
                 itemBuilder: (_, i) {
                   final item = payment.items[i];
                   return Padding(
@@ -934,7 +966,6 @@ class _PaymentDetailSheet extends StatelessWidget {
               ),
             ),
 
-            // Footer total
             Container(
               padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
               decoration: BoxDecoration(

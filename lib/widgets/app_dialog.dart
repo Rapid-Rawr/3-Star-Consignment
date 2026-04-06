@@ -23,10 +23,6 @@ class AppDialogAction {
   });
 }
 
-// ─────────────────────────────────────────────
-// 3 Star Consignment AppDialog
-// ─────────────────────────────────────────────
-
 /// Dialog yang dapat di-reuse di seluruh aplikasi.
 ///
 /// Fitur:
@@ -99,7 +95,8 @@ class _AppDialogWidget extends StatelessWidget {
           Text(title, style: TextStyle(color: textColor)),
         ],
       ),
-      content: contentWidget ?? Text(content, style: TextStyle(color: textColor)),
+      content:
+          contentWidget ?? Text(content, style: TextStyle(color: textColor)),
       actions: actions.map((action) {
         if (action.type == AppDialogActionType.gradient) {
           return GradientButton(

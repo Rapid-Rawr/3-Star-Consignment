@@ -88,7 +88,6 @@ class ConsignmentRequestController {
       );
 
       final docData = model.toMap();
-      // Ensure createdAt uses serverTimestamp over explicit DateTime.now() for consistency
       docData['createdAt'] = FieldValue.serverTimestamp();
 
       await firestore.collection(collectionName).add(docData);

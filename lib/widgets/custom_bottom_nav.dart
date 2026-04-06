@@ -80,7 +80,6 @@ class _CustomBottomNavState extends State<CustomBottomNav> {
       );
     }
 
-    // Fallback ke IconData
     final IconData iconData = isActive
         ? (item.activeIcon ?? item.icon!)
         : item.icon!;
@@ -149,8 +148,8 @@ class _CustomBottomNavState extends State<CustomBottomNav> {
               }),
             ),
           ),
-        ), // SafeArea
-      ), // Container
-    ); // ShaderMask
+        ),
+      ),
+    );
   }
 }
