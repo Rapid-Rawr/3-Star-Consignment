@@ -32,44 +32,51 @@ class PaidItem {
   );
 }
 
-class PembayaranModel {
+class PaymentModel {
   final String id;
   final String clientId;
   final String clientName;
   final String clientAddress;
+  final String clientEmail;
   final String paymentMethod;
   final List<PaidItem> items;
   final double totalAmount;
   final DateTime? paidAt;
+  final String? confirmedBy;
 
-  const PembayaranModel({
+  const PaymentModel({
     required this.id,
     required this.clientId,
     required this.clientName,
     required this.clientAddress,
+    required this.clientEmail,
     required this.paymentMethod,
     required this.items,
     required this.totalAmount,
     this.paidAt,
+    this.confirmedBy,
   });
 
   Map<String, dynamic> toMap() => {
     'clientId': clientId,
     'clientName': clientName,
     'clientAddress': clientAddress,
+    'clientEmail': clientEmail,
     'paymentMethod': paymentMethod,
     'items': items.map((i) => i.toMap()).toList(),
     'totalAmount': totalAmount,
     'paidAt': paidAt != null ? Timestamp.fromDate(paidAt!) : null,
+    if (confirmedBy != null) 'confirmedBy': confirmedBy,
   };
 
-  factory PembayaranModel.fromMap(String id, Map<String, dynamic> m) {
+  factory PaymentModel.fromMap(String id, Map<String, dynamic> m) {
     final rawItems = m['items'] as List<dynamic>? ?? [];
-    return PembayaranModel(
+    return PaymentModel(
       id: id,
       clientId: m['clientId'] ?? '',
       clientName: m['clientName'] ?? '',
       clientAddress: m['clientAddress'] ?? '',
+      clientEmail: m['clientEmail'] ?? '',
       paymentMethod: m['paymentMethod'] ?? 'cash',
       items: rawItems
           .whereType<Map<String, dynamic>>()
@@ -77,6 +84,7 @@ class PembayaranModel {
           .toList(),
       totalAmount: (m['totalAmount'] as num?)?.toDouble() ?? 0.0,
       paidAt: (m['paidAt'] as Timestamp?)?.toDate(),
+      confirmedBy: m['confirmedBy'] as String?,
     );
   }
 }

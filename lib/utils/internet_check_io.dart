@@ -1,4 +1,3 @@
-// Implementasi untuk mobile — menggunakan dart:io
 import 'dart:io';
 
 Future<bool> checkInternetConnection() async {

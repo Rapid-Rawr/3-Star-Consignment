@@ -1,5 +1,3 @@
-/// Format angka double menjadi string Rupiah.
-/// Contoh: 1500000 → 'Rp 1.500.000'
 String formatRupiah(double value) {
   if (value == 0) return 'Rp 0';
   final parts = value.toStringAsFixed(0).split('');

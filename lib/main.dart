@@ -8,10 +8,10 @@ import 'controllers/auth_controller.dart';
 import 'utils/theme_notifier.dart';
 import 'utils/supabase_service.dart';
 import 'widgets/login_drawer.dart';
-import 'views/tabbar_page/beranda_page.dart';
-import 'views/tabbar_page/pembayaran_page.dart';
-import 'views/tabbar_page/barang_page.dart';
-import 'views/tabbar_page/pengguna_page.dart';
+import 'views/tabbar/beranda_page.dart';
+import 'views/tabbar/pembayaran_page.dart';
+import 'views/tabbar/barang_page.dart';
+import 'views/tabbar/pengguna_page.dart';
 import 'widgets/custom_bottom_nav.dart';
 
 void main() async {
@@ -217,12 +217,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
       ),
       body: TabBarView(
         controller: _tabController,
-        children: const [
-          BerandaPage(),
-          PesananPage(),
-          BarangPage(),
-          PenggunaPage(),
-        ],
+        children: const [HomePage(), PaymentPage(), ItemPage(), UserPage()],
       ),
     );
   }

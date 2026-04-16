@@ -3,14 +3,13 @@ import 'gradient_button.dart';
 
 /// Tipe tombol aksi di dalam AppDialog.
 enum AppDialogActionType {
-  /// Tombol tanpa background — style TextButton biasa (mengikuti tema)
+  /// Pakai Untuk Konfirmasi Batal !!
   flat,
 
-  /// Tombol dengan background gradient yang mengikuti dark/light mode
+  /// Pakai Untuk Konfirmasi Iya !!
   gradient,
 }
 
-/// Definisi satu tombol aksi di AppDialog.
 class AppDialogAction {
   final String label;
   final VoidCallback onPressed;
@@ -55,15 +54,23 @@ Future<void> showAppDialog({
   required List<AppDialogAction> actions,
   Widget? titleIcon,
   Widget? contentWidget,
+  Widget Function(BuildContext dialogContext, StateSetter setDialogState)?
+  contentBuilder,
 }) {
   return showDialog(
     context: context,
-    builder: (ctx) => _AppDialogWidget(
-      title: title,
-      content: content,
-      actions: actions,
-      titleIcon: titleIcon,
-      contentWidget: contentWidget,
+    builder: (ctx) => StatefulBuilder(
+      builder: (dialogContext, setDialogState) {
+        return _AppDialogWidget(
+          title: title,
+          content: content,
+          actions: actions,
+          titleIcon: titleIcon,
+          contentWidget: contentBuilder != null
+              ? contentBuilder(dialogContext, setDialogState)
+              : contentWidget,
+        );
+      },
     ),
   );
 }
@@ -87,8 +94,11 @@ class _AppDialogWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final Color textColor = isDark ? Colors.white : const Color(0xFF1D1B20);
+    final Color bgColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
 
     return AlertDialog(
+      backgroundColor: bgColor,
+      surfaceTintColor: Colors.transparent, // Disable material 3 tint
       title: Row(
         children: [
           if (titleIcon != null) ...[titleIcon!, const SizedBox(width: 8)],

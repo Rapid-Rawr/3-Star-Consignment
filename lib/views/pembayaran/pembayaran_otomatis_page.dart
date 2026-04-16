@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
+import '../../utils/app_colors.dart';
 
-class PembayaranPage extends StatelessWidget {
-  const PembayaranPage({super.key});
+class AutoPaymentPage extends StatelessWidget {
+  const AutoPaymentPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final Color emptyIcon = isDark ? Colors.white24 : Colors.black26;
-    final Color emptyText = isDark ? Colors.white38 : const Color(0xFF9E9E9E);
+    final Color emptyIcon = context.emptyIcon;
+    final Color emptyText = context.emptyText;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Pembayaran', style: TextStyle(fontFamily: 'Poppins')),
+        title: const Text(
+          'Pembayaran',
+          style: TextStyle(fontFamily: 'Poppins'),
+        ),
       ),
       body: Center(
         child: Column(

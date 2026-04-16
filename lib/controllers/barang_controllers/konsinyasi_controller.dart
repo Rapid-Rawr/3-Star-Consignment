@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/barang_models/katalog_model.dart';
-import '../../models/barang_models/pengajuan_konsinyasi_model.dart';
+import '../../models/barang_models/konsinyasi_model.dart';
 
 class ConsignmentRequestController {
   final FirebaseFirestore firestore;
@@ -16,10 +16,10 @@ class ConsignmentRequestController {
         .snapshots();
   }
 
-  Stream<QuerySnapshot> getRequestsStreamForUser(String userId) {
+  Stream<QuerySnapshot> getRequestsStreamForUser(String clientId) {
     return firestore
         .collection(collectionName)
-        .where('userId', isEqualTo: userId)
+        .where('clientId', isEqualTo: clientId)
         .orderBy('createdAt', descending: true)
         .snapshots();
   }
@@ -27,10 +27,10 @@ class ConsignmentRequestController {
   Future<Map<String, dynamic>> createRequest({
     required List<CatalogModel> catalogItems,
     required List<int> quantities,
-    required String userId,
-    required String userName,
-    required String userEmail,
-    String userSchool = '',
+    required String clientId,
+    required String clientName,
+    String clientAddress = '',
+    required String clientEmail,
   }) async {
     assert(catalogItems.length == quantities.length);
     try {
@@ -48,10 +48,10 @@ class ConsignmentRequestController {
 
       final model = ConsignmentRequestModel(
         id: '',
-        userId: userId,
-        userName: userName,
-        userEmail: userEmail,
-        userSchool: userSchool,
+        clientId: clientId,
+        clientName: clientName,
+        clientAddress: clientAddress,
+        clientEmail: clientEmail,
         items: items,
       );
 
@@ -63,10 +63,10 @@ class ConsignmentRequestController {
   }
 
   Future<Map<String, dynamic>> createDirectReceivedRequest({
-    required String userId,
-    required String userName,
-    required String userEmail,
-    required String userSchool,
+    required String clientId,
+    required String clientName,
+    String clientAddress = '',
+    required String clientEmail,
     required List<ConsignmentItemEntry> items,
   }) async {
     try {
@@ -76,10 +76,10 @@ class ConsignmentRequestController {
 
       final model = ConsignmentRequestModel(
         id: '',
-        userId: userId,
-        userName: userName,
-        userEmail: userEmail,
-        userSchool: userSchool,
+        clientId: clientId,
+        clientName: clientName,
+        clientAddress: clientAddress,
+        clientEmail: clientEmail,
         status: ConsignmentBatchStatus.received,
         items: items,
         packedBy: processorName,
@@ -309,22 +309,39 @@ class ConsignmentRequestController {
           )
           .toList();
 
-      if (batch.userEmail.isNotEmpty && approvedItems.isNotEmpty) {
-        final clientQuery = await firestore
-            .collection('clients')
-            .where('email', isEqualTo: batch.userEmail)
-            .limit(1)
-            .get();
+      if (approvedItems.isNotEmpty) {
+        // Cari dokumen klien: utamakan clientId, fallback ke userEmail (data lama)
+        DocumentReference? clientRef;
 
-        if (clientQuery.docs.isEmpty) {
+        if (batch.clientId.isNotEmpty) {
+          final clientDoc = await firestore
+              .collection('clients')
+              .doc(batch.clientId)
+              .get();
+          if (clientDoc.exists) {
+            clientRef = clientDoc.reference;
+          }
+        }
+
+        // Fallback untuk data lama yang menggunakan userEmail
+        if (clientRef == null && (batch.userEmail?.isNotEmpty == true)) {
+          final clientQuery = await firestore
+              .collection('clients')
+              .where('email', isEqualTo: batch.userEmail)
+              .limit(1)
+              .get();
+          if (clientQuery.docs.isNotEmpty) {
+            clientRef = clientQuery.docs.first.reference;
+          }
+        }
+
+        if (clientRef == null) {
           return {'success': false, 'error': 'Klien tidak ditemukan'};
         }
 
-        final clientRef = clientQuery.docs.first.reference;
-
         await firestore.runTransaction((tx) async {
-          final clientSnap = await tx.get(clientRef);
-          final data = clientSnap.data();
+          final clientSnap = await tx.get(clientRef!);
+          final data = clientSnap.data() as Map<String, dynamic>?;
           final rawBorrowed = (data?['borrowedItems'] as List<dynamic>?) ?? [];
 
           String mergeKey(Map<String, dynamic> raw) {

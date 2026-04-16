@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../controllers/barang_controllers/katalog_controller.dart';
-import '../../controllers/barang_controllers/pengajuan_konsinyasi_controller.dart';
+import '../../controllers/barang_controllers/konsinyasi_controller.dart';
 import '../../models/barang_models/katalog_model.dart';
 import '../../widgets/search_filter_bar.dart';
 import '../../widgets/gradient_button.dart';
 import '../../widgets/catalog_image.dart';
 import '../../widgets/app_dialog.dart';
+import '../../widgets/quantity_stepper.dart';
 import '../../utils/currency_format.dart';
 
 class _SelectedItem {
@@ -87,12 +88,13 @@ class _ConsignmentRequestPageState extends State<ConsignmentRequestPage> {
     if (_selected.isEmpty || _isSubmitting) return;
 
     final user = FirebaseAuth.instance.currentUser;
-    final userId = user?.uid ?? '';
-    final userName =
-        user?.displayName ?? user?.email?.split('@').first ?? 'Unknown';
     final userEmail = user?.email ?? '';
 
-    String userSchool = '';
+    // Lookup data klien dari collection clients berdasarkan email
+    String clientId = '';
+    String clientName = user?.displayName ?? user?.email?.split('@').first ?? 'Unknown';
+    String clientAddress = '';
+
     if (userEmail.isNotEmpty) {
       try {
         final clientSnap = await FirebaseFirestore.instance
@@ -101,7 +103,17 @@ class _ConsignmentRequestPageState extends State<ConsignmentRequestPage> {
             .limit(1)
             .get();
         if (clientSnap.docs.isNotEmpty) {
-          userSchool = (clientSnap.docs.first.data()['name'] as String?) ?? '';
+          final doc = clientSnap.docs.first;
+          clientId = doc.id;
+          clientName = (doc.data()['name'] as String?)?.isNotEmpty == true
+              ? doc.data()['name'] as String
+              : clientName;
+          clientAddress = (doc.data()['address'] as String?) ?? '';
+          // Update photoUrl di clients doc agar selalu fresh
+          final freshPhotoUrl = user?.photoURL;
+          if (freshPhotoUrl != null) {
+            doc.reference.update({'photoUrl': freshPhotoUrl}).catchError((_) {});
+          }
         }
       } catch (_) {}
     }
@@ -112,10 +124,10 @@ class _ConsignmentRequestPageState extends State<ConsignmentRequestPage> {
     final result = await _requestController.createRequest(
       catalogItems: entries.map((e) => e.catalog).toList(),
       quantities: entries.map((e) => e.quantity).toList(),
-      userId: userId,
-      userName: userName,
-      userEmail: userEmail,
-      userSchool: userSchool,
+      clientId: clientId,
+      clientName: clientName,
+      clientAddress: clientAddress,
+      clientEmail: userEmail,
     );
 
     final allSuccess = result['success'] == true;
@@ -291,7 +303,7 @@ class _ConsignmentRequestPageState extends State<ConsignmentRequestPage> {
                       return ListView.builder(
                         padding: EdgeInsets.fromLTRB(
                           16,
-                          8,
+                          0,
                           16,
                           hasSelection ? 220 : 24,
                         ),
@@ -481,138 +493,7 @@ class _CatalogItemCard extends StatelessWidget {
   }
 }
 
-class _QuantityStepper extends StatefulWidget {
-  final int quantity;
-  final bool isDark;
-  final VoidCallback onDecrement;
-  final VoidCallback onIncrement;
-  final ValueChanged<int>? onChanged;
 
-  const _QuantityStepper({
-    required this.quantity,
-    required this.isDark,
-    required this.onDecrement,
-    required this.onIncrement,
-    this.onChanged,
-  });
-
-  @override
-  State<_QuantityStepper> createState() => _QuantityStepperState();
-}
-
-class _QuantityStepperState extends State<_QuantityStepper> {
-  late TextEditingController _ctrl;
-  final FocusNode _focusNode = FocusNode();
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = TextEditingController(text: widget.quantity.toString());
-    _focusNode.addListener(() {
-      if (!_focusNode.hasFocus) {
-        _handleSubmitted(_ctrl.text);
-      }
-    });
-  }
-
-  @override
-  void didUpdateWidget(covariant _QuantityStepper oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.quantity != widget.quantity) {
-      if (_ctrl.text != widget.quantity.toString()) {
-        _ctrl.text = widget.quantity.toString();
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    _focusNode.dispose();
-    super.dispose();
-  }
-
-  void _handleSubmitted(String val) {
-    final qty = int.tryParse(val);
-    if (qty != null && qty > 0) {
-      widget.onChanged?.call(qty);
-    } else {
-      _ctrl.text = widget.quantity.toString();
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final Color bg = widget.isDark
-        ? const Color(0xFF1A3A2A)
-        : const Color(0xFFE6F4EA);
-    final Color iconColor = widget.isDark
-        ? const Color(0xFF80CBC4)
-        : const Color(0xFF2E7D32);
-    final Color textColor = widget.isDark
-        ? Colors.white
-        : const Color(0xFF1D1B20);
-
-    return Container(
-      height: 32,
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          InkWell(
-            onTap: widget.onDecrement,
-            borderRadius: const BorderRadius.horizontal(
-              left: Radius.circular(20),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              child: Icon(
-                widget.quantity <= 1 ? Icons.delete_outline : Icons.remove,
-                size: 18,
-                color: widget.quantity <= 1 ? Colors.red.shade400 : iconColor,
-              ),
-            ),
-          ),
-          SizedBox(
-            width: 36,
-            child: TextField(
-              controller: _ctrl,
-              focusNode: _focusNode,
-              keyboardType: TextInputType.number,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontWeight: FontWeight.w700,
-                fontSize: 14,
-                color: textColor,
-              ),
-              decoration: const InputDecoration(
-                isDense: true,
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.zero,
-              ),
-              onSubmitted: _handleSubmitted,
-              onTapOutside: (_) => _focusNode.unfocus(),
-            ),
-          ),
-          InkWell(
-            onTap: widget.onIncrement,
-            borderRadius: const BorderRadius.horizontal(
-              right: Radius.circular(20),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              child: Icon(Icons.add, size: 18, color: iconColor),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class _SelectionBottomSheet extends StatefulWidget {
   final List<_SelectedItem> selected;
@@ -810,9 +691,8 @@ class _SelectionBottomSheetState extends State<_SelectionBottomSheet> {
                                     ],
                                   ),
                                 ),
-                                _QuantityStepper(
+                                QuantityStepper(
                                   quantity: entry.quantity,
-                                  isDark: widget.isDark,
                                   onDecrement: () =>
                                       widget.onChangeQty(entry.catalog.id, -1),
                                   onIncrement: () =>
@@ -877,9 +757,7 @@ class _SelectionBottomSheetState extends State<_SelectionBottomSheet> {
                         label: 'Kirim Pengajuan',
                         onPressed: () => showAppDialog(
                           context: context,
-                          titleIcon: const Icon(
-                            Icons.warning_amber_rounded,
-                          ),
+                          titleIcon: const Icon(Icons.warning_amber_rounded),
                           title: 'Kirim Pengajuan',
                           content:
                               'Kirim pengajuan ${widget.selected.length} item dengan total estimasi ${formatRupiah(totalPrice)}?',

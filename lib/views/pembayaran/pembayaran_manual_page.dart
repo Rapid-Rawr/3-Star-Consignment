@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../controllers/pengguna_controllers/klien_controller.dart';
 import '../../controllers/pembayaran_controllers/pembayaran_controller.dart';
 import '../../models/pengguna_models/klien_model.dart';
@@ -8,7 +9,9 @@ import '../../widgets/search_filter_bar.dart';
 import '../../widgets/catalog_image.dart';
 import '../../widgets/gradient_button.dart';
 import '../../widgets/app_dialog.dart';
+import '../../widgets/quantity_stepper.dart';
 import '../../utils/currency_format.dart';
+import '../../utils/app_colors.dart';
 
 class _PayItem {
   final BorrowedItem item;
@@ -16,14 +19,14 @@ class _PayItem {
   _PayItem({required this.item, required this.qty});
 }
 
-class PembayaranManualPage extends StatefulWidget {
-  const PembayaranManualPage({super.key});
+class ManualPaymentPage extends StatefulWidget {
+  const ManualPaymentPage({super.key});
 
   @override
-  State<PembayaranManualPage> createState() => _PembayaranManualPageState();
+  State<ManualPaymentPage> createState() => _ManualPaymentPageState();
 }
 
-class _PembayaranManualPageState extends State<PembayaranManualPage> {
+class _ManualPaymentPageState extends State<ManualPaymentPage> {
   late final ClientController _controller;
   late final Stream<QuerySnapshot> _stream;
 
@@ -46,16 +49,12 @@ class _PembayaranManualPageState extends State<PembayaranManualPage> {
     super.dispose();
   }
 
-  void _showPaymentSheet(
-    BuildContext context,
-    ClientModel client,
-    bool isDark,
-  ) {
+  void _showPaymentSheet(BuildContext context, ClientModel client) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _PaymentBottomSheet(client: client, isDark: isDark),
+      builder: (_) => _PaymentBottomSheet(client: client),
     );
   }
 
@@ -172,7 +171,7 @@ class _PembayaranManualPageState extends State<PembayaranManualPage> {
                       );
                     }
                     return ListView.builder(
-                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                       itemCount: clients.length,
                       itemBuilder: (context, i) {
                         final client = clients[i];
@@ -187,9 +186,7 @@ class _PembayaranManualPageState extends State<PembayaranManualPage> {
                         return _ClientPayCard(
                           client: client,
                           displayItems: displayItems,
-                          isDark: isDark,
-                          onPay: () =>
-                              _showPaymentSheet(context, client, isDark),
+                          onPay: () => _showPaymentSheet(context, client),
                         );
                       },
                     );
@@ -207,30 +204,16 @@ class _PembayaranManualPageState extends State<PembayaranManualPage> {
 class _ClientPayCard extends StatelessWidget {
   final ClientModel client;
   final List<BorrowedItem> displayItems;
-  final bool isDark;
   final VoidCallback onPay;
 
   const _ClientPayCard({
     required this.client,
     required this.displayItems,
-    required this.isDark,
     required this.onPay,
   });
 
   @override
   Widget build(BuildContext context) {
-    final Color cardBg = isDark ? const Color(0xFF2B2930) : Colors.white;
-    final Color cardBorder = isDark
-        ? const Color(0xFF49454F)
-        : const Color(0xFFE0E0E0);
-    final Color nameColor = isDark ? Colors.white : const Color(0xFF1D1B20);
-    final Color subColor = isDark ? Colors.white54 : const Color(0xFF757575);
-    final Color tealFg = isDark
-        ? const Color(0xFF4DB6AC)
-        : const Color(0xFF00796B);
-    final Color tealBg = isDark
-        ? const Color(0xFF1A3A3A)
-        : const Color(0xFFE0F2F1);
 
     final bool hasBorrowed = displayItems.isNotEmpty;
     final int totalQty = displayItems.fold(0, (s, b) => s + b.quantity);
@@ -244,14 +227,12 @@ class _ClientPayCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
-        color: cardBg,
+        color: context.cardBg,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: cardBorder, width: 1),
+        border: Border.all(color: context.cardBorder, width: 1),
         boxShadow: [
           BoxShadow(
-            color: isDark
-                ? Colors.black26
-                : Colors.black.withValues(alpha: 0.06),
+            color: context.cardShadow,
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -270,15 +251,15 @@ class _ClientPayCard extends StatelessWidget {
                   height: 44,
                   decoration: BoxDecoration(
                     color: hasBorrowed
-                        ? tealBg
-                        : (isDark
+                        ? context.primaryBg
+                        : (context.isDark
                               ? const Color(0xFF3A3740)
                               : Colors.grey[100]!),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     hasBorrowed ? Icons.store_outlined : Icons.person_outline,
-                    color: hasBorrowed ? tealFg : subColor,
+                    color: hasBorrowed ? context.primaryFg : context.subColor,
                     size: 22,
                   ),
                 ),
@@ -295,7 +276,7 @@ class _ClientPayCard extends StatelessWidget {
                           fontFamily: 'Poppins',
                           fontWeight: FontWeight.w700,
                           fontSize: 15,
-                          color: nameColor,
+                          color: context.nameColor,
                         ),
                       ),
                       if (client.address.isNotEmpty)
@@ -304,7 +285,7 @@ class _ClientPayCard extends StatelessWidget {
                             Icon(
                               Icons.location_on_outlined,
                               size: 12,
-                              color: subColor,
+                              color: context.subColor,
                             ),
                             const SizedBox(width: 4),
                             Expanded(
@@ -313,7 +294,7 @@ class _ClientPayCard extends StatelessWidget {
                                 style: TextStyle(
                                   fontFamily: 'Poppins',
                                   fontSize: 12,
-                                  color: subColor,
+                                  color: context.subColor,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -331,7 +312,7 @@ class _ClientPayCard extends StatelessWidget {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: tealBg,
+                      color: context.primaryBg,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
@@ -340,7 +321,7 @@ class _ClientPayCard extends StatelessWidget {
                         fontFamily: 'Poppins',
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
-                        color: tealFg,
+                        color: context.primaryFg,
                       ),
                     ),
                   ),
@@ -361,7 +342,7 @@ class _ClientPayCard extends StatelessWidget {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: isDark
+                            color: context.isDark
                                 ? const Color(0xFF3A3740)
                                 : Colors.grey[100],
                             borderRadius: BorderRadius.circular(4),
@@ -371,7 +352,9 @@ class _ClientPayCard extends StatelessWidget {
                             style: TextStyle(
                               fontFamily: 'Poppins',
                               fontSize: 10,
-                              color: isDark ? Colors.white70 : Colors.black87,
+                              color: context.isDark
+                                  ? Colors.white70
+                                  : Colors.black87,
                             ),
                           ),
                         ),
@@ -403,7 +386,7 @@ class _ClientPayCard extends StatelessWidget {
                                     fontFamily: 'Poppins',
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
-                                    color: nameColor,
+                                    color: context.nameColor,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -413,7 +396,7 @@ class _ClientPayCard extends StatelessWidget {
                                   style: TextStyle(
                                     fontFamily: 'Poppins',
                                     fontSize: 11,
-                                    color: subColor,
+                                    color: context.subColor,
                                   ),
                                 ),
                               ],
@@ -433,12 +416,12 @@ class _ClientPayCard extends StatelessWidget {
                       fontFamily: 'Poppins',
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
-                      color: tealFg,
+                      color: context.primaryFg,
                     ),
                   ),
                 ),
 
-              Divider(height: 20, color: cardBorder),
+              Divider(height: 20, color: context.cardBorder),
               Row(
                 children: [
                   Column(
@@ -449,7 +432,7 @@ class _ClientPayCard extends StatelessWidget {
                         style: TextStyle(
                           fontFamily: 'Poppins',
                           fontSize: 10,
-                          color: subColor,
+                          color: context.subColor,
                         ),
                       ),
                       Text(
@@ -458,7 +441,7 @@ class _ClientPayCard extends StatelessWidget {
                           fontFamily: 'Poppins',
                           fontWeight: FontWeight.w700,
                           fontSize: 14,
-                          color: tealFg,
+                          color: context.primaryFg,
                         ),
                       ),
                     ],
@@ -472,8 +455,8 @@ class _ClientPayCard extends StatelessWidget {
                       style: TextStyle(fontFamily: 'Poppins', fontSize: 12),
                     ),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: tealFg,
-                      side: BorderSide(color: tealFg),
+                      foregroundColor: context.primaryFg,
+                      side: BorderSide(color: context.primaryFg),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 14,
                         vertical: 8,
@@ -490,7 +473,9 @@ class _ClientPayCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF3A3740) : Colors.grey[50],
+                  color: context.isDark
+                      ? const Color(0xFF3A3740)
+                      : Colors.grey[50],
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Center(
@@ -499,7 +484,7 @@ class _ClientPayCard extends StatelessWidget {
                     style: TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 12,
-                      color: subColor,
+                      color: context.subColor,
                     ),
                   ),
                 ),
@@ -514,9 +499,8 @@ class _ClientPayCard extends StatelessWidget {
 
 class _PaymentBottomSheet extends StatefulWidget {
   final ClientModel client;
-  final bool isDark;
 
-  const _PaymentBottomSheet({required this.client, required this.isDark});
+  const _PaymentBottomSheet({required this.client});
 
   @override
   State<_PaymentBottomSheet> createState() => _PaymentBottomSheetState();
@@ -525,7 +509,7 @@ class _PaymentBottomSheet extends StatefulWidget {
 class _PaymentBottomSheetState extends State<_PaymentBottomSheet> {
   late final Map<int, _PayItem> _selected;
   late final ClientController _controller;
-  late final PembayaranController _payController;
+  late final PaymentController _payController;
   bool _isPaying = false;
 
   final DraggableScrollableController _dragController =
@@ -535,9 +519,7 @@ class _PaymentBottomSheetState extends State<_PaymentBottomSheet> {
   void initState() {
     super.initState();
     _controller = ClientController(firestore: FirebaseFirestore.instance);
-    _payController = PembayaranController(
-      firestore: FirebaseFirestore.instance,
-    );
+    _payController = PaymentController(firestore: FirebaseFirestore.instance);
     _selected = {};
   }
 
@@ -620,9 +602,12 @@ class _PaymentBottomSheetState extends State<_PaymentBottomSheet> {
         clientId: widget.client.id,
         clientName: widget.client.name,
         clientAddress: widget.client.address,
+        clientEmail: widget.client.email,
         paymentMethod: 'cash',
         items: paidItems,
         totalAmount: totalAmount,
+        confirmedBy: FirebaseAuth.instance.currentUser?.displayName ??
+            FirebaseAuth.instance.currentUser?.email,
       );
     }
 
@@ -647,27 +632,6 @@ class _PaymentBottomSheetState extends State<_PaymentBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final Color sheetBg = widget.isDark
-        ? const Color(0xFF2B2930)
-        : Colors.white;
-    final Color divider = widget.isDark
-        ? const Color(0xFF49454F)
-        : const Color(0xFFE0E0E0);
-    final Color nameColor = widget.isDark
-        ? Colors.white
-        : const Color(0xFF1D1B20);
-    final Color subColor = widget.isDark
-        ? Colors.white54
-        : const Color(0xFF757575);
-    final Color tealFg = widget.isDark
-        ? const Color(0xFF4DB6AC)
-        : const Color(0xFF00796B);
-    final Color tealBg = widget.isDark
-        ? const Color(0xFF1A3A3A)
-        : const Color(0xFFE0F2F1);
-    final Color priceColor = widget.isDark
-        ? const Color(0xFF80CBC4)
-        : const Color(0xFF2E7D32);
 
     final allItems = widget.client.borrowedItems;
     final selectedList = _selected.values.toList();
@@ -681,12 +645,12 @@ class _PaymentBottomSheetState extends State<_PaymentBottomSheet> {
     return Container(
       clipBehavior: Clip.hardEdge,
       decoration: BoxDecoration(
-        color: sheetBg,
+        color: context.cardBg,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        border: Border(top: BorderSide(color: divider, width: 1)),
+        border: Border(top: BorderSide(color: context.cardBorder, width: 1)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: widget.isDark ? 0.35 : 0.10),
+            color: Colors.black.withValues(alpha: context.isDark ? 0.35 : 0.10),
             blurRadius: 16,
             offset: const Offset(0, -3),
           ),
@@ -706,7 +670,7 @@ class _PaymentBottomSheetState extends State<_PaymentBottomSheet> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: divider,
+                  color: context.cardBorder,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -719,10 +683,10 @@ class _PaymentBottomSheetState extends State<_PaymentBottomSheet> {
                     width: 38,
                     height: 38,
                     decoration: BoxDecoration(
-                      color: tealBg,
+                      color: context.primaryBg,
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(Icons.store_outlined, color: tealFg, size: 20),
+                    child: Icon(Icons.store_outlined, color: context.primaryFg, size: 20),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -735,7 +699,7 @@ class _PaymentBottomSheetState extends State<_PaymentBottomSheet> {
                             fontFamily: 'Poppins',
                             fontWeight: FontWeight.w700,
                             fontSize: 15,
-                            color: nameColor,
+                            color: context.nameColor,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -746,7 +710,7 @@ class _PaymentBottomSheetState extends State<_PaymentBottomSheet> {
                             style: TextStyle(
                               fontFamily: 'Poppins',
                               fontSize: 11,
-                              color: subColor,
+                              color: context.subColor,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -760,7 +724,7 @@ class _PaymentBottomSheetState extends State<_PaymentBottomSheet> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: tealBg,
+                      color: context.primaryBg,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
@@ -769,7 +733,7 @@ class _PaymentBottomSheetState extends State<_PaymentBottomSheet> {
                         fontFamily: 'Poppins',
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
-                        color: tealFg,
+                        color: context.primaryFg,
                       ),
                     ),
                   ),
@@ -782,7 +746,7 @@ class _PaymentBottomSheetState extends State<_PaymentBottomSheet> {
               ),
             ),
 
-            Divider(height: 1, color: divider),
+            Divider(height: 1, color: context.cardBorder),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
               child: Row(
@@ -793,7 +757,7 @@ class _PaymentBottomSheetState extends State<_PaymentBottomSheet> {
                       fontFamily: 'Poppins',
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
-                      color: nameColor,
+                      color: context.nameColor,
                     ),
                   ),
                   const Spacer(),
@@ -803,7 +767,7 @@ class _PaymentBottomSheetState extends State<_PaymentBottomSheet> {
                       vertical: 3,
                     ),
                     decoration: BoxDecoration(
-                      color: tealBg,
+                      color: context.primaryBg,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
@@ -812,14 +776,14 @@ class _PaymentBottomSheetState extends State<_PaymentBottomSheet> {
                         fontFamily: 'Poppins',
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        color: tealFg,
+                        color: context.primaryFg,
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-            Divider(height: 1, color: divider),
+            Divider(height: 1, color: context.cardBorder),
             Expanded(
               child: allItems.isEmpty
                   ? Center(
@@ -828,7 +792,7 @@ class _PaymentBottomSheetState extends State<_PaymentBottomSheet> {
                         style: TextStyle(
                           fontFamily: 'Poppins',
                           fontSize: 13,
-                          color: subColor,
+                          color: context.subColor,
                         ),
                       ),
                     )
@@ -840,7 +804,7 @@ class _PaymentBottomSheetState extends State<_PaymentBottomSheet> {
                       ),
                       itemCount: allItems.length,
                       separatorBuilder: (_, __) =>
-                          Divider(height: 1, color: divider),
+                          Divider(height: 1, color: context.cardBorder),
                       itemBuilder: (_, i) {
                         final b = allItems[i];
                         final key = i;
@@ -860,11 +824,11 @@ class _PaymentBottomSheetState extends State<_PaymentBottomSheet> {
                                   height: 24,
                                   decoration: BoxDecoration(
                                     color: isSelected
-                                        ? tealFg
+                                        ? context.primaryFg
                                         : Colors.transparent,
                                     borderRadius: BorderRadius.circular(6),
                                     border: Border.all(
-                                      color: isSelected ? tealFg : divider,
+                                      color: isSelected ? context.primaryFg : context.cardBorder,
                                       width: 1.5,
                                     ),
                                   ),
@@ -894,7 +858,7 @@ class _PaymentBottomSheetState extends State<_PaymentBottomSheet> {
                                         fontFamily: 'Poppins',
                                         fontSize: 13,
                                         fontWeight: FontWeight.w600,
-                                        color: nameColor,
+                                        color: context.nameColor,
                                       ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
@@ -904,7 +868,7 @@ class _PaymentBottomSheetState extends State<_PaymentBottomSheet> {
                                       style: TextStyle(
                                         fontFamily: 'Poppins',
                                         fontSize: 11,
-                                        color: subColor,
+                                        color: context.subColor,
                                       ),
                                     ),
                                     Text(
@@ -913,7 +877,7 @@ class _PaymentBottomSheetState extends State<_PaymentBottomSheet> {
                                         fontFamily: 'Poppins',
                                         fontSize: 12,
                                         fontWeight: FontWeight.w500,
-                                        color: priceColor,
+                                        color: context.isDark ? const Color(0xFF80CBC4) : const Color(0xFF2E7D32),
                                       ),
                                     ),
                                   ],
@@ -921,10 +885,9 @@ class _PaymentBottomSheetState extends State<_PaymentBottomSheet> {
                               ),
                               const SizedBox(width: 8),
                               if (isSelected && payItem != null)
-                                _QuantityStepper(
+                                QuantityStepper(
                                   quantity: payItem.qty,
                                   maxQuantity: b.quantity,
-                                  isDark: widget.isDark,
                                   onDecrement: () => _changeQty(key, -1),
                                   onIncrement: () => _changeQty(key, 1),
                                   onChanged: (val) => _setQty(key, val),
@@ -935,7 +898,7 @@ class _PaymentBottomSheetState extends State<_PaymentBottomSheet> {
                                   style: TextStyle(
                                     fontFamily: 'Poppins',
                                     fontSize: 11,
-                                    color: subColor,
+                                    color: context.subColor,
                                   ),
                                 ),
                             ],
@@ -947,8 +910,8 @@ class _PaymentBottomSheetState extends State<_PaymentBottomSheet> {
             Container(
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
               decoration: BoxDecoration(
-                color: sheetBg,
-                border: Border(top: BorderSide(color: divider, width: 1)),
+                color: context.cardBg,
+                border: Border(top: BorderSide(color: context.cardBorder, width: 1)),
               ),
               child: Row(
                 children: [
@@ -961,7 +924,9 @@ class _PaymentBottomSheetState extends State<_PaymentBottomSheet> {
                           style: TextStyle(
                             fontFamily: 'Poppins',
                             fontSize: 11,
-                            color: widget.isDark ? Colors.white54 : Colors.grey,
+                            color: context.isDark
+                                ? Colors.white54
+                                : Colors.grey,
                           ),
                         ),
                         Text(
@@ -970,7 +935,7 @@ class _PaymentBottomSheetState extends State<_PaymentBottomSheet> {
                             fontFamily: 'Poppins',
                             fontWeight: FontWeight.w700,
                             fontSize: 15,
-                            color: nameColor,
+                            color: context.nameColor,
                           ),
                         ),
                       ],
@@ -1025,143 +990,3 @@ class _PaymentBottomSheetState extends State<_PaymentBottomSheet> {
   }
 }
 
-class _QuantityStepper extends StatefulWidget {
-  final int quantity;
-  final int maxQuantity;
-  final bool isDark;
-  final VoidCallback onDecrement;
-  final VoidCallback onIncrement;
-  final ValueChanged<int>? onChanged;
-
-  const _QuantityStepper({
-    required this.quantity,
-    required this.maxQuantity,
-    required this.isDark,
-    required this.onDecrement,
-    required this.onIncrement,
-    this.onChanged,
-  });
-
-  @override
-  State<_QuantityStepper> createState() => _QuantityStepperState();
-}
-
-class _QuantityStepperState extends State<_QuantityStepper> {
-  late TextEditingController _ctrl;
-  final FocusNode _focusNode = FocusNode();
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = TextEditingController(text: widget.quantity.toString());
-    _focusNode.addListener(() {
-      if (!_focusNode.hasFocus) _handleSubmitted(_ctrl.text);
-    });
-  }
-
-  @override
-  void didUpdateWidget(covariant _QuantityStepper old) {
-    super.didUpdateWidget(old);
-    if (old.quantity != widget.quantity &&
-        _ctrl.text != widget.quantity.toString()) {
-      _ctrl.text = widget.quantity.toString();
-    }
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    _focusNode.dispose();
-    super.dispose();
-  }
-
-  void _handleSubmitted(String val) {
-    final qty = int.tryParse(val);
-    if (qty != null && qty > 0) {
-      final clamped = qty.clamp(1, widget.maxQuantity);
-      widget.onChanged?.call(clamped);
-    } else {
-      _ctrl.text = widget.quantity.toString();
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final Color bg = widget.isDark
-        ? const Color(0xFF1A3A2A)
-        : const Color(0xFFE6F4EA);
-    final Color iconColor = widget.isDark
-        ? const Color(0xFF80CBC4)
-        : const Color(0xFF2E7D32);
-    final Color textColor = widget.isDark
-        ? Colors.white
-        : const Color(0xFF1D1B20);
-
-    return Container(
-      height: 32,
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          InkWell(
-            onTap: widget.onDecrement,
-            borderRadius: const BorderRadius.horizontal(
-              left: Radius.circular(20),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              child: Icon(
-                widget.quantity <= 1 ? Icons.delete_outline : Icons.remove,
-                size: 18,
-                color: widget.quantity <= 1 ? Colors.red.shade400 : iconColor,
-              ),
-            ),
-          ),
-          SizedBox(
-            width: 36,
-            child: TextField(
-              controller: _ctrl,
-              focusNode: _focusNode,
-              keyboardType: TextInputType.number,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontWeight: FontWeight.w700,
-                fontSize: 14,
-                color: textColor,
-              ),
-              decoration: const InputDecoration(
-                isDense: true,
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.zero,
-              ),
-              onSubmitted: _handleSubmitted,
-              onTapOutside: (_) => _focusNode.unfocus(),
-            ),
-          ),
-          InkWell(
-            onTap: widget.quantity >= widget.maxQuantity
-                ? null
-                : widget.onIncrement,
-            borderRadius: const BorderRadius.horizontal(
-              right: Radius.circular(20),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              child: Icon(
-                Icons.add,
-                size: 18,
-                color: widget.quantity >= widget.maxQuantity
-                    ? iconColor.withValues(alpha: 0.3)
-                    : iconColor,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}

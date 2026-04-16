@@ -1,23 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../controllers/barang_controllers/pengajuan_konsinyasi_controller.dart';
-import '../../models/barang_models/pengajuan_konsinyasi_model.dart';
+import '../../controllers/barang_controllers/konsinyasi_controller.dart';
+import '../../models/barang_models/konsinyasi_model.dart';
 import '../../widgets/search_filter_bar.dart';
 import '../../widgets/catalog_image.dart';
 import '../../widgets/gradient_button.dart';
 import '../../utils/currency_format.dart';
 import '../../widgets/app_dialog.dart';
 
-class DaftarPengajuanPage extends StatefulWidget {
-  const DaftarPengajuanPage({super.key});
+class RequestListPage extends StatefulWidget {
+  const RequestListPage({super.key});
 
   @override
-  State<DaftarPengajuanPage> createState() => _DaftarPengajuanPageState();
+  State<RequestListPage> createState() => _RequestListPageState();
 }
 
-class _DaftarPengajuanPageState extends State<DaftarPengajuanPage> {
+class _RequestListPageState extends State<RequestListPage> {
   late final ConsignmentRequestController _controller;
   late final Stream<QuerySnapshot> _stream;
+
+  // Map<clientId, photoUrl> — loaded once from clients collection
+  Map<String, String> _clientPhotoMap = {};
 
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
@@ -31,6 +34,23 @@ class _DaftarPengajuanPageState extends State<DaftarPengajuanPage> {
       firestore: FirebaseFirestore.instance,
     );
     _stream = _controller.getRequestsStream();
+    _loadClientPhotos();
+  }
+
+  Future<void> _loadClientPhotos() async {
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection('clients')
+          .get();
+      if (!mounted) return;
+      setState(() {
+        _clientPhotoMap = {
+          for (final doc in snap.docs)
+            if ((doc.data()['photoUrl'] as String?)?.isNotEmpty == true)
+              doc.id: doc.data()['photoUrl'] as String,
+        };
+      });
+    } catch (_) {}
   }
 
   @override
@@ -445,13 +465,13 @@ class _DaftarPengajuanPageState extends State<DaftarPengajuanPage> {
 
                 if (_searchQuery.isNotEmpty) {
                   batches = batches.where((b) {
-                    final nameMatch = b.userName.toLowerCase().contains(
+                    final nameMatch = b.clientName.toLowerCase().contains(
                       _searchQuery,
                     );
-                    final schoolMatch = b.userSchool.toLowerCase().contains(
+                    final addrMatch = b.clientAddress.toLowerCase().contains(
                       _searchQuery,
                     );
-                    return nameMatch || schoolMatch;
+                    return nameMatch || addrMatch;
                   }).toList();
                 }
 
@@ -500,6 +520,7 @@ class _DaftarPengajuanPageState extends State<DaftarPengajuanPage> {
                       pendingCount: pendingCount,
                       categories: categories,
                       isDark: isDark,
+                      clientPhotoMap: _clientPhotoMap,
                       batchStatusBg: _batchStatusBg,
                       batchStatusFg: _batchStatusFg,
                       batchStatusIcon: _batchStatusIcon,
@@ -533,6 +554,7 @@ class _BatchCard extends StatelessWidget {
   final int pendingCount;
   final List<String> categories;
   final bool isDark;
+  final Map<String, String> clientPhotoMap;
   final Color Function(ConsignmentBatchStatus, bool) batchStatusBg;
   final Color Function(ConsignmentBatchStatus, bool) batchStatusFg;
   final IconData Function(ConsignmentBatchStatus) batchStatusIcon;
@@ -547,6 +569,7 @@ class _BatchCard extends StatelessWidget {
     required this.pendingCount,
     required this.categories,
     required this.isDark,
+    required this.clientPhotoMap,
     required this.batchStatusBg,
     required this.batchStatusFg,
     required this.batchStatusIcon,
@@ -598,20 +621,26 @@ class _BatchCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                CircleAvatar(
-                  radius: 22,
-                  backgroundColor: accentGreenBg,
-                  child: Text(
-                    batch.userName.isNotEmpty
-                        ? batch.userName[0].toUpperCase()
-                        : '?',
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontWeight: FontWeight.w700,
-                      fontSize: 18,
-                      color: accentGreen,
-                    ),
-                  ),
+                Builder(
+                  builder: (context) {
+                    final photoUrl = clientPhotoMap[batch.clientId];
+                    return photoUrl != null && photoUrl.isNotEmpty
+                        ? CircleAvatar(
+                            radius: 22,
+                            backgroundColor: accentGreenBg,
+                            backgroundImage: NetworkImage(photoUrl),
+                            onBackgroundImageError: (_, __) {},
+                          )
+                        : CircleAvatar(
+                            radius: 22,
+                            backgroundColor: accentGreenBg,
+                            child: Icon(
+                              Icons.store_outlined,
+                              size: 22,
+                              color: accentGreen,
+                            ),
+                          );
+                  },
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -619,9 +648,9 @@ class _BatchCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        batch.userName.isNotEmpty
-                            ? batch.userName
-                            : 'Pengguna Tidak Dikenal',
+                        batch.clientName.isNotEmpty
+                            ? batch.clientName
+                            : 'Klien Tidak Dikenal',
                         style: TextStyle(
                           fontFamily: 'Poppins',
                           fontWeight: FontWeight.w700,
@@ -629,29 +658,17 @@ class _BatchCard extends StatelessWidget {
                           color: nameColor,
                         ),
                       ),
-                      if (batch.userSchool.isNotEmpty) ...[
+                      if (batch.clientAddress.isNotEmpty) ...[
                         const SizedBox(height: 2),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.school_outlined,
-                              size: 12,
-                              color: subColor,
-                            ),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                batch.userSchool,
-                                style: TextStyle(
-                                  fontFamily: 'Poppins',
-                                  fontSize: 12,
-                                  color: subColor,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
+                        Text(
+                          batch.clientAddress,
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 12,
+                            color: subColor,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ],
@@ -1070,9 +1087,9 @@ class _DetailSheetBody extends StatelessWidget {
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
-                      batch.userName.isNotEmpty
-                          ? batch.userName
-                          : 'Pengguna Tidak Dikenal',
+                      batch.clientName.isNotEmpty
+                          ? batch.clientName
+                          : 'Klien Tidak Dikenal',
                       style: TextStyle(
                         fontFamily: 'Poppins',
                         fontWeight: FontWeight.w700,
@@ -1115,16 +1132,16 @@ class _DetailSheetBody extends StatelessWidget {
               ),
             ),
 
-            if (batch.userSchool.isNotEmpty)
+            if (batch.clientAddress.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(left: 16, right: 16, bottom: 6),
                 child: Row(
                   children: [
-                    Icon(Icons.school_outlined, size: 13, color: subColor),
+                    Icon(Icons.location_on_outlined, size: 13, color: subColor),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
-                        batch.userSchool,
+                        batch.clientAddress,
                         style: TextStyle(
                           fontFamily: 'Poppins',
                           fontSize: 12,

@@ -2,23 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../controllers/pengguna_controllers/klien_controller.dart';
 import '../../controllers/barang_controllers/katalog_controller.dart';
-import '../../controllers/barang_controllers/pengajuan_konsinyasi_controller.dart';
+import '../../controllers/barang_controllers/konsinyasi_controller.dart';
 import '../../models/pengguna_models/klien_model.dart';
 import '../../models/barang_models/katalog_model.dart';
-import '../../models/barang_models/pengajuan_konsinyasi_model.dart';
+import '../../models/barang_models/konsinyasi_model.dart';
 import '../../widgets/search_filter_bar.dart';
 import '../../widgets/catalog_image.dart';
 import '../../widgets/gradient_button.dart';
 import '../../utils/currency_format.dart';
 
-class BarangKonsinyasiPage extends StatefulWidget {
-  const BarangKonsinyasiPage({super.key});
+class ConsignmentPage extends StatefulWidget {
+  const ConsignmentPage({super.key});
 
   @override
-  State<BarangKonsinyasiPage> createState() => _BarangKonsinyasiPageState();
+  State<ConsignmentPage> createState() => _ConsignmentPageState();
 }
 
-class _BarangKonsinyasiPageState extends State<BarangKonsinyasiPage> {
+class _ConsignmentPageState extends State<ConsignmentPage> {
   late final ClientController _controller;
   late final Stream<QuerySnapshot> _stream;
 
@@ -222,7 +222,7 @@ class _BarangKonsinyasiPageState extends State<BarangKonsinyasiPage> {
                       );
                     }
                     return ListView.builder(
-                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
                       itemCount: clients.length,
                       itemBuilder: (context, i) {
                         final client = clients[i];
@@ -1116,10 +1116,10 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
           .toList();
 
       await _consignmentRequestController.createDirectReceivedRequest(
-        userId: _selectedClient!.id,
-        userName: _selectedClient!.name,
-        userEmail: _selectedClient!.email,
-        userSchool: _selectedClient!.address,
+        clientId: _selectedClient!.id,
+        clientName: _selectedClient!.name,
+        clientAddress: _selectedClient!.address,
+        clientEmail: _selectedClient!.email,
         items: consignmentItems,
       );
     }

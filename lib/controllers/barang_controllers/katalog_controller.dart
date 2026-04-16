@@ -61,6 +61,18 @@ class CatalogController {
     return null;
   }
 
+  Future<bool> checkNameExists(String name, {String? excludeId}) async {
+    final query = await firestore
+        .collection(collectionName)
+        .where('name', isEqualTo: name.trim())
+        .get();
+
+    if (excludeId != null) {
+      return query.docs.any((doc) => doc.id != excludeId);
+    }
+    return query.docs.isNotEmpty;
+  }
+
   Future<Map<String, dynamic>> createItem({
     required String name,
     required double price,
@@ -68,6 +80,9 @@ class CatalogController {
     XFile? imageFile,
   }) async {
     try {
+      final nameExists = await checkNameExists(name);
+      if (nameExists) return {'success': false, 'error': 'Nama barang sudah terdaftar'};
+
       final docRef = await firestore.collection(collectionName).add({
         'name': name.trim(),
         'price': price,
@@ -102,6 +117,9 @@ class CatalogController {
     bool removeImage = false,
   }) async {
     try {
+      final nameExists = await checkNameExists(name, excludeId: id);
+      if (nameExists) return {'success': false, 'error': 'Nama barang sudah terdaftar'};
+
       String? finalImagePath = oldImagePath;
 
       if (removeImage) {

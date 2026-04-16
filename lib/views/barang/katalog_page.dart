@@ -6,7 +6,6 @@ import '../../controllers/barang_controllers/katalog_controller.dart';
 import '../../models/barang_models/katalog_model.dart';
 import '../../widgets/search_filter_bar.dart';
 import '../../widgets/app_dialog.dart';
-import '../../widgets/gradient_button.dart';
 import '../../widgets/catalog_image.dart';
 import '../../utils/currency_format.dart';
 
@@ -61,130 +60,145 @@ class _CatalogPageState extends State<CatalogPage> {
     final priceController = TextEditingController();
     String selectedCategory = _categories.first;
     XFile? pickedImage;
+    String? nameServerError;
 
-    showDialog(
+    showAppDialog(
       context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (dialogContext, setDialogState) => AlertDialog(
-          title: const Text('Tambah Barang'),
-          content: SingleChildScrollView(
-            child: Form(
-              key: formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  GestureDetector(
-                    onTap: () async {
-                      final file = await _pickImage();
-                      if (file != null) {
-                        setDialogState(() => pickedImage = file);
-                      }
-                    },
-                    child: _ImagePickerPreview(
-                      pickedImage: pickedImage,
-                      existingPath: null,
-                      onRemove: () => setDialogState(() => pickedImage = null),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: nameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Nama Barang',
-                      border: OutlineInputBorder(),
-                      hintText: 'Masukkan nama barang',
-                      prefixIcon: Icon(Icons.inventory_2_outlined),
-                    ),
-                    validator: _controller.validateName,
-                    textCapitalization: TextCapitalization.words,
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: priceController,
-                    decoration: const InputDecoration(
-                      labelText: 'Harga (Rp)',
-                      border: OutlineInputBorder(),
-                      hintText: '0',
-                      prefixIcon: Icon(Icons.sell_outlined),
-                    ),
-                    keyboardType: TextInputType.number,
-                    validator: _controller.validatePrice,
-                    autovalidateMode: AutovalidateMode.onUserInteraction,
-                  ),
-                  const SizedBox(height: 16),
-                  DropdownButtonFormField<String>(
-                    value: selectedCategory,
-                    decoration: const InputDecoration(
-                      labelText: 'Kategori',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.category_outlined),
-                    ),
-                    items: _categories
-                        .map(
-                          (cat) =>
-                              DropdownMenuItem(value: cat, child: Text(cat)),
-                        )
-                        .toList(),
-                    onChanged: (value) {
-                      if (value != null) {
-                        setDialogState(() => selectedCategory = value);
-                      }
-                    },
-                    validator: _controller.validateCategory,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              style: TextButton.styleFrom(
-                foregroundColor: Theme.of(dialogContext).colorScheme.onSurface,
-                splashFactory: NoSplash.splashFactory,
-                overlayColor: Colors.transparent,
-              ),
-              child: const Text('Batal'),
-            ),
-            GradientButton(
-              label: 'Tambah',
-              onPressed: () async {
-                if (formKey.currentState!.validate()) {
-                  final price =
-                      double.tryParse(
-                        priceController.text
-                            .trim()
-                            .replaceAll(',', '')
-                            .replaceAll('.', ''),
-                      ) ??
-                      0.0;
-                  Navigator.pop(dialogContext);
-                  final result = await _controller.createItem(
-                    name: nameController.text.trim(),
-                    price: price,
-                    category: selectedCategory,
-                    imageFile: pickedImage,
-                  );
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          result['success'] == true
-                              ? 'Barang berhasil ditambahkan'
-                              : (result['error'] ?? 'Terjadi kesalahan'),
-                        ),
-                        backgroundColor: result['success'] == true
-                            ? Colors.green
-                            : Colors.red,
-                      ),
-                    );
+      title: 'Tambah Barang',
+      contentBuilder: (dialogContext, setDialogState) => SingleChildScrollView(
+        child: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              GestureDetector(
+                onTap: () async {
+                  final file = await _pickImage();
+                  if (file != null) {
+                    setDialogState(() => pickedImage = file);
                   }
-                }
-              },
-            ),
-          ],
+                },
+                child: _ImagePickerPreview(
+                  pickedImage: pickedImage,
+                  existingPath: null,
+                  onRemove: () => setDialogState(() => pickedImage = null),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Nama Barang',
+                  border: OutlineInputBorder(),
+                  hintText: 'Masukkan nama barang',
+                  prefixIcon: Icon(Icons.inventory_2_outlined),
+                ),
+                onChanged: (val) {
+                  if (nameServerError != null) {
+                    nameServerError = null;
+                    formKey.currentState?.validate();
+                  }
+                },
+                validator: (value) {
+                  if (nameServerError != null) return nameServerError;
+                  return _controller.validateName(value);
+                },
+                textCapitalization: TextCapitalization.words,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: priceController,
+                decoration: const InputDecoration(
+                  labelText: 'Harga (Rp)',
+                  border: OutlineInputBorder(),
+                  hintText: '0',
+                  prefixIcon: Icon(Icons.sell_outlined),
+                ),
+                keyboardType: TextInputType.number,
+                validator: _controller.validatePrice,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                initialValue: selectedCategory,
+                decoration: const InputDecoration(
+                  labelText: 'Kategori',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.category_outlined),
+                ),
+                items: _categories
+                    .map(
+                      (cat) => DropdownMenuItem(value: cat, child: Text(cat)),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    setDialogState(() => selectedCategory = value);
+                  }
+                },
+                validator: _controller.validateCategory,
+              ),
+            ],
+          ),
         ),
       ),
+      actions: [
+        AppDialogAction(
+          label: 'Batal',
+          onPressed: () => Navigator.pop(context),
+        ),
+        AppDialogAction(
+          label: 'Tambah',
+          type: AppDialogActionType.gradient,
+          onPressed: () async {
+            nameServerError = null;
+            if (formKey.currentState!.validate()) {
+              final nameExists = await _controller.checkNameExists(
+                nameController.text.trim(),
+              );
+              if (nameExists) {
+                nameServerError = 'Nama barang sudah terdaftar';
+                formKey.currentState!.validate();
+                return;
+              }
+
+              final price =
+                  double.tryParse(
+                    priceController.text
+                        .trim()
+                        .replaceAll(',', '')
+                        .replaceAll('.', ''),
+                  ) ??
+                  0.0;
+
+              if (!context.mounted) return;
+              Navigator.pop(context);
+
+              final result = await _controller.createItem(
+                name: nameController.text.trim(),
+                price: price,
+                category: selectedCategory,
+                imageFile: pickedImage,
+              );
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      result['success'] == true
+                          ? 'Barang berhasil ditambahkan'
+                          : (result['error'] ?? 'Terjadi kesalahan'),
+                    ),
+                    backgroundColor: result['success'] == true
+                        ? Colors.green
+                        : Colors.red,
+                  ),
+                );
+              }
+            }
+          },
+        ),
+      ],
     );
   }
 
@@ -199,137 +213,153 @@ class _CatalogPageState extends State<CatalogPage> {
         : _categories.first;
     XFile? pickedImage;
     bool removeImage = false;
+    String? nameServerError;
 
-    showDialog(
+    showAppDialog(
       context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (dialogContext, setDialogState) => AlertDialog(
-          title: const Text('Edit Barang'),
-          content: SingleChildScrollView(
-            child: Form(
-              key: formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  GestureDetector(
-                    onTap: () async {
-                      final file = await _pickImage();
-                      if (file != null) {
-                        setDialogState(() {
-                          pickedImage = file;
-                          removeImage = false;
-                        });
-                      }
-                    },
-                    child: _ImagePickerPreview(
-                      pickedImage: pickedImage,
-                      existingPath: removeImage ? null : item.imagePath,
-                      onRemove: () => setDialogState(() {
-                        pickedImage = null;
-                        removeImage = true;
-                      }),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: nameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Nama Barang',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.inventory_2_outlined),
-                    ),
-                    validator: _controller.validateName,
-                    textCapitalization: TextCapitalization.words,
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: priceController,
-                    decoration: const InputDecoration(
-                      labelText: 'Harga (Rp)',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.sell_outlined),
-                    ),
-                    keyboardType: TextInputType.number,
-                    validator: _controller.validatePrice,
-                    autovalidateMode: AutovalidateMode.onUserInteraction,
-                  ),
-                  const SizedBox(height: 16),
-                  DropdownButtonFormField<String>(
-                    value: selectedCategory,
-                    decoration: const InputDecoration(
-                      labelText: 'Kategori',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.category_outlined),
-                    ),
-                    items: _categories
-                        .map(
-                          (cat) =>
-                              DropdownMenuItem(value: cat, child: Text(cat)),
-                        )
-                        .toList(),
-                    onChanged: (value) {
-                      if (value != null) {
-                        setDialogState(() => selectedCategory = value);
-                      }
-                    },
-                    validator: _controller.validateCategory,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              style: TextButton.styleFrom(
-                foregroundColor: Theme.of(dialogContext).colorScheme.onSurface,
-                splashFactory: NoSplash.splashFactory,
-                overlayColor: Colors.transparent,
-              ),
-              child: const Text('Batal'),
-            ),
-            GradientButton(
-              label: 'Simpan',
-              onPressed: () async {
-                if (formKey.currentState!.validate()) {
-                  final price =
-                      double.tryParse(
-                        priceController.text
-                            .trim()
-                            .replaceAll(',', '')
-                            .replaceAll('.', ''),
-                      ) ??
-                      0.0;
-                  Navigator.pop(dialogContext);
-                  final result = await _controller.updateItem(
-                    id: item.id,
-                    name: nameController.text.trim(),
-                    price: price,
-                    category: selectedCategory,
-                    newImageFile: pickedImage,
-                    oldImagePath: item.imagePath,
-                    removeImage: removeImage,
-                  );
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          result['success'] == true
-                              ? 'Barang berhasil diupdate'
-                              : (result['error'] ?? 'Terjadi kesalahan'),
-                        ),
-                        backgroundColor: result['success'] == true
-                            ? Colors.green
-                            : Colors.red,
-                      ),
-                    );
+      title: 'Edit Barang',
+      contentBuilder: (dialogContext, setDialogState) => SingleChildScrollView(
+        child: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              GestureDetector(
+                onTap: () async {
+                  final file = await _pickImage();
+                  if (file != null) {
+                    setDialogState(() {
+                      pickedImage = file;
+                      removeImage = false;
+                    });
                   }
-                }
-              },
-            ),
-          ],
+                },
+                child: _ImagePickerPreview(
+                  pickedImage: pickedImage,
+                  existingPath: removeImage ? null : item.imagePath,
+                  onRemove: () => setDialogState(() {
+                    pickedImage = null;
+                    removeImage = true;
+                  }),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Nama Barang',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.inventory_2_outlined),
+                ),
+                onChanged: (val) {
+                  if (nameServerError != null) {
+                    nameServerError = null;
+                    formKey.currentState?.validate();
+                  }
+                },
+                validator: (value) {
+                  if (nameServerError != null) return nameServerError;
+                  return _controller.validateName(value);
+                },
+                textCapitalization: TextCapitalization.words,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: priceController,
+                decoration: const InputDecoration(
+                  labelText: 'Harga (Rp)',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.sell_outlined),
+                ),
+                keyboardType: TextInputType.number,
+                validator: _controller.validatePrice,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                initialValue: selectedCategory,
+                decoration: const InputDecoration(
+                  labelText: 'Kategori',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.category_outlined),
+                ),
+                items: _categories
+                    .map(
+                      (cat) => DropdownMenuItem(value: cat, child: Text(cat)),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    setDialogState(() => selectedCategory = value);
+                  }
+                },
+                validator: _controller.validateCategory,
+              ),
+            ],
+          ),
         ),
       ),
+      actions: [
+        AppDialogAction(
+          label: 'Batal',
+          onPressed: () => Navigator.pop(context),
+        ),
+        AppDialogAction(
+          label: 'Simpan',
+          type: AppDialogActionType.gradient,
+          onPressed: () async {
+            nameServerError = null;
+            if (formKey.currentState!.validate()) {
+              final nameExists = await _controller.checkNameExists(
+                nameController.text.trim(),
+                excludeId: item.id,
+              );
+              if (nameExists) {
+                nameServerError = 'Nama barang sudah terdaftar';
+                formKey.currentState!.validate();
+                return;
+              }
+
+              final price =
+                  double.tryParse(
+                    priceController.text
+                        .trim()
+                        .replaceAll(',', '')
+                        .replaceAll('.', ''),
+                  ) ??
+                  0.0;
+
+              if (!context.mounted) return;
+              Navigator.pop(context);
+
+              final result = await _controller.updateItem(
+                id: item.id,
+                name: nameController.text.trim(),
+                price: price,
+                category: selectedCategory,
+                newImageFile: pickedImage,
+                oldImagePath: item.imagePath,
+                removeImage: removeImage,
+              );
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      result['success'] == true
+                          ? 'Barang berhasil diupdate'
+                          : (result['error'] ?? 'Terjadi kesalahan'),
+                    ),
+                    backgroundColor: result['success'] == true
+                        ? Colors.green
+                        : Colors.red,
+                  ),
+                );
+              }
+            }
+          },
+        ),
+      ],
     );
   }
 
@@ -530,7 +560,7 @@ class _CatalogPageState extends State<CatalogPage> {
                       }
 
                       return ListView.builder(
-                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
                         itemCount: filteredWithMeta.length,
                         itemBuilder: (context, index) {
                           final item = filteredWithMeta[index].item;

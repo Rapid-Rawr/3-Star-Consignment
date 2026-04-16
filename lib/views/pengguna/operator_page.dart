@@ -4,7 +4,7 @@ import '../../controllers/pengguna_controllers/operator_controller.dart';
 import '../../models/pengguna_models/operator_model.dart';
 import '../../widgets/search_filter_bar.dart';
 import '../../widgets/app_dialog.dart';
-import '../../widgets/gradient_button.dart';
+import '../../utils/app_colors.dart';
 
 class OperatorPage extends StatefulWidget {
   const OperatorPage({super.key});
@@ -60,102 +60,116 @@ class _OperatorPageState extends State<OperatorPage> {
     final nameController = TextEditingController();
     final emailController = TextEditingController();
     String selectedRole = 'Administrator';
+    String? emailServerError;
 
-    showDialog(
+    showAppDialog(
       context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (dialogContext, setDialogState) => AlertDialog(
-          title: const Text('Tambah Operator'),
-          content: SingleChildScrollView(
-            child: Form(
-              key: formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextFormField(
-                    controller: nameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Nama',
-                      border: OutlineInputBorder(),
-                      hintText: 'Masukkan nama lengkap',
-                    ),
-                    validator: _controller.validateName,
-                    textCapitalization: TextCapitalization.words,
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: emailController,
-                    decoration: const InputDecoration(
-                      labelText: 'Email',
-                      border: OutlineInputBorder(),
-                      hintText: 'contoh@gmail.com',
-                      prefixIcon: Icon(Icons.email),
-                    ),
-                    keyboardType: TextInputType.emailAddress,
-                    validator: _controller.validateEmail,
-                    autovalidateMode: AutovalidateMode.onUserInteraction,
-                  ),
-                  const SizedBox(height: 16),
-                  DropdownButtonFormField<String>(
-                    initialValue: selectedRole,
-                    decoration: const InputDecoration(
-                      labelText: 'Role',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: ['Administrator', 'Karyawan']
-                        .map(
-                          (role) =>
-                              DropdownMenuItem(value: role, child: Text(role)),
-                        )
-                        .toList(),
-                    onChanged: (value) =>
-                        setDialogState(() => selectedRole = value!),
-                    validator: _controller.validateRole,
-                  ),
-                ],
+      title: 'Tambah Operator',
+      contentBuilder: (dialogContext, setDialogState) => SingleChildScrollView(
+        child: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Nama',
+                  border: OutlineInputBorder(),
+                  hintText: 'Masukkan nama lengkap',
+                ),
+                validator: _controller.validateName,
+                textCapitalization: TextCapitalization.words,
               ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              style: TextButton.styleFrom(
-                foregroundColor: Theme.of(dialogContext).colorScheme.onSurface,
-                splashFactory: NoSplash.splashFactory,
-                overlayColor: Colors.transparent,
-              ),
-              child: const Text('Batal'),
-            ),
-            GradientButton(
-              label: 'Tambah',
-              onPressed: () async {
-                if (formKey.currentState!.validate()) {
-                  Navigator.pop(dialogContext);
-                  final result = await _controller.createOperator(
-                    name: nameController.text.trim(),
-                    email: emailController.text.trim(),
-                    role: selectedRole,
-                  );
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          result['success'] == true
-                              ? 'Operator berhasil ditambahkan'
-                              : (result['error'] ?? 'Terjadi kesalahan'),
-                        ),
-                        backgroundColor: result['success'] == true
-                            ? Colors.green
-                            : Colors.red,
-                      ),
-                    );
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: emailController,
+                decoration: const InputDecoration(
+                  labelText: 'Email',
+                  border: OutlineInputBorder(),
+                  hintText: 'contoh@gmail.com',
+                  prefixIcon: Icon(Icons.email),
+                ),
+                keyboardType: TextInputType.emailAddress,
+                onChanged: (val) {
+                  if (emailServerError != null) {
+                    emailServerError = null;
+                    formKey.currentState?.validate();
                   }
-                }
-              },
-            ),
-          ],
+                },
+                validator: (value) {
+                  if (emailServerError != null) return emailServerError;
+                  return _controller.validateEmail(value);
+                },
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                initialValue: selectedRole,
+                decoration: const InputDecoration(
+                  labelText: 'Role',
+                  border: OutlineInputBorder(),
+                ),
+                items: ['Administrator', 'Karyawan']
+                    .map(
+                      (role) =>
+                          DropdownMenuItem(value: role, child: Text(role)),
+                    )
+                    .toList(),
+                onChanged: (value) =>
+                    setDialogState(() => selectedRole = value!),
+                validator: _controller.validateRole,
+              ),
+            ],
+          ),
         ),
       ),
+      actions: [
+        AppDialogAction(
+          label: 'Batal',
+          onPressed: () => Navigator.pop(context),
+        ),
+        AppDialogAction(
+          label: 'Tambah',
+          type: AppDialogActionType.gradient,
+          onPressed: () async {
+            emailServerError = null;
+            if (formKey.currentState!.validate()) {
+              final email = emailController.text.trim();
+              
+              final result = await _controller.createOperator(
+                name: nameController.text.trim(),
+                email: email,
+                role: selectedRole,
+              );
+              
+              if (!context.mounted) return;
+
+              if (result['success'] == true) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Operator berhasil ditambahkan'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              } else {
+                if (result['error'] == 'Email sudah terdaftar') {
+                  emailServerError = result['error'];
+                  formKey.currentState!.validate();
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(result['error'] ?? 'Terjadi kesalahan'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            }
+          },
+        ),
+      ],
     );
   }
 
@@ -164,103 +178,117 @@ class _OperatorPageState extends State<OperatorPage> {
     final nameController = TextEditingController(text: operator.name);
     final emailController = TextEditingController(text: operator.email);
     String selectedRole = operator.role;
+    String? emailServerError;
 
-    showDialog(
+    showAppDialog(
       context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (dialogContext, setDialogState) => AlertDialog(
-          title: const Text('Edit Operator'),
-          content: SingleChildScrollView(
-            child: Form(
-              key: formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextFormField(
-                    controller: nameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Nama',
-                      border: OutlineInputBorder(),
-                      hintText: 'Masukkan nama lengkap',
-                    ),
-                    validator: _controller.validateName,
-                    textCapitalization: TextCapitalization.words,
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: emailController,
-                    decoration: const InputDecoration(
-                      labelText: 'Email',
-                      border: OutlineInputBorder(),
-                      hintText: 'contoh@gmail.com',
-                      prefixIcon: Icon(Icons.email),
-                    ),
-                    keyboardType: TextInputType.emailAddress,
-                    validator: _controller.validateEmail,
-                    autovalidateMode: AutovalidateMode.onUserInteraction,
-                  ),
-                  const SizedBox(height: 16),
-                  DropdownButtonFormField<String>(
-                    initialValue: selectedRole,
-                    decoration: const InputDecoration(
-                      labelText: 'Role',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: ['Administrator', 'Karyawan']
-                        .map(
-                          (role) =>
-                              DropdownMenuItem(value: role, child: Text(role)),
-                        )
-                        .toList(),
-                    onChanged: (value) =>
-                        setDialogState(() => selectedRole = value!),
-                    validator: _controller.validateRole,
-                  ),
-                ],
+      title: 'Edit Operator',
+      contentBuilder: (dialogContext, setDialogState) => SingleChildScrollView(
+        child: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Nama',
+                  border: OutlineInputBorder(),
+                  hintText: 'Masukkan nama lengkap',
+                ),
+                validator: _controller.validateName,
+                textCapitalization: TextCapitalization.words,
               ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              style: TextButton.styleFrom(
-                foregroundColor: Theme.of(dialogContext).colorScheme.onSurface,
-                splashFactory: NoSplash.splashFactory,
-                overlayColor: Colors.transparent,
-              ),
-              child: const Text('Batal'),
-            ),
-            GradientButton(
-              label: 'Simpan',
-              onPressed: () async {
-                if (formKey.currentState!.validate()) {
-                  Navigator.pop(dialogContext);
-                  final result = await _controller.updateOperator(
-                    id: operator.id,
-                    name: nameController.text.trim(),
-                    email: emailController.text.trim(),
-                    role: selectedRole,
-                  );
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          result['success'] == true
-                              ? 'Operator berhasil diupdate'
-                              : (result['error'] ?? 'Terjadi kesalahan'),
-                        ),
-                        backgroundColor: result['success'] == true
-                            ? Colors.green
-                            : Colors.red,
-                      ),
-                    );
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: emailController,
+                decoration: const InputDecoration(
+                  labelText: 'Email',
+                  border: OutlineInputBorder(),
+                  hintText: 'contoh@gmail.com',
+                  prefixIcon: Icon(Icons.email),
+                ),
+                keyboardType: TextInputType.emailAddress,
+                onChanged: (val) {
+                  if (emailServerError != null) {
+                    emailServerError = null;
+                    formKey.currentState?.validate();
                   }
-                }
-              },
-            ),
-          ],
+                },
+                validator: (value) {
+                  if (emailServerError != null) return emailServerError;
+                  return _controller.validateEmail(value);
+                },
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                initialValue: selectedRole,
+                decoration: const InputDecoration(
+                  labelText: 'Role',
+                  border: OutlineInputBorder(),
+                ),
+                items: ['Administrator', 'Karyawan']
+                    .map(
+                      (role) =>
+                          DropdownMenuItem(value: role, child: Text(role)),
+                    )
+                    .toList(),
+                onChanged: (value) =>
+                    setDialogState(() => selectedRole = value!),
+                validator: _controller.validateRole,
+              ),
+            ],
+          ),
         ),
       ),
+      actions: [
+        AppDialogAction(
+          label: 'Batal',
+          onPressed: () => Navigator.pop(context),
+        ),
+        AppDialogAction(
+          label: 'Simpan',
+          type: AppDialogActionType.gradient,
+          onPressed: () async {
+            emailServerError = null;
+            if (formKey.currentState!.validate()) {
+              final email = emailController.text.trim();
+              
+              final result = await _controller.updateOperator(
+                id: operator.id,
+                name: nameController.text.trim(),
+                email: email,
+                role: selectedRole,
+              );
+              
+              if (!context.mounted) return;
+
+              if (result['success'] == true) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Operator berhasil diupdate'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              } else {
+                if (result['error'] == 'Email sudah terdaftar') {
+                  emailServerError = result['error'];
+                  formKey.currentState!.validate();
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(result['error'] ?? 'Terjadi kesalahan'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            }
+          },
+        ),
+      ],
     );
   }
 
@@ -303,23 +331,6 @@ class _OperatorPageState extends State<OperatorPage> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-
-    final Color editBg = isDark
-        ? const Color(0xFF49454F)
-        : const Color(0xFFE8E5EC);
-    final Color editIcon = isDark ? Colors.white : const Color(0xFF1D1B20);
-    final Color deleteBg = isDark
-        ? const Color(0xFF4D2B2B)
-        : const Color(0xFFFCE8E8);
-    final Color deleteIcon = isDark ? const Color(0xFFFF8A8A) : Colors.red;
-    final Color emptyIcon = isDark ? Colors.white24 : Colors.black26;
-    final Color emptyText = isDark ? Colors.white38 : const Color(0xFF9E9E9E);
-
-    final List<Color> fabGradient = isDark
-        ? [const Color(0xFFA3A3A3), const Color(0xFFFFFFFF)]
-        : [const Color(0xFF67636D), const Color(0xFF1D1B20)];
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Operator', style: TextStyle(fontFamily: 'Poppins')),
@@ -380,14 +391,14 @@ class _OperatorPageState extends State<OperatorPage> {
                           Icon(
                             Icons.people_outline,
                             size: 64,
-                            color: emptyIcon,
+                            color: context.emptyIcon,
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            'No Operator Available',
+                            'Belum Ada Operator',
                             style: TextStyle(
                               fontSize: 16,
-                              color: emptyText,
+                              color: context.emptyText,
                               fontFamily: 'Poppins',
                             ),
                           ),
@@ -425,13 +436,13 @@ class _OperatorPageState extends State<OperatorPage> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.search_off, size: 64, color: emptyIcon),
+                          Icon(Icons.search_off, size: 64, color: context.emptyIcon),
                           const SizedBox(height: 16),
                           Text(
-                            'No Operator Found',
+                            'Operator Tidak Ditemukan',
                             style: TextStyle(
                               fontSize: 16,
-                              color: emptyText,
+                              color: context.emptyText,
                               fontFamily: 'Poppins',
                             ),
                           ),
@@ -467,45 +478,18 @@ class _OperatorPageState extends State<OperatorPage> {
                                 : operator.name.trim()[0].toUpperCase()
                           : '?';
                       final isAdmin = operator.role == 'Administrator';
-                      final roleBadgeBg = isAdmin
-                          ? (isDark
-                                ? const Color(0xFF4A2E76)
-                                : const Color(0xFFEDE7F6))
-                          : (isDark
-                                ? const Color(0xFF1A3E3A)
-                                : const Color(0xFFE0F2F1));
-                      final roleBadgeText = isAdmin
-                          ? (isDark
-                                ? const Color(0xFFCE93D8)
-                                : const Color(0xFF6A1B9A))
-                          : (isDark
-                                ? const Color(0xFF80CBC4)
-                                : const Color(0xFF00695C));
-
-                      final cardBg = isDark
-                          ? const Color(0xFF2B2930)
-                          : Colors.white;
-                      final cardBorder = isDark
-                          ? const Color(0xFF49454F)
-                          : const Color(0xFFE0E0E0);
-                      final nameColor = isDark
-                          ? Colors.white
-                          : const Color(0xFF1D1B20);
-                      final emailColor = isDark
-                          ? Colors.white54
-                          : const Color(0xFF757575);
+                      final roleBadgeBg = context.roleBadgeBg(isAdmin);
+                      final roleBadgeText = context.roleBadgeText(isAdmin);
 
                       return Container(
                         margin: const EdgeInsets.only(bottom: 12),
                         decoration: BoxDecoration(
-                          color: cardBg,
+                          color: context.cardBg,
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: cardBorder, width: 1),
+                          border: Border.all(color: context.cardBorder, width: 1),
                           boxShadow: [
                             BoxShadow(
-                              color: isDark
-                                  ? Colors.black26
-                                  : Colors.black.withValues(alpha: 0.06),
+                              color: context.cardShadow,
                               blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),
@@ -550,7 +534,7 @@ class _OperatorPageState extends State<OperatorPage> {
                                         fontFamily: 'Poppins',
                                         fontWeight: FontWeight.w600,
                                         fontSize: 15,
-                                        color: nameColor,
+                                        color: context.nameColor,
                                       ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
@@ -562,9 +546,7 @@ class _OperatorPageState extends State<OperatorPage> {
                                           Icon(
                                             Icons.access_time_rounded,
                                             size: 12,
-                                            color: isDark
-                                                ? Colors.amber.shade300
-                                                : Colors.orange,
+                                          color: context.pendingColor,
                                           ),
                                           const SizedBox(width: 3),
                                           Text(
@@ -572,9 +554,7 @@ class _OperatorPageState extends State<OperatorPage> {
                                             style: TextStyle(
                                               fontFamily: 'Poppins',
                                               fontSize: 10,
-                                              color: isDark
-                                                  ? Colors.amber.shade300
-                                                  : Colors.orange,
+                                              color: context.pendingColor,
                                             ),
                                           ),
                                         ],
@@ -586,7 +566,7 @@ class _OperatorPageState extends State<OperatorPage> {
                                         Icon(
                                           Icons.email_outlined,
                                           size: 13,
-                                          color: emailColor,
+                                          color: context.subColor,
                                         ),
                                         const SizedBox(width: 4),
                                         Expanded(
@@ -595,7 +575,7 @@ class _OperatorPageState extends State<OperatorPage> {
                                             style: TextStyle(
                                               fontFamily: 'Poppins',
                                               fontSize: 12,
-                                              color: emailColor,
+                                              color: context.subColor,
                                             ),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
@@ -637,12 +617,12 @@ class _OperatorPageState extends State<OperatorPage> {
                                     child: Container(
                                       padding: const EdgeInsets.all(8),
                                       decoration: BoxDecoration(
-                                        color: editBg,
+                                        color: context.editBg,
                                         borderRadius: BorderRadius.circular(20),
                                       ),
                                       child: Icon(
                                         Icons.edit_outlined,
-                                        color: editIcon,
+                                        color: context.editIcon,
                                         size: 18,
                                       ),
                                     ),
@@ -655,12 +635,12 @@ class _OperatorPageState extends State<OperatorPage> {
                                     child: Container(
                                       padding: const EdgeInsets.all(8),
                                       decoration: BoxDecoration(
-                                        color: deleteBg,
+                                        color: context.deleteBg,
                                         borderRadius: BorderRadius.circular(20),
                                       ),
                                       child: Icon(
                                         Icons.delete_outline,
-                                        color: deleteIcon,
+                                        color: context.deleteIcon,
                                         size: 18,
                                       ),
                                     ),
@@ -684,7 +664,7 @@ class _OperatorPageState extends State<OperatorPage> {
           gradient: LinearGradient(
             begin: Alignment.bottomLeft,
             end: Alignment.topRight,
-            colors: fabGradient,
+            colors: context.fabGradient,
           ),
           shape: BoxShape.circle,
         ),
@@ -692,7 +672,7 @@ class _OperatorPageState extends State<OperatorPage> {
           onPressed: _showAddOperatorDialog,
           tooltip: 'Tambah Operator',
           backgroundColor: Colors.transparent,
-          foregroundColor: isDark ? const Color(0xFF1D1B20) : Colors.white,
+          foregroundColor: context.isDark ? const Color(0xFF1D1B20) : Colors.white,
           elevation: 0,
           shape: const CircleBorder(),
           child: const Icon(Icons.add),

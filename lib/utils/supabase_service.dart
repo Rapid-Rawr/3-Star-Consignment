@@ -6,7 +6,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class SupabaseService {
   static const String _bucketName = 'Catalog';
 
-  /// Inisialisasi Supabase client — panggil sekali di main()
   static Future<void> initialize({
     required String url,
     required String anonKey,
@@ -52,8 +51,6 @@ class SupabaseService {
     }
   }
 
-  /// Ambil public URL dari path file (bucket harus public).
-  /// Operasi ini sinkron — tidak perlu API call tambahan.
   static String? getPublicUrl(String? path) {
     if (path == null || path.isEmpty) return null;
     try {
@@ -64,7 +61,6 @@ class SupabaseService {
     }
   }
 
-  /// Hapus file gambar dari Storage berdasarkan path-nya.
   static Future<void> deleteCatalogImage(String? path) async {
     if (path == null || path.isEmpty) return;
     try {
@@ -74,7 +70,6 @@ class SupabaseService {
     }
   }
 
-  /// Hapus semua gambar dalam folder catalog/{catalogId}/
   static Future<void> deleteCatalogFolder(String catalogId) async {
     try {
       final folderPath = 'catalog/$catalogId';

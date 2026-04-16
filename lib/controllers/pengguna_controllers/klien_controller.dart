@@ -49,6 +49,19 @@ class ClientController {
     return null;
   }
 
+  Future<bool> checkEmailExists(String email, {String? excludeId}) async {
+    final emailQuery = await firestore
+        .collection(collectionName)
+        .where('email', isEqualTo: email.trim())
+        .get();
+
+    if (excludeId != null) {
+      return emailQuery.docs.any((doc) => doc.id != excludeId);
+    }
+
+    return emailQuery.docs.isNotEmpty;
+  }
+
   Future<Map<String, dynamic>> createClient({
     required String name,
     required String phone,
@@ -56,6 +69,11 @@ class ClientController {
     required String address,
   }) async {
     try {
+      final emailExists = await checkEmailExists(email);
+      if (emailExists) {
+        return {'success': false, 'error': 'Email sudah terdaftar'};
+      }
+
       await firestore.collection(collectionName).add({
         'name': name.trim(),
         'phone': phone.trim(),
@@ -78,6 +96,11 @@ class ClientController {
     required String address,
   }) async {
     try {
+      final emailExists = await checkEmailExists(email, excludeId: id);
+      if (emailExists) {
+        return {'success': false, 'error': 'Email sudah terdaftar'};
+      }
+
       await firestore.collection(collectionName).doc(id).update({
         'name': name.trim(),
         'phone': phone.trim(),

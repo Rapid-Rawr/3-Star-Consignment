@@ -4,8 +4,8 @@ import '../../controllers/pengguna_controllers/klien_controller.dart';
 import '../../models/pengguna_models/klien_model.dart';
 import '../../widgets/search_filter_bar.dart';
 import '../../widgets/app_dialog.dart';
-import '../../widgets/gradient_button.dart';
 import '../../utils/currency_format.dart';
+import '../../utils/app_colors.dart';
 
 class ClientPage extends StatefulWidget {
   const ClientPage({super.key});
@@ -39,110 +39,126 @@ class _ClientPageState extends State<ClientPage> {
     final phoneController = TextEditingController();
     final emailController = TextEditingController();
     final addressController = TextEditingController();
+    String? emailServerError;
 
-    showDialog(
+    showAppDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Tambah Klien'),
-        content: SingleChildScrollView(
-          child: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Nama Klien',
-                    border: OutlineInputBorder(),
-                    hintText: 'Masukkan nama lengkap',
-                    prefixIcon: Icon(Icons.person_outline),
-                  ),
-                  validator: _controller.validateName,
-                  textCapitalization: TextCapitalization.words,
+      title: 'Tambah Klien',
+      contentBuilder: (dialogContext, setDialogState) => SingleChildScrollView(
+        child: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Nama Klien',
+                  border: OutlineInputBorder(),
+                  hintText: 'Masukkan nama lengkap',
+                  prefixIcon: Icon(Icons.person_outline),
                 ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: phoneController,
-                  decoration: const InputDecoration(
-                    labelText: 'Nomor Telepon',
-                    border: OutlineInputBorder(),
-                    hintText: '08xxxxxxxxxx',
-                    prefixIcon: Icon(Icons.phone_outlined),
-                  ),
-                  keyboardType: TextInputType.phone,
-                  validator: _controller.validatePhone,
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                validator: _controller.validateName,
+                textCapitalization: TextCapitalization.words,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: phoneController,
+                decoration: const InputDecoration(
+                  labelText: 'Nomor Telepon',
+                  border: OutlineInputBorder(),
+                  hintText: '08xxxxxxxxxx',
+                  prefixIcon: Icon(Icons.phone_outlined),
                 ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: emailController,
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    border: OutlineInputBorder(),
-                    hintText: 'contoh@email.com',
-                    prefixIcon: Icon(Icons.email_outlined),
-                  ),
-                  keyboardType: TextInputType.emailAddress,
-                  validator: _controller.validateEmail,
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                keyboardType: TextInputType.phone,
+                validator: _controller.validatePhone,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: emailController,
+                decoration: const InputDecoration(
+                  labelText: 'Email',
+                  border: OutlineInputBorder(),
+                  hintText: 'contoh@email.com',
+                  prefixIcon: Icon(Icons.email_outlined),
                 ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: addressController,
-                  decoration: const InputDecoration(
-                    labelText: 'Alamat',
-                    border: OutlineInputBorder(),
-                    hintText: 'Masukkan alamat lengkap',
-                    prefixIcon: Icon(Icons.location_on_outlined),
-                  ),
-                  maxLines: 2,
-                  validator: _controller.validateAddress,
+                keyboardType: TextInputType.emailAddress,
+                onChanged: (val) {
+                  if (emailServerError != null) {
+                    emailServerError = null;
+                    formKey.currentState?.validate();
+                  }
+                },
+                validator: (value) {
+                  if (emailServerError != null) return emailServerError;
+                  return _controller.validateEmail(value);
+                },
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: addressController,
+                decoration: const InputDecoration(
+                  labelText: 'Alamat',
+                  border: OutlineInputBorder(),
+                  hintText: 'Masukkan alamat lengkap',
+                  prefixIcon: Icon(Icons.location_on_outlined),
                 ),
-              ],
-            ),
+                maxLines: 2,
+                validator: _controller.validateAddress,
+              ),
+            ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            style: TextButton.styleFrom(
-              foregroundColor: Theme.of(dialogContext).colorScheme.onSurface,
-              splashFactory: NoSplash.splashFactory,
-              overlayColor: Colors.transparent,
-            ),
-            child: const Text('Batal'),
-          ),
-          GradientButton(
-            label: 'Tambah',
-            onPressed: () async {
-              if (formKey.currentState!.validate()) {
-                Navigator.pop(dialogContext);
-                final result = await _controller.createClient(
-                  name: nameController.text.trim(),
-                  phone: phoneController.text.trim(),
-                  email: emailController.text.trim(),
-                  address: addressController.text.trim(),
+      ),
+      actions: [
+        AppDialogAction(
+          label: 'Batal',
+          onPressed: () => Navigator.pop(context),
+        ),
+        AppDialogAction(
+          label: 'Tambah',
+          type: AppDialogActionType.gradient,
+          onPressed: () async {
+            emailServerError = null;
+            if (formKey.currentState!.validate()) {
+              final email = emailController.text.trim();
+
+              final result = await _controller.createClient(
+                name: nameController.text.trim(),
+                phone: phoneController.text.trim(),
+                email: email,
+                address: addressController.text.trim(),
+              );
+
+              if (!context.mounted) return;
+
+              if (result['success'] == true) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Klien berhasil ditambahkan'),
+                    backgroundColor: Colors.green,
+                  ),
                 );
-                if (mounted) {
+              } else {
+                if (result['error'] == 'Email sudah terdaftar') {
+                  emailServerError = result['error'];
+                  formKey.currentState!.validate();
+                } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(
-                        result['success'] == true
-                            ? 'Klien berhasil ditambahkan'
-                            : (result['error'] ?? 'Terjadi kesalahan'),
-                      ),
-                      backgroundColor: result['success'] == true
-                          ? Colors.green
-                          : Colors.red,
+                      content: Text(result['error'] ?? 'Terjadi kesalahan'),
+                      backgroundColor: Colors.red,
                     ),
                   );
                 }
               }
-            },
-          ),
-        ],
-      ),
+            }
+          },
+        ),
+      ],
     );
   }
 
@@ -152,107 +168,123 @@ class _ClientPageState extends State<ClientPage> {
     final phoneController = TextEditingController(text: client.phone);
     final emailController = TextEditingController(text: client.email);
     final addressController = TextEditingController(text: client.address);
+    String? emailServerError;
 
-    showDialog(
+    showAppDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Edit Klien'),
-        content: SingleChildScrollView(
-          child: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Nama Klien',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.person_outline),
-                  ),
-                  validator: _controller.validateName,
-                  textCapitalization: TextCapitalization.words,
+      title: 'Edit Klien',
+      contentBuilder: (dialogContext, setDialogState) => SingleChildScrollView(
+        child: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Nama Klien',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.person_outline),
                 ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: phoneController,
-                  decoration: const InputDecoration(
-                    labelText: 'Nomor Telepon',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.phone_outlined),
-                  ),
-                  keyboardType: TextInputType.phone,
-                  validator: _controller.validatePhone,
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                validator: _controller.validateName,
+                textCapitalization: TextCapitalization.words,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: phoneController,
+                decoration: const InputDecoration(
+                  labelText: 'Nomor Telepon',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.phone_outlined),
                 ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: emailController,
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.email_outlined),
-                  ),
-                  keyboardType: TextInputType.emailAddress,
-                  validator: _controller.validateEmail,
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                keyboardType: TextInputType.phone,
+                validator: _controller.validatePhone,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: emailController,
+                decoration: const InputDecoration(
+                  labelText: 'Email',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.email_outlined),
                 ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: addressController,
-                  decoration: const InputDecoration(
-                    labelText: 'Alamat',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.location_on_outlined),
-                  ),
-                  maxLines: 2,
-                  validator: _controller.validateAddress,
+                keyboardType: TextInputType.emailAddress,
+                onChanged: (val) {
+                  if (emailServerError != null) {
+                    emailServerError = null;
+                    formKey.currentState?.validate();
+                  }
+                },
+                validator: (value) {
+                  if (emailServerError != null) return emailServerError;
+                  return _controller.validateEmail(value);
+                },
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: addressController,
+                decoration: const InputDecoration(
+                  labelText: 'Alamat',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.location_on_outlined),
                 ),
-              ],
-            ),
+                maxLines: 2,
+                validator: _controller.validateAddress,
+              ),
+            ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            style: TextButton.styleFrom(
-              foregroundColor: Theme.of(dialogContext).colorScheme.onSurface,
-              splashFactory: NoSplash.splashFactory,
-              overlayColor: Colors.transparent,
-            ),
-            child: const Text('Batal'),
-          ),
-          GradientButton(
-            label: 'Simpan',
-            onPressed: () async {
-              if (formKey.currentState!.validate()) {
-                Navigator.pop(dialogContext);
-                final result = await _controller.updateClient(
-                  id: client.id,
-                  name: nameController.text.trim(),
-                  phone: phoneController.text.trim(),
-                  email: emailController.text.trim(),
-                  address: addressController.text.trim(),
+      ),
+      actions: [
+        AppDialogAction(
+          label: 'Batal',
+          onPressed: () => Navigator.pop(context),
+        ),
+        AppDialogAction(
+          label: 'Simpan',
+          type: AppDialogActionType.gradient,
+          onPressed: () async {
+            emailServerError = null;
+            if (formKey.currentState!.validate()) {
+              final email = emailController.text.trim();
+
+              final result = await _controller.updateClient(
+                id: client.id,
+                name: nameController.text.trim(),
+                phone: phoneController.text.trim(),
+                email: email,
+                address: addressController.text.trim(),
+              );
+
+              if (!context.mounted) return;
+
+              if (result['success'] == true) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Klien berhasil diupdate'),
+                    backgroundColor: Colors.green,
+                  ),
                 );
-                if (mounted) {
+              } else {
+                if (result['error'] == 'Email sudah terdaftar') {
+                  emailServerError = result['error'];
+                  formKey.currentState!.validate();
+                } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(
-                        result['success'] == true
-                            ? 'Klien berhasil diupdate'
-                            : (result['error'] ?? 'Terjadi kesalahan'),
-                      ),
-                      backgroundColor: result['success'] == true
-                          ? Colors.green
-                          : Colors.red,
+                      content: Text(result['error'] ?? 'Terjadi kesalahan'),
+                      backgroundColor: Colors.red,
                     ),
                   );
                 }
               }
-            },
-          ),
-        ],
-      ),
+            }
+          },
+        ),
+      ],
     );
   }
 
@@ -295,23 +327,6 @@ class _ClientPageState extends State<ClientPage> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-
-    final Color editBg = isDark
-        ? const Color(0xFF49454F)
-        : const Color(0xFFE8E5EC);
-    final Color editIcon = isDark ? Colors.white : const Color(0xFF1D1B20);
-    final Color deleteBg = isDark
-        ? const Color(0xFF4D2B2B)
-        : const Color(0xFFFCE8E8);
-    final Color deleteIcon = isDark ? const Color(0xFFFF8A8A) : Colors.red;
-    final Color emptyIcon = isDark ? Colors.white24 : Colors.black26;
-    final Color emptyText = isDark ? Colors.white38 : const Color(0xFF9E9E9E);
-
-    final List<Color> fabGradient = isDark
-        ? [const Color(0xFFA3A3A3), const Color(0xFFFFFFFF)]
-        : [const Color(0xFF67636D), const Color(0xFF1D1B20)];
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Klien', style: TextStyle(fontFamily: 'Poppins')),
@@ -370,14 +385,14 @@ class _ClientPageState extends State<ClientPage> {
                           Icon(
                             Icons.people_outline,
                             size: 64,
-                            color: emptyIcon,
+                            color: context.emptyIcon,
                           ),
                           const SizedBox(height: 16),
                           Text(
                             'Belum Ada Klien',
                             style: TextStyle(
                               fontSize: 16,
-                              color: emptyText,
+                              color: context.emptyText,
                               fontFamily: 'Poppins',
                             ),
                           ),
@@ -422,13 +437,17 @@ class _ClientPageState extends State<ClientPage> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.search_off, size: 64, color: emptyIcon),
+                          Icon(
+                            Icons.search_off,
+                            size: 64,
+                            color: context.emptyIcon,
+                          ),
                           const SizedBox(height: 16),
                           Text(
                             'Klien Tidak Ditemukan',
                             style: TextStyle(
                               fontSize: 16,
-                              color: emptyText,
+                              color: context.emptyText,
                               fontFamily: 'Poppins',
                             ),
                           ),
@@ -445,43 +464,21 @@ class _ClientPageState extends State<ClientPage> {
                       final isPending = filteredWithMeta[index].isPending;
 
                       final hasDebt = client.computedDebt > 0;
-                      final debtBg = hasDebt
-                          ? (isDark
-                                ? const Color(0xFF4D2B2B)
-                                : const Color(0xFFFCE8E8))
-                          : (isDark
-                                ? const Color(0xFF1A3A2A)
-                                : const Color(0xFFE8F5E9));
-                      final debtTextColor = hasDebt
-                          ? (isDark ? const Color(0xFFFF8A8A) : Colors.red)
-                          : (isDark
-                                ? const Color(0xFF80CBC4)
-                                : const Color(0xFF2E7D32));
-
-                      final cardBg = isDark
-                          ? const Color(0xFF2B2930)
-                          : Colors.white;
-                      final cardBorder = isDark
-                          ? const Color(0xFF49454F)
-                          : const Color(0xFFE0E0E0);
-                      final nameColor = isDark
-                          ? Colors.white
-                          : const Color(0xFF1D1B20);
-                      final subColor = isDark
-                          ? Colors.white54
-                          : const Color(0xFF757575);
+                      final debtBg = context.debtBg(hasDebt);
+                      final debtTextColor = context.debtTextColor(hasDebt);
 
                       return Container(
                         margin: const EdgeInsets.only(bottom: 12),
                         decoration: BoxDecoration(
-                          color: cardBg,
+                          color: context.cardBg,
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: cardBorder, width: 1),
+                          border: Border.all(
+                            color: context.cardBorder,
+                            width: 1,
+                          ),
                           boxShadow: [
                             BoxShadow(
-                              color: isDark
-                                  ? Colors.black26
-                                  : Colors.black.withValues(alpha: 0.06),
+                              color: context.cardShadow,
                               blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),
@@ -504,7 +501,7 @@ class _ClientPageState extends State<ClientPage> {
                                               fontFamily: 'Poppins',
                                               fontWeight: FontWeight.w600,
                                               fontSize: 15,
-                                              color: nameColor,
+                                              color: context.nameColor,
                                             ),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
@@ -517,9 +514,7 @@ class _ClientPageState extends State<ClientPage> {
                                             child: Icon(
                                               Icons.access_time_rounded,
                                               size: 14,
-                                              color: isDark
-                                                  ? Colors.amber.shade300
-                                                  : Colors.orange,
+                                              color: context.pendingColor,
                                             ),
                                           ),
                                         ],
@@ -531,7 +526,7 @@ class _ClientPageState extends State<ClientPage> {
                                         Icon(
                                           Icons.phone_outlined,
                                           size: 13,
-                                          color: subColor,
+                                          color: context.subColor,
                                         ),
                                         const SizedBox(width: 4),
                                         Text(
@@ -539,7 +534,7 @@ class _ClientPageState extends State<ClientPage> {
                                           style: TextStyle(
                                             fontFamily: 'Poppins',
                                             fontSize: 12,
-                                            color: subColor,
+                                            color: context.subColor,
                                           ),
                                         ),
                                       ],
@@ -555,7 +550,7 @@ class _ClientPageState extends State<ClientPage> {
                                             Icon(
                                               Icons.email_outlined,
                                               size: 13,
-                                              color: subColor,
+                                              color: context.subColor,
                                             ),
                                             const SizedBox(width: 4),
                                             Expanded(
@@ -564,7 +559,7 @@ class _ClientPageState extends State<ClientPage> {
                                                 style: TextStyle(
                                                   fontFamily: 'Poppins',
                                                   fontSize: 12,
-                                                  color: subColor,
+                                                  color: context.subColor,
                                                 ),
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
@@ -579,7 +574,7 @@ class _ClientPageState extends State<ClientPage> {
                                         Icon(
                                           Icons.location_on_outlined,
                                           size: 13,
-                                          color: subColor,
+                                          color: context.subColor,
                                         ),
                                         const SizedBox(width: 4),
                                         Expanded(
@@ -588,7 +583,7 @@ class _ClientPageState extends State<ClientPage> {
                                             style: TextStyle(
                                               fontFamily: 'Poppins',
                                               fontSize: 12,
-                                              color: subColor,
+                                              color: context.subColor,
                                             ),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
@@ -619,7 +614,9 @@ class _ClientPageState extends State<ClientPage> {
                                           const SizedBox(width: 4),
                                           Text(
                                             hasDebt
-                                                ? formatRupiah(client.computedDebt)
+                                                ? formatRupiah(
+                                                    client.computedDebt,
+                                                  )
                                                 : 'Lunas',
                                             style: TextStyle(
                                               fontFamily: 'Poppins',
@@ -644,12 +641,12 @@ class _ClientPageState extends State<ClientPage> {
                                     child: Container(
                                       padding: const EdgeInsets.all(8),
                                       decoration: BoxDecoration(
-                                        color: editBg,
+                                        color: context.editBg,
                                         borderRadius: BorderRadius.circular(20),
                                       ),
                                       child: Icon(
-                                        Icons.edit_outlined,
-                                        color: editIcon,
+                                        Icons.edit,
+                                        color: context.editIcon,
                                         size: 18,
                                       ),
                                     ),
@@ -662,12 +659,12 @@ class _ClientPageState extends State<ClientPage> {
                                     child: Container(
                                       padding: const EdgeInsets.all(8),
                                       decoration: BoxDecoration(
-                                        color: deleteBg,
+                                        color: context.deleteBg,
                                         borderRadius: BorderRadius.circular(20),
                                       ),
                                       child: Icon(
                                         Icons.delete_outline,
-                                        color: deleteIcon,
+                                        color: context.deleteIcon,
                                         size: 18,
                                       ),
                                     ),
@@ -690,8 +687,7 @@ class _ClientPageState extends State<ClientPage> {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.bottomLeft,
-            end: Alignment.topRight,
-            colors: fabGradient,
+            colors: context.fabGradient,
           ),
           shape: BoxShape.circle,
         ),
@@ -699,7 +695,9 @@ class _ClientPageState extends State<ClientPage> {
           onPressed: _showAddClientDialog,
           tooltip: 'Tambah Klien',
           backgroundColor: Colors.transparent,
-          foregroundColor: isDark ? const Color(0xFF1D1B20) : Colors.white,
+          foregroundColor: context.isDark
+              ? const Color(0xFF1D1B20)
+              : Colors.white,
           elevation: 0,
           shape: const CircleBorder(),
           child: const Icon(Icons.add),

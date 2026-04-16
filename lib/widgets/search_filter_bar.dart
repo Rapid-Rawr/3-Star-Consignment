@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
+import '../utils/app_colors.dart';
 
-/// Model untuk satu filter chip
 class FilterChipOption<T> {
   final String label;
-  final T? value; // null = "All"
+  final T? value;
 
   const FilterChipOption({required this.label, required this.value});
 }
 
-/// Widget reusable: search bar + horizontal filter chips dengan gradient selected
 ///
 /// Contoh penggunaan:
 /// ```dart
@@ -55,6 +54,11 @@ class SearchFilterBar<T> extends StatelessWidget {
     final Color filterIconColor = isDark
         ? Colors.white60
         : const Color(0xFF49454F);
+    
+    final Color borderActive = isDark
+        ? const Color(0xFF4DB6AC)
+        : const Color(0xFF00796B);
+    final Color actualBorderDim = context.cardBorder;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -77,7 +81,16 @@ class SearchFilterBar<T> extends StatelessWidget {
                       },
                     ),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: actualBorderDim),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: actualBorderDim),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: borderActive),
               ),
               filled: true,
               fillColor: fillColor,

@@ -75,10 +75,17 @@ const Object _unset = Object();
 
 class ConsignmentRequestModel {
   final String id;
-  final String userId;
-  final String userName;
-  final String userEmail;
-  final String userSchool;
+
+  // Client fields (denormalized — same pattern as payment_history)
+  final String clientId;
+  final String clientName;
+  final String clientAddress;
+  final String clientEmail;
+
+  // Legacy field — kept for backward compatibility with old Firestore documents
+  // Used as fallback in receiveBatch when clientId is not yet stored
+  final String? userEmail;
+
   final ConsignmentBatchStatus status;
   final List<ConsignmentItemEntry> items;
   final String? packedBy;
@@ -88,10 +95,11 @@ class ConsignmentRequestModel {
 
   const ConsignmentRequestModel({
     required this.id,
-    required this.userId,
-    required this.userName,
-    required this.userEmail,
-    this.userSchool = '',
+    required this.clientId,
+    required this.clientName,
+    this.clientAddress = '',
+    required this.clientEmail,
+    this.userEmail,
     this.status = ConsignmentBatchStatus.pending,
     required this.items,
     this.packedBy,
@@ -101,10 +109,10 @@ class ConsignmentRequestModel {
   });
 
   Map<String, dynamic> toMap() => {
-    'userId': userId,
-    'userName': userName,
-    'userEmail': userEmail,
-    'userSchool': userSchool,
+    'clientId': clientId,
+    'clientName': clientName,
+    'clientAddress': clientAddress,
+    'clientEmail': clientEmail,
     'status': status.name,
     'items': items.map((e) => e.toMap()).toList(),
     'packedBy': packedBy,
@@ -113,7 +121,10 @@ class ConsignmentRequestModel {
     'createdAt': FieldValue.serverTimestamp(),
   };
 
-  factory ConsignmentRequestModel.fromMap(String id, Map<String, dynamic> map) {
+  factory ConsignmentRequestModel.fromMap(
+    String id,
+    Map<String, dynamic> map,
+  ) {
     final batchStatus =
         ConsignmentBatchStatus.values.asNameMap()[map['status'] as String?] ??
         ConsignmentBatchStatus.pending;
@@ -124,12 +135,38 @@ class ConsignmentRequestModel {
         .map(ConsignmentItemEntry.fromMap)
         .toList();
 
+    // Backward compatibility: read new fields with fallback to old field names
+    final clientId =
+        (map['clientId'] as String?)?.isNotEmpty == true
+            ? map['clientId'] as String
+            : (map['userId'] as String? ?? '');
+
+    final clientName =
+        (map['clientName'] as String?)?.isNotEmpty == true
+            ? map['clientName'] as String
+            : (map['userName'] as String? ?? '');
+
+    final clientAddress =
+        (map['clientAddress'] as String?)?.isNotEmpty == true
+            ? map['clientAddress'] as String
+            : (map['userSchool'] as String? ?? '');
+
+    final clientEmail =
+        (map['clientEmail'] as String?)?.isNotEmpty == true
+            ? map['clientEmail'] as String
+            : (map['userEmail'] as String? ?? '');
+
+    // Keep userEmail for legacy receiveBatch fallback
+    final userEmail = map['userEmail'] as String?;
+    // clientPhotoUrl is now stored in clients collection, not in request documents
+
     return ConsignmentRequestModel(
       id: id,
-      userId: map['userId'] ?? '',
-      userName: map['userName'] ?? '',
-      userEmail: map['userEmail'] ?? '',
-      userSchool: map['userSchool'] ?? '',
+      clientId: clientId,
+      clientName: clientName,
+      clientAddress: clientAddress,
+      clientEmail: clientEmail,
+      userEmail: userEmail,
       status: batchStatus,
       items: items,
       packedBy: map['packedBy'] as String?,
@@ -142,10 +179,11 @@ class ConsignmentRequestModel {
   ConsignmentRequestModel copyWithItems(List<ConsignmentItemEntry> newItems) {
     return ConsignmentRequestModel(
       id: id,
-      userId: userId,
-      userName: userName,
+      clientId: clientId,
+      clientName: clientName,
+      clientAddress: clientAddress,
+      clientEmail: clientEmail,
       userEmail: userEmail,
-      userSchool: userSchool,
       status: status,
       items: newItems,
       packedBy: packedBy,
