@@ -7,9 +7,13 @@ import '../../widgets/catalog_image.dart';
 import '../../widgets/gradient_button.dart';
 import '../../utils/currency_format.dart';
 import '../../widgets/app_dialog.dart';
+import '../../views/tabbar/beranda_page.dart';
+
 
 class RequestListPage extends StatefulWidget {
-  const RequestListPage({super.key});
+  final ConsignmentRequestModel? initialBatch;
+  
+  const RequestListPage({super.key, this.initialBatch});
 
   @override
   State<RequestListPage> createState() => _RequestListPageState();
@@ -35,6 +39,15 @@ class _RequestListPageState extends State<RequestListPage> {
     );
     _stream = _controller.getRequestsStream();
     _loadClientPhotos();
+
+    if (widget.initialBatch != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final isDark =
+            Theme.of(context).brightness == Brightness.dark;
+
+        _showDetail(context, widget.initialBatch!, isDark);
+     });
+    }
   }
 
   Future<void> _loadClientPhotos() async {

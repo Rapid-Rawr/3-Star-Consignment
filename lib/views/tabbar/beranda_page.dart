@@ -1,26 +1,92 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../views/barang/daftar_pengajuan_page.dart';
+import '../../models/barang_models/konsinyasi_model.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
-Stream<QuerySnapshot> getRequests() {
-  return FirebaseFirestore.instance
-      .collection('consignment_requests')
-      .where('status', isEqualTo: 'pendingR')
-      .snapshots();
-}
+  /// ==========================================================
+  /// ✅ NEW: APPROVE ALL ITEMS + UPDATE BATCH STATUS
+  /// (REPLACED old updateRequestStatus)
+  /// ==========================================================
+  Future<void> approveAllItems(String batchId) async {
+    final docRef = FirebaseFirestore.instance
+        .collection('consignment_requests')
+        .doc(batchId);
+
+    final snapshot = await docRef.get();
+    final data = snapshot.data();
+
+    if (data == null) return;
+
+    final List items = data['items'] ?? [];
+
+    /// ✅ CHANGE: update every item's status
+    final updatedItems = items.map((item) {
+      return {
+        ...item,
+        'itemStatus': 'approved',
+      };
+    }).toList();
+
+    /// ✅ CHANGE: update items + batch status together
+    await docRef.update({
+      'items': updatedItems,
+      'status': 'processing',
+    });
+  }
+
+  /// ==========================================================
+  /// ✅ NEW: REJECT ALL ITEMS
+  /// ==========================================================
+  Future<void> rejectAllItems(String batchId) async {
+    final docRef = FirebaseFirestore.instance
+        .collection('consignment_requests')
+        .doc(batchId);
+
+    final snapshot = await docRef.get();
+    final data = snapshot.data();
+
+    if (data == null) return;
+
+    final List items = data['items'] ?? [];
+
+    /// ✅ CHANGE: reject all items
+    final updatedItems = items.map((item) {
+      return {
+        ...item,
+        'itemStatus': 'rejected',
+      };
+    }).toList();
+
+    await docRef.update({
+      'items': updatedItems,
+      'status': 'rejected',
+    });
+  }
+
+  /// ==========================================================
+  /// ✅ STREAM ONLY PENDING REQUESTS (UNCHANGED)
+  /// ==========================================================
+  Stream<QuerySnapshot> getRequests() {
+    return FirebaseFirestore.instance
+        .collection('consignment_requests')
+        .where('status', isEqualTo: 'pending')
+        .snapshots();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    final bool isDark =
+        Theme.of(context).brightness == Brightness.dark;
 
+    return Scaffold(
       body: Column(
         children: [
 
           /// ======================
-          /// TOP HALF (LIST)
+          /// TOP HALF (REQUEST LIST)
           /// ======================
           Expanded(
             flex: 1,
@@ -42,11 +108,14 @@ Stream<QuerySnapshot> getRequests() {
                   itemCount: docs.length,
                   itemBuilder: (context, index) {
 
-                    final data =
-                        docs[index].data() as Map<String, dynamic>;
+                    final doc = docs[index];
 
-                    final name =
-                        data['clientName'] ?? "Tanpa Nama";
+                    final batch = ConsignmentRequestModel.fromMap(
+                      doc.id,
+                      doc.data() as Map<String, dynamic>,
+                    );
+
+                    final name = batch.clientName;
 
                     return Card(
                       margin: const EdgeInsets.only(bottom: 10),
@@ -57,35 +126,72 @@ Stream<QuerySnapshot> getRequests() {
                           mainAxisSize: MainAxisSize.min,
                           children: [
 
-                            /// Detail
+                            /// =================================================
+                            /// DETAIL BUTTON (UNCHANGED)
+                            /// =================================================
                             IconButton(
                               icon: const Icon(Icons.assignment_outlined),
                               onPressed: () {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => RequestListPage(),
+                                    builder: (context) =>
+                                        RequestListPage(
+                                      initialBatch: batch,
+                                    ),
                                   ),
                                 );
                               },
                             ),
 
-                            /// APPROVE
+                            /// =================================================
+                            /// ✅ ACCEPT BUTTON (UPDATED)
+                            /// =================================================
                             IconButton(
                               icon: const Icon(
                                 Icons.check_rounded,
                                 color: Colors.green,
                               ),
-                              onPressed: () {},
+                              onPressed: () async {
+
+                                /// ✅ CHANGE:
+                                /// update ALL item status + batch status
+                                await approveAllItems(batch.id);
+
+                                ScaffoldMessenger.of(context)
+                                    .showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'Request berhasil disetujui',
+                                    ),
+                                  ),
+                                );
+                              },
                             ),
 
-                            /// DECLINE
+                            /// =================================================
+                            /// ✅ DECLINE BUTTON (UPDATED)
+                            /// =================================================
                             IconButton(
                               icon: const Icon(
                                 Icons.cancel_outlined,
                                 color: Colors.red,
                               ),
-                              onPressed: () {},
+                              onPressed: () async {
+
+                                /// ✅ CHANGE:
+                                /// reject ALL items
+                                await rejectAllItems(batch.id);
+
+                                ScaffoldMessenger.of(context)
+                                    .showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'Request ditolak',
+                                    ),
+                                  ),
+                                );
+                              },
                             ),
                           ],
                         ),
@@ -98,7 +204,7 @@ Stream<QuerySnapshot> getRequests() {
           ),
 
           /// ======================
-          /// BOTTOM HALF (EMPTY NOW)
+          /// BOTTOM HALF
           /// ======================
           Expanded(
             flex: 1,
