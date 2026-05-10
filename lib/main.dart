@@ -132,12 +132,8 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
-    _tabController.addListener(() {
-      if (!_tabController.indexIsChanging && mounted) {
-        setState(() => _currentTabIndex = _tabController.index);
-      }
-    });
+    _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(_handleTabSelection);
     _auth.init();
     _authSubscription = _auth.authStateChanges.listen((user) {
       if (mounted) setState(() => _currentUser = user);
@@ -145,8 +141,19 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     });
   }
 
+  void _handleTabSelection() {
+    if (!_tabController.indexIsChanging && mounted) {
+      if (_currentTabIndex != _tabController.index) {
+        setState(() {
+          _currentTabIndex = _tabController.index;
+        });
+      }
+    }
+  }
+
   @override
   void dispose() {
+    _tabController.removeListener(_handleTabSelection);
     _tabController.dispose();
     _authSubscription?.cancel();
     super.dispose();
@@ -263,17 +270,13 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
 
   void _updateTabController(int newLength) {
     if (_tabController.length != newLength) {
+      _tabController.removeListener(_handleTabSelection);
       _tabController.dispose();
 
       _currentTabIndex = 0; // reset biar aman
 
       _tabController = TabController(length: newLength, vsync: this);
-
-      _tabController.addListener(() {
-        if (!_tabController.indexIsChanging && mounted) {
-          setState(() => _currentTabIndex = _tabController.index);
-        }
-      });
+      _tabController.addListener(_handleTabSelection);
     }
   }
 
@@ -361,16 +364,11 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     final titles = getTitles(isAdmin);
     final navItems = getNavItems(isAdmin);
 
+    _updateTabController(pages.length);
+
     if (_currentTabIndex >= pages.length) {
       _currentTabIndex = 0;
     }
-
-    _tabController.addListener(() {
-      if (!_tabController.indexIsChanging) {
-        setState(() => _currentTabIndex = _tabController.index);
-      }
-    });
-    _updateTabController(pages.length);
 
     return Scaffold(
       key: _scaffoldKey,
