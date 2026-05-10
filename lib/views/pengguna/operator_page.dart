@@ -139,13 +139,11 @@ class _OperatorPageState extends State<OperatorPage> {
             emailServerError = null;
             if (formKey.currentState!.validate()) {
               final email = emailController.text.trim();
-
               final result = await _controller.createOperator(
                 name: nameController.text.trim(),
                 email: email,
                 role: selectedRole,
               );
-
               if (!context.mounted) return;
 
               if (result['success'] == true) {
@@ -257,14 +255,12 @@ class _OperatorPageState extends State<OperatorPage> {
             emailServerError = null;
             if (formKey.currentState!.validate()) {
               final email = emailController.text.trim();
-
               final result = await _controller.updateOperator(
                 id: operator.id,
                 name: nameController.text.trim(),
                 email: email,
                 role: selectedRole,
               );
-
               if (!context.mounted) return;
 
               if (result['success'] == true) {

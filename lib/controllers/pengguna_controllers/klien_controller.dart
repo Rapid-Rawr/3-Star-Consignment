@@ -53,19 +53,6 @@ class ClientController {
     return null;
   }
 
-  // Future<bool> checkEmailExists(String email, {String? excludeId}) async {
-  //   final emailQuery = await firestore
-  //       .collection(collectionName)
-  //       .where('email', isEqualTo: email.trim())
-  //       .get();
-
-  //   if (excludeId != null) {
-  //     return emailQuery.docs.any((doc) => doc.id != excludeId);
-  //   }
-
-  //   return emailQuery.docs.isNotEmpty;
-  // }
-
   Future<bool> checkEmailExists(String email, {String? excludeId}) async {
     return await emailValidator.isEmailUsedAnywhere(
       email,
