@@ -7,13 +7,13 @@ import '../../widgets/catalog_image.dart';
 import '../../widgets/gradient_button.dart';
 import '../../utils/currency_format.dart';
 import '../../widgets/app_dialog.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:provider/provider.dart';
-import '../../service/auth_provider.dart' as local;
-import '../../service/roles.dart';
+import '../../views/tabbar/beranda_page.dart';
+
 
 class RequestListPage extends StatefulWidget {
-  const RequestListPage({super.key});
+  final ConsignmentRequestModel? initialBatch;
+  
+  const RequestListPage({super.key, this.initialBatch});
 
   @override
   State<RequestListPage> createState() => _RequestListPageState();
@@ -37,18 +37,24 @@ class _RequestListPageState extends State<RequestListPage> {
     _controller = ConsignmentRequestController(
       firestore: FirebaseFirestore.instance,
     );
-
-    final role = context.read<local.AuthProvider>().role ?? '';
-
-    final email = FirebaseAuth.instance.currentUser?.email ?? '';
-
-    _stream = _controller.getRequestsByRole(role: role, email: email);
+    _stream = _controller.getRequestsStream();
     _loadClientPhotos();
+
+    if (widget.initialBatch != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final isDark =
+            Theme.of(context).brightness == Brightness.dark;
+
+        _showDetail(context, widget.initialBatch!, isDark);
+     });
+    }
   }
 
   Future<void> _loadClientPhotos() async {
     try {
-      final snap = await FirebaseFirestore.instance.collection('clients').get();
+      final snap = await FirebaseFirestore.instance
+          .collection('clients')
+          .get();
       if (!mounted) return;
       setState(() {
         _clientPhotoMap = {

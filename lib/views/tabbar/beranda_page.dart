@@ -16,7 +16,7 @@ class HomePage extends StatelessWidget {
 
     switch (role) {
       case Roles.admin:
-        return const HomeAdminPage();
+        return HomeAdminPage();
 
       case Roles.karyawan:
         return const HomeKaryawanPage();

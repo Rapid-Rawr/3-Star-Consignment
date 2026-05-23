@@ -11,6 +11,7 @@ import '../../widgets/catalog_image.dart';
 import '../../widgets/gradient_button.dart';
 import '../../utils/currency_format.dart';
 
+
 class ConsignmentPage extends StatefulWidget {
   const ConsignmentPage({super.key});
 
