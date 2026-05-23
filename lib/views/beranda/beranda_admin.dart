@@ -93,10 +93,7 @@ Stream<QuerySnapshot> getBarangPreview() {
     return Scaffold(
       body: Column(
         children: [
-
-          /// ======================
-          /// TOP HALF (REQUEST LIST)
-          /// ======================
+          //TOP HALF
           Expanded(
             flex: 1,
             child: StreamBuilder<QuerySnapshot>(
@@ -134,10 +131,6 @@ Stream<QuerySnapshot> getBarangPreview() {
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-
-                            /// =================================================
-                            /// DETAIL BUTTON (UNCHANGED)
-                            /// =================================================
                             IconButton(
                               icon: const Icon(Icons.assignment_outlined),
                               onPressed: () {
@@ -152,19 +145,12 @@ Stream<QuerySnapshot> getBarangPreview() {
                                 );
                               },
                             ),
-
-                            /// =================================================
-                            /// ✅ ACCEPT BUTTON (UPDATED)
-                            /// =================================================
                             IconButton(
                               icon: const Icon(
                                 Icons.check_rounded,
                                 color: Colors.green,
                               ),
                               onPressed: () async {
-
-                                /// ✅ CHANGE:
-                                /// update ALL item status + batch status
                                 await approveAllItems(batch.id);
 
                                 ScaffoldMessenger.of(context)
@@ -177,10 +163,6 @@ Stream<QuerySnapshot> getBarangPreview() {
                                 );
                               },
                             ),
-
-                            /// =================================================
-                            /// ✅ DECLINE BUTTON (UPDATED)
-                            /// =================================================
                             IconButton(
                               icon: const Icon(
                                 Icons.cancel_outlined,
@@ -188,8 +170,6 @@ Stream<QuerySnapshot> getBarangPreview() {
                               ),
                               onPressed: () async {
 
-                                /// ✅ CHANGE:
-                                /// reject ALL items
                                 await rejectAllItems(batch.id);
 
                                 ScaffoldMessenger.of(context)
@@ -211,9 +191,7 @@ Stream<QuerySnapshot> getBarangPreview() {
               },
             ),
           ),
-          /// ======================
-          /// BOTTOM HALF
-          /// ======================
+          //BOTTOM HALF
           Expanded(
             flex: 1,
             child: Padding(
@@ -225,10 +203,6 @@ Stream<QuerySnapshot> getBarangPreview() {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-
-                  /// =========================
-                  /// HEADER
-                  /// =========================
                   Row(
                     children: [
 
@@ -259,10 +233,7 @@ Stream<QuerySnapshot> getBarangPreview() {
                   ),
 
                   const SizedBox(height: 10),
-
-                  /// =========================
-                  /// LIST PREVIEW
-                  /// =========================
+                  //LIST PREVIEW
                   Expanded(
                     child: StreamBuilder<QuerySnapshot>(
                       stream: FirebaseFirestore.instance
@@ -314,7 +285,6 @@ Stream<QuerySnapshot> getBarangPreview() {
 
                                 children: [
 
-                                  /// IMAGE / ICON
                                   Container(
                                     width: 54,
                                     height: 54,
@@ -348,7 +318,6 @@ Stream<QuerySnapshot> getBarangPreview() {
 
                                   const SizedBox(width: 12),
 
-                                  /// CONTENT
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment:
@@ -356,7 +325,6 @@ Stream<QuerySnapshot> getBarangPreview() {
 
                                       children: [
 
-                                        /// CLIENT NAME
                                         Text(
                                           batch.clientName,
                                           style: const TextStyle(
@@ -368,7 +336,6 @@ Stream<QuerySnapshot> getBarangPreview() {
 
                                         const SizedBox(height: 4),
 
-                                        /// ITEM NAME
                                         Text(
                                           firstItem?.catalogName ??
                                               "Tanpa Barang",
@@ -385,7 +352,6 @@ Stream<QuerySnapshot> getBarangPreview() {
 
                                         const SizedBox(height: 4),
 
-                                        /// PRICE
                                         Text(
                                           'Rp ${firstItem?.catalogPrice.toStringAsFixed(0) ?? '0'}',
 
