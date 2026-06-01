@@ -14,6 +14,8 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final role = context.watch<AuthProvider>().role;
 
+     debugPrint('[BerandaPage] role=$role');
+
     switch (role) {
       case Roles.admin:
         return HomeAdminPage();

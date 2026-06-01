@@ -151,6 +151,21 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     }
   }
 
+  // PERBAIKAN: uncomment dan tambahkan initialIndex
+  void _updateTabController(int newLength) {
+    if (_tabController.length != newLength) {
+      _tabController.removeListener(_handleTabSelection);
+      _tabController.dispose();
+      _currentTabIndex = 0;
+      _tabController = TabController(
+        length: newLength,
+        vsync: this,
+        initialIndex: 0,
+      );
+      _tabController.addListener(_handleTabSelection);
+    }
+  }
+
   @override
   void dispose() {
     _tabController.removeListener(_handleTabSelection);
@@ -202,9 +217,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                         color: Colors.orange,
                       ),
                     ),
-
                     const SizedBox(height: 20),
-
                     const Text(
                       'Login Diperlukan',
                       style: TextStyle(
@@ -212,9 +225,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-
                     const SizedBox(height: 12),
-
                     Text(
                       'Anda harus login terlebih dahulu untuk mengakses fitur ini.',
                       textAlign: TextAlign.center,
@@ -223,9 +234,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                         color: Theme.of(context).textTheme.bodyMedium?.color,
                       ),
                     ),
-
                     const SizedBox(height: 24),
-
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
@@ -237,7 +246,6 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                         ),
                         onPressed: () {
                           Navigator.pop(context);
-
                           Future.delayed(const Duration(milliseconds: 200), () {
                             _scaffoldKey.currentState?.openEndDrawer();
                           });
@@ -268,31 +276,22 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     );
   }
 
-  void _updateTabController(int newLength) {
-    if (_tabController.length != newLength) {
-      _tabController.removeListener(_handleTabSelection);
-      _tabController.dispose();
-
-      _currentTabIndex = 0; // reset biar aman
-
-      _tabController = TabController(length: newLength, vsync: this);
-      _tabController.addListener(_handleTabSelection);
-    }
-  }
-
-  List<Widget> getPages(bool isAdmin) {
-    return isAdmin
+  List<Widget> getPages(String? role) {
+    final isAdminOrKaryawan = role == Roles.admin || role == Roles.karyawan;
+    return isAdminOrKaryawan
         ? const [HomePage(), PaymentPage(), ItemPage(), UserPage()]
         : const [HomePage(), PaymentPage(), ItemPage()];
   }
 
-  List<String> getTitles(bool isAdmin) {
-    return isAdmin
+  List<String> getTitles(String? role) {
+    final isAdminOrKaryawan = role == Roles.admin || role == Roles.karyawan;
+    return isAdminOrKaryawan
         ? ['Beranda', 'Transaksi', 'Barang', 'Pengguna']
         : ['Beranda', 'Transaksi', 'Barang'];
   }
 
-  List<CustomBottomNavItem> getNavItems(bool isAdmin) {
+  List<CustomBottomNavItem> getNavItems(String? role) {
+    final isAdminOrKaryawan = role == Roles.admin || role == Roles.karyawan;
     return [
       const CustomBottomNavItem(
         iconSvg: 'assets/icons/Home Outlined.svg',
@@ -310,7 +309,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
         iconSize: 24,
         activeIconSize: 26,
       ),
-      if (isAdmin)
+      if (isAdminOrKaryawan)
         const CustomBottomNavItem(
           icon: Icons.group_outlined,
           activeIcon: Icons.group_rounded,
@@ -341,16 +340,10 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   Future<void> _handleSignOut() async {
     await _auth.signOut(context);
     if (mounted) {
-      setState(() {
-        _currentTabIndex = 0;
-      });
-
+      setState(() => _currentTabIndex = 0);
       _tabController.animateTo(0);
-
       Future.delayed(const Duration(milliseconds: 300), () {
-        if (mounted) {
-          _showLoginRequiredDialog();
-        }
+        if (mounted) _showLoginRequiredDialog();
       });
     }
   }
@@ -358,17 +351,18 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final role = context.watch<local.AuthProvider>().role;
-    final isAdmin = role == Roles.admin;
 
-    final pages = getPages(isAdmin);
-    final titles = getTitles(isAdmin);
-    final navItems = getNavItems(isAdmin);
+    final pages = getPages(role);
+    final titles = getTitles(role);
+    final navItems = getNavItems(role);
 
-    _updateTabController(pages.length);
-
+    // PERBAIKAN: reset index DULU sebelum update controller
     if (_currentTabIndex >= pages.length) {
       _currentTabIndex = 0;
     }
+
+    // BARU update controller setelah index aman
+    _updateTabController(pages.length);
 
     return Scaffold(
       key: _scaffoldKey,
@@ -392,13 +386,10 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
         currentIndex: _currentTabIndex,
         onTap: (i) {
           final user = FirebaseAuth.instance.currentUser;
-
-          // Beranda boleh diakses tanpa login
           if (i != 0 && user == null) {
             _showLoginRequiredDialog();
             return;
           }
-
           setState(() => _currentTabIndex = i);
           _tabController.animateTo(i);
         },
