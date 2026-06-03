@@ -6,14 +6,14 @@ import '../barang/barang_konsinyasi_page.dart';
 import '../../models/barang_models/katalog_model.dart';
 
 class HomeAdminPage extends StatelessWidget {
-  const HomeAdminPage({super.key});
+  final FirebaseFirestore firestore;
+  const HomeAdminPage({
+    super.key,
+    FirebaseFirestore? firestore,
+  }) : firestore = firestore ?? FirebaseFirestore.instance;
 
-  /// ==========================================================
-  /// ✅ NEW: APPROVE ALL ITEMS + UPDATE BATCH STATUS
-  /// (REPLACED old updateRequestStatus)
-  /// ==========================================================
   Future<void> approveAllItems(String batchId) async {
-    final docRef = FirebaseFirestore.instance
+    final docRef = firestore
         .collection('consignment_requests')
         .doc(batchId);
 
@@ -24,7 +24,6 @@ class HomeAdminPage extends StatelessWidget {
 
     final List items = data['items'] ?? [];
 
-    /// ✅ CHANGE: update every item's status
     final updatedItems = items.map((item) {
       return {
         ...item,
@@ -32,18 +31,14 @@ class HomeAdminPage extends StatelessWidget {
       };
     }).toList();
 
-    /// ✅ CHANGE: update items + batch status together
     await docRef.update({
       'items': updatedItems,
       'status': 'processing',
     });
   }
 
-  /// ==========================================================
-  /// ✅ NEW: REJECT ALL ITEMS
-  /// ==========================================================
   Future<void> rejectAllItems(String batchId) async {
-    final docRef = FirebaseFirestore.instance
+    final docRef = firestore
         .collection('consignment_requests')
         .doc(batchId);
 
@@ -54,7 +49,6 @@ class HomeAdminPage extends StatelessWidget {
 
     final List items = data['items'] ?? [];
 
-    /// ✅ CHANGE: reject all items
     final updatedItems = items.map((item) {
       return {
         ...item,
@@ -68,18 +62,15 @@ class HomeAdminPage extends StatelessWidget {
     });
   }
 
-  /// ==========================================================
-  /// ✅ STREAM ONLY PENDING REQUESTS (UNCHANGED)
-  /// ==========================================================
   Stream<QuerySnapshot> getRequests() {
-    return FirebaseFirestore.instance
+    return firestore
         .collection('consignment_requests')
         .where('status', isEqualTo: 'pending')
         .snapshots();
   }
 
 Stream<QuerySnapshot> getBarangPreview() {
-  return FirebaseFirestore.instance
+  return firestore
       .collection('catalog')
       .limit(3)
       .snapshots();
@@ -236,7 +227,7 @@ Stream<QuerySnapshot> getBarangPreview() {
                   //LIST PREVIEW
                   Expanded(
                     child: StreamBuilder<QuerySnapshot>(
-                      stream: FirebaseFirestore.instance
+                      stream: firestore
                           .collection('consignment_requests')
                           .orderBy(
                             'createdAt',
