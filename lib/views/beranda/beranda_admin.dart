@@ -4,6 +4,7 @@ import '../../views/barang/daftar_pengajuan_page.dart';
 import '../../models/barang_models/konsinyasi_model.dart';
 import '../barang/barang_konsinyasi_page.dart';
 import '../../models/barang_models/katalog_model.dart';
+import '../../models/pengguna_models/klien_model.dart';
 
 class HomeAdminPage extends StatelessWidget {
   final FirebaseFirestore firestore;
@@ -190,13 +191,11 @@ Stream<QuerySnapshot> getBarangPreview() {
                 horizontal: 16,
                 vertical: 8,
               ),
-
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-
                       const Text(
                         "Barang Konsinyasi",
                         style: TextStyle(
@@ -212,34 +211,44 @@ Stream<QuerySnapshot> getBarangPreview() {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) =>
-                                  ConsignmentPage(),
+                              builder: (_) => ConsignmentPage(),
                             ),
                           );
                         },
-
                         child: const Text("Lihat Semua"),
                       ),
                     ],
                   ),
 
                   const SizedBox(height: 10),
-                  //LIST PREVIEW
+
                   Expanded(
                     child: StreamBuilder<QuerySnapshot>(
                       stream: firestore
-                          .collection('consignment_requests')
-                          .orderBy(
-                            'createdAt',
-                            descending: true,
-                          )
-                          .limit(5)
+                          .collection('clients')
                           .snapshots(),
-
                       builder: (context, snapshot) {
+                        if (!snapshot.hasData) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        }
 
-                        if (!snapshot.hasData ||
-                            snapshot.data!.docs.isEmpty) {
+                        final clients = snapshot.data!.docs
+                            .map(
+                              (doc) => ClientModel.fromMap(
+                                doc.id,
+                                doc.data() as Map<String, dynamic>,
+                              ),
+                            )
+                            .where(
+                              (client) =>
+                                  client.borrowedItems.isNotEmpty,
+                            )
+                            .take(5)
+                            .toList();
+
+                        if (clients.isEmpty) {
                           return const Center(
                             child: Text(
                               "Belum ada barang konsinyasi",
@@ -247,113 +256,50 @@ Stream<QuerySnapshot> getBarangPreview() {
                           );
                         }
 
-                        final docs = snapshot.data!.docs;
-
                         return ListView.builder(
-                          itemCount: docs.length,
-
+                          itemCount: clients.length,
                           itemBuilder: (context, index) {
+                            final client = clients[index];
+                            final item =
+                                client.borrowedItems.first;
 
-                            final batch =
-                                ConsignmentRequestModel.fromMap(
-                              docs[index].id,
-                              docs[index].data()
-                                  as Map<String, dynamic>,
-                            );
+                            return ListTile(
+                              contentPadding: EdgeInsets.zero,
 
-                            final firstItem =
-                                batch.items.isNotEmpty
-                                    ? batch.items.first
-                                    : null;
+                              leading: item.catalogImagePath != null &&
+                                      item.catalogImagePath!.isNotEmpty
+                                  ? ClipRRect(
+                                      borderRadius:
+                                          BorderRadius.circular(8),
+                                      child: Image.network(
+                                        item.catalogImagePath!,
+                                        width: 50,
+                                        height: 50,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    )
+                                  : const CircleAvatar(
+                                      child: Icon(
+                                        Icons.inventory_2_outlined,
+                                      ),
+                                    ),
 
-                            return Padding(
-                              padding:
-                                  const EdgeInsets.only(bottom: 14),
+                              title: Text(
+                                item.catalogName,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
 
-                              child: Row(
+                              subtitle: Column(
                                 crossAxisAlignment:
                                     CrossAxisAlignment.start,
-
                                 children: [
-
-                                  Container(
-                                    width: 54,
-                                    height: 54,
-
-                                    decoration: BoxDecoration(
-                                      color: Colors.blue.shade100,
-                                      borderRadius:
-                                          BorderRadius.circular(12),
-                                    ),
-
-                                    child: firstItem?.catalogImagePath !=
-                                                null &&
-                                            firstItem!
-                                                .catalogImagePath!
-                                                .isNotEmpty
-                                        ? ClipRRect(
-                                            borderRadius:
-                                                BorderRadius.circular(
-                                                    12),
-
-                                            child: Image.network(
-                                              firstItem
-                                                  .catalogImagePath!,
-                                              fit: BoxFit.cover,
-                                            ),
-                                          )
-                                        : const Icon(
-                                            Icons.inventory_2_outlined,
-                                          ),
+                                  Text(
+                                    'Peminjam: ${client.name}',
                                   ),
-
-                                  const SizedBox(width: 12),
-
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-
-                                      children: [
-
-                                        Text(
-                                          batch.clientName,
-                                          style: const TextStyle(
-                                            fontWeight:
-                                                FontWeight.bold,
-                                            fontSize: 15,
-                                          ),
-                                        ),
-
-                                        const SizedBox(height: 4),
-
-                                        Text(
-                                          firstItem?.catalogName ??
-                                              "Tanpa Barang",
-
-                                          maxLines: 1,
-                                          overflow:
-                                              TextOverflow.ellipsis,
-
-                                          style: TextStyle(
-                                            color:
-                                                Colors.grey.shade700,
-                                          ),
-                                        ),
-
-                                        const SizedBox(height: 4),
-
-                                        Text(
-                                          'Rp ${firstItem?.catalogPrice.toStringAsFixed(0) ?? '0'}',
-
-                                          style: TextStyle(
-                                            color:
-                                                Colors.grey.shade600,
-                                            fontSize: 13,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
+                                  Text(
+                                    'Qty: ${item.quantity}',
                                   ),
                                 ],
                               ),
