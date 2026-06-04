@@ -8,7 +8,14 @@ import '../../utils/currency_format.dart';
 // TIDAK pakai Scaffold/AppBar sendiri
 // ─────────────────────────────────────────────────────────────
 class HomeClientPage extends StatefulWidget {
-  const HomeClientPage({super.key});
+  final FirebaseAuth? auth;
+  final FirebaseFirestore? firestore;
+
+  const HomeClientPage({
+    super.key,
+    this.auth,
+    this.firestore,
+  });
 
   @override
   State<HomeClientPage> createState() => _HomeClientPageState();
@@ -20,6 +27,12 @@ class _HomeClientPageState extends State<HomeClientPage> {
   String? _clientId;
   bool _loadingClient = true;
 
+  FirebaseAuth get _auth =>
+      widget.auth ?? FirebaseAuth.instance;
+
+  FirebaseFirestore get _firestore =>
+      widget.firestore ?? FirebaseFirestore.instance;
+
   @override
   void initState() {
     super.initState();
@@ -27,13 +40,13 @@ class _HomeClientPageState extends State<HomeClientPage> {
   }
 
   Future<void> _resolveClientId() async {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = _auth.currentUser;
     if (user == null) {
       setState(() => _loadingClient = false);
       return;
     }
     try {
-      final snap = await FirebaseFirestore.instance
+      final snap = await _firestore
           .collection('clients')
           .where('email', isEqualTo: user.email)
           .limit(1)
@@ -68,6 +81,7 @@ class _HomeClientPageState extends State<HomeClientPage> {
         clientId: _clientId,
         previewLimit: _previewLimit,
         isDark: isDark,
+        firestore: _firestore
       ),
     );
   }
@@ -80,11 +94,13 @@ class _RequestListCard extends StatelessWidget {
   final String? clientId;
   final int previewLimit;
   final bool isDark;
+  final FirebaseFirestore firestore;
 
   const _RequestListCard({
     required this.clientId,
     required this.previewLimit,
     required this.isDark,
+    required this.firestore,
   });
 
   @override
@@ -111,7 +127,7 @@ class _RequestListCard extends StatelessWidget {
     }
 
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
+      stream: firestore
           .collection('consignment_requests')
           .where('clientId', isEqualTo: clientId)
           .orderBy('createdAt', descending: true)
