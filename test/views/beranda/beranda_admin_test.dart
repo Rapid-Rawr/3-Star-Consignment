@@ -1,7 +1,7 @@
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:star_consignment/views/beranda/beranda_admin.dart';
 
 void main() {
@@ -21,17 +21,41 @@ void main() {
       'clientAddress': 'Test Address',
       'clientEmail': 'john@test.com',
       'status': 'pending',
-      'createdAt': DateTime.now(),
+      'createdAt': Timestamp.now(),
 
       'items': [
         {
           'catalogId': 'item1',
-          'catalogName': 'Baju Seragam',
+          'catalogName': 'Baju',
           'catalogPrice': 150000,
           'catalogCategory': 'Seragam',
           'catalogImagePath': '',
           'quantity': 2,
           'itemStatus': 'pending',
+        }
+      ]
+    });
+  }
+
+  Future<void> createSampleClient() async {
+    await firestore
+        .collection('clients')
+        .doc('client1')
+        .set({
+      'name': 'John Doe',
+      'phone': '08123456789',
+      'email': 'john@test.com',
+      'address': 'Test Address',
+      'debt': 300000,
+
+      'borrowedItems': [
+        {
+          'catalogId': 'item1',
+          'catalogName': 'Baju',
+          'catalogPrice': 150000,
+          'catalogCategory': 'Seragam',
+          'catalogImagePath': '',
+          'quantity': 2,
         }
       ]
     });
@@ -44,9 +68,10 @@ void main() {
       ),
     );
   }
-
+  
   group('HomeAdminPage Widget Tests', () {
     testWidgets(
+      //Apakah menampilkan state kosong jida request tidak ada
       'shows empty state when no requests exist',
       (tester) async {
         await tester.pumpWidget(buildWidget());
@@ -61,6 +86,7 @@ void main() {
     );
 
     testWidgets(
+      //Apakah menampilkan request dari firestore
       'shows request from firestore',
       (tester) async {
         await createSampleRequest();
@@ -71,12 +97,13 @@ void main() {
 
         expect(
           find.text('John Doe'),
-          findsNWidgets(2),
+          findsOneWidget,
         );
       },
     );
 
     testWidgets(
+      //Apakah tombol approve bekerja untuk approve status
       'approve button updates status',
       (tester) async {
         await createSampleRequest();
@@ -117,6 +144,7 @@ void main() {
     );
 
     testWidgets(
+      //Apakah tombol reject bekerja untuk reject status
       'reject button updates status',
       (tester) async {
         await createSampleRequest();
@@ -156,33 +184,40 @@ void main() {
       },
     );
 
+  testWidgets(
+    //Apakah menampilkan preview untuk barang konsinyasi
+    'shows preview item information',
+    (tester) async {
+      await createSampleClient();
+
+      await tester.pumpWidget(buildWidget());
+
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Barang Konsinyasi'),
+        findsOneWidget,
+      );
+
+      expect(
+        find.text('Baju'),
+        findsOneWidget,
+      );
+
+      expect(
+        find.text('Peminjam: John Doe'),
+        findsOneWidget,
+      );
+
+      expect(
+        find.text('Qty: 2'),
+        findsOneWidget,
+      );
+    },
+  );
+
     testWidgets(
-      'shows preview item information',
-      (tester) async {
-        await createSampleRequest();
-
-        await tester.pumpWidget(buildWidget());
-
-        await tester.pumpAndSettle();
-
-        expect(
-          find.text('Barang Konsinyasi'),
-          findsOneWidget,
-        );
-
-        expect(
-          find.text('Baju Seragam'),
-          findsOneWidget,
-        );
-
-        expect(
-          find.textContaining('Rp'),
-          findsWidgets,
-        );
-      },
-    );
-
-    testWidgets(
+      //Apakah tombol lihat semua ada
       'lihat semua button exists',
       (tester) async {
         await createSampleRequest();
