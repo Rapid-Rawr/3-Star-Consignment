@@ -720,7 +720,7 @@ class _ClientPageState extends State<ClientPage> {
               showNoAccess(context);
               return;
             }
-            _showAddClientDialog;
+            _showAddClientDialog();
           },
           tooltip: 'Tambah Klien',
           backgroundColor: Colors.transparent,

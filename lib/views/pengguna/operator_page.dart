@@ -699,7 +699,7 @@ class _OperatorPageState extends State<OperatorPage> {
               showNoAccess(context);
               return;
             }
-            _showAddOperatorDialog;
+            _showAddOperatorDialog();
           },
           tooltip: 'Tambah Operator',
           backgroundColor: Colors.transparent,
