@@ -1737,3 +1737,8 @@ class _InlineQtyStepper extends StatelessWidget {
     );
   }
 }
+
+typedef InlineQtyStepper = _InlineQtyStepper;
+typedef ClientCard = _ClientCard;
+typedef ClientDetailSheet = _ClientDetailSheet;
+typedef SelectedItem = _SelectedItem;

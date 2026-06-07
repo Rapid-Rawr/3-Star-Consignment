@@ -48,6 +48,14 @@ class _CustomBottomNavState extends State<CustomBottomNav> {
     _scales = List.filled(widget.items.length, 1.0);
   }
 
+  @override
+  void didUpdateWidget(CustomBottomNav oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.items.length != widget.items.length) {
+      _scales = List.filled(widget.items.length, 1.0);
+    }
+  }
+
   void _onTapDown(int index) {
     setState(() => _scales[index] = 0.80);
   }
@@ -92,7 +100,6 @@ class _CustomBottomNavState extends State<CustomBottomNav> {
     final Color bgColor = Theme.of(context).scaffoldBackgroundColor;
     final Color activeColor = isDark ? Colors.white : const Color(0xFF1D1B20);
     final Color inactiveColor = isDark ? Colors.white38 : Colors.black38;
-
     final Color borderColor = isDark ? Colors.white24 : Colors.black12;
 
     return ShaderMask(

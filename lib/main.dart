@@ -152,19 +152,20 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   }
 
   // PERBAIKAN: uncomment dan tambahkan initialIndex
-  void _updateTabController(int newLength) {
-    if (_tabController.length != newLength) {
-      _tabController.removeListener(_handleTabSelection);
-      _tabController.dispose();
-      _currentTabIndex = 0;
-      _tabController = TabController(
-        length: newLength,
-        vsync: this,
-        initialIndex: 0,
-      );
-      _tabController.addListener(_handleTabSelection);
-    }
+ void _updateTabController(int newLength) {
+  if (_tabController.length != newLength) {
+    _tabController.removeListener(_handleTabSelection);
+    _tabController.dispose();
+    _tabController = TabController(
+      length: newLength,
+      vsync: this,
+      initialIndex: 0,
+    );
+    _tabController.addListener(_handleTabSelection);
+    // JANGAN setState di sini — dipanggil dari build
+    _currentTabIndex = 0;
   }
+} 
 
   @override
   void dispose() {
@@ -338,64 +339,66 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   }
 
   Future<void> _handleSignOut() async {
-    await _auth.signOut(context);
-    if (mounted) {
-      setState(() => _currentTabIndex = 0);
-      _tabController.animateTo(0);
-      Future.delayed(const Duration(milliseconds: 300), () {
-        if (mounted) _showLoginRequiredDialog();
-      });
-    }
+  await _auth.signOut(context);
+  if (mounted) {
+    setState(() {
+      _currentTabIndex = 0; // 
+    });
+    _tabController.animateTo(0);
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (mounted) _showLoginRequiredDialog();
+    });
   }
+}
 
-  @override
-  Widget build(BuildContext context) {
-    final role = context.watch<local.AuthProvider>().role;
+@override
+Widget build(BuildContext context) {
+  final role = context.watch<local.AuthProvider>().role;
 
-    final pages = getPages(role);
-    final titles = getTitles(role);
-    final navItems = getNavItems(role);
+  final pages = getPages(role);
+  final titles = getTitles(role);
+  final navItems = getNavItems(role);
 
-    // PERBAIKAN: reset index DULU sebelum update controller
-    if (_currentTabIndex >= pages.length) {
-      _currentTabIndex = 0;
-    }
-
-    // BARU update controller setelah index aman
-    _updateTabController(pages.length);
-
-    return Scaffold(
-      key: _scaffoldKey,
-      extendBody: true,
-      appBar: AppBar(
-        title: Text(titles[_currentTabIndex]),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
-          ),
-        ],
-      ),
-      endDrawer: LoginDrawer(
-        currentUser: _currentUser,
-        isSigningIn: _isSigningIn,
-        onSignIn: _handleSignIn,
-        onSignOut: _handleSignOut,
-      ),
-      bottomNavigationBar: CustomBottomNav(
-        currentIndex: _currentTabIndex,
-        onTap: (i) {
-          final user = FirebaseAuth.instance.currentUser;
-          if (i != 0 && user == null) {
-            _showLoginRequiredDialog();
-            return;
-          }
-          setState(() => _currentTabIndex = i);
-          _tabController.animateTo(i);
-        },
-        items: navItems,
-      ),
-      body: TabBarView(controller: _tabController, children: pages),
-    );
+  // Hitung safeIndex SEBELUM update controller
+  if (_currentTabIndex >= pages.length) {
+    _currentTabIndex = 0; // langsung mutasi, tidak perlu setState di sini
   }
+  _updateTabController(pages.length);
+
+  final safeIndex = _currentTabIndex; // sudah aman
+
+  return Scaffold(
+    key: _scaffoldKey,
+    extendBody: true,
+    appBar: AppBar(
+      title: Text(titles[safeIndex]), // ← pakai safeIndex
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.menu),
+          onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
+        ),
+      ],
+    ),
+    endDrawer: LoginDrawer(
+      currentUser: _currentUser,
+      isSigningIn: _isSigningIn,
+      onSignIn: _handleSignIn,
+      onSignOut: _handleSignOut,
+    ),
+    bottomNavigationBar: CustomBottomNav(
+      currentIndex: safeIndex, // ← pakai safeIndex
+      onTap: (i) {
+        final user = FirebaseAuth.instance.currentUser;
+        if (i != 0 && user == null) {
+          _showLoginRequiredDialog();
+          return;
+        }
+        setState(() => _currentTabIndex = i);
+        _tabController.animateTo(i);
+      },
+      items: navItems,
+    ),
+    body: TabBarView(controller: _tabController, children: pages),
+  );
+}
 }
