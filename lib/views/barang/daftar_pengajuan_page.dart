@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
+import 'package:provider/provider.dart';
 import '../../controllers/barang_controllers/konsinyasi_controller.dart';
 import '../../models/barang_models/konsinyasi_model.dart';
+import '../../service/auth_provider.dart';
+import '../../service/roles.dart';
 import '../../widgets/search_filter_bar.dart';
 import '../../widgets/catalog_image.dart';
 import '../../widgets/gradient_button.dart';
 import '../../utils/currency_format.dart';
 import '../../widgets/app_dialog.dart';
-import '../../views/tabbar/beranda_page.dart';
-
 
 class RequestListPage extends StatefulWidget {
   final ConsignmentRequestModel? initialBatch;
-  
+
   const RequestListPage({super.key, this.initialBatch});
 
   @override
@@ -21,7 +23,6 @@ class RequestListPage extends StatefulWidget {
 
 class _RequestListPageState extends State<RequestListPage> {
   late final ConsignmentRequestController _controller;
-  late final Stream<QuerySnapshot> _stream;
 
   // Map<clientId, photoUrl> — loaded once from clients collection
   Map<String, String> _clientPhotoMap = {};
@@ -37,24 +38,20 @@ class _RequestListPageState extends State<RequestListPage> {
     _controller = ConsignmentRequestController(
       firestore: FirebaseFirestore.instance,
     );
-    _stream = _controller.getRequestsStream();
     _loadClientPhotos();
 
     if (widget.initialBatch != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        final isDark =
-            Theme.of(context).brightness == Brightness.dark;
+        final isDark = Theme.of(context).brightness == Brightness.dark;
 
         _showDetail(context, widget.initialBatch!, isDark);
-     });
+      });
     }
   }
 
   Future<void> _loadClientPhotos() async {
     try {
-      final snap = await FirebaseFirestore.instance
-          .collection('clients')
-          .get();
+      final snap = await FirebaseFirestore.instance.collection('clients').get();
       if (!mounted) return;
       setState(() {
         _clientPhotoMap = {
@@ -284,11 +281,55 @@ class _RequestListPageState extends State<RequestListPage> {
     }
   }
 
+  Future<void> _deleteRequest(
+    BuildContext context,
+    ConsignmentRequestModel batch,
+  ) async {
+    bool confirm = false;
+    await showAppDialog(
+      context: context,
+      title: 'Hapus Pengajuan',
+      contentWidget: Text(
+        'Hapus pengajuan "${batch.clientName}" secara permanen?',
+        style: const TextStyle(fontFamily: 'Poppins', fontSize: 13),
+      ),
+      actions: [
+        AppDialogAction(
+          label: 'Batal',
+          onPressed: () => Navigator.pop(context),
+        ),
+        AppDialogAction(
+          label: 'Hapus',
+          type: AppDialogActionType.gradient,
+          onPressed: () {
+            confirm = true;
+            Navigator.pop(context);
+          },
+        ),
+      ],
+    );
+    if (confirm && context.mounted) {
+      final result = await _controller.deleteRequest(batch.id);
+      if (!context.mounted) return;
+      if (result['success'] != true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['error'] ?? 'Gagal menghapus'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   void _showDetail(
     BuildContext context,
     ConsignmentRequestModel batch,
     bool isDark,
   ) {
+    final role = context.read<AuthProvider>().role;
+    final isAdmin = role == Roles.admin;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -296,6 +337,7 @@ class _RequestListPageState extends State<RequestListPage> {
       builder: (ctx) => _DetailSheet(
         batch: batch,
         isDark: isDark,
+        isAdmin: isAdmin,
         itemStatusBg: _itemStatusBg,
         itemStatusFg: _itemStatusFg,
         itemStatusIcon: _itemStatusIcon,
@@ -374,6 +416,15 @@ class _RequestListPageState extends State<RequestListPage> {
     final Color emptyIcon = isDark ? Colors.white24 : Colors.black26;
     final Color emptyText = isDark ? Colors.white38 : const Color(0xFF9E9E9E);
 
+    final role = context.watch<AuthProvider>().role;
+    final user = FirebaseAuth.instance.currentUser;
+    final isAdmin = role == Roles.admin;
+
+    final stream = _controller.getRequestsByRole(
+      role: role ?? '',
+      email: user?.email ?? '',
+    );
+
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -416,7 +467,7 @@ class _RequestListPageState extends State<RequestListPage> {
           ),
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
-              stream: _stream,
+              stream: stream,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
@@ -533,6 +584,7 @@ class _RequestListPageState extends State<RequestListPage> {
                       pendingCount: pendingCount,
                       categories: categories,
                       isDark: isDark,
+                      isAdmin: isAdmin,
                       clientPhotoMap: _clientPhotoMap,
                       batchStatusBg: _batchStatusBg,
                       batchStatusFg: _batchStatusFg,
@@ -541,14 +593,22 @@ class _RequestListPageState extends State<RequestListPage> {
                       formatDate: _formatDate,
                       onDetail: () => _showDetail(context, batch, isDark),
                       onApproveAll:
-                          batch.status != ConsignmentBatchStatus.packed &&
+                          isAdmin &&
+                              batch.status != ConsignmentBatchStatus.packed &&
                               pendingCount > 0
                           ? () => _approveAllThenDetail(context, batch, isDark)
                           : null,
                       onRejectAll:
-                          batch.status != ConsignmentBatchStatus.packed &&
+                          isAdmin &&
+                              batch.status != ConsignmentBatchStatus.packed &&
                               pendingCount > 0
                           ? () => _rejectAllThenDetail(context, batch, isDark)
+                          : null,
+                      onDelete:
+                          role == Roles.client &&
+                              (batch.status == ConsignmentBatchStatus.pending ||
+                               batch.status == ConsignmentBatchStatus.processing)
+                          ? () => _deleteRequest(context, batch)
                           : null,
                     );
                   },
@@ -567,6 +627,7 @@ class _BatchCard extends StatelessWidget {
   final int pendingCount;
   final List<String> categories;
   final bool isDark;
+  final bool isAdmin;
   final Map<String, String> clientPhotoMap;
   final Color Function(ConsignmentBatchStatus, bool) batchStatusBg;
   final Color Function(ConsignmentBatchStatus, bool) batchStatusFg;
@@ -576,12 +637,14 @@ class _BatchCard extends StatelessWidget {
   final VoidCallback onDetail;
   final Future<void> Function()? onApproveAll;
   final Future<void> Function()? onRejectAll;
+  final Future<void> Function()? onDelete;
 
   const _BatchCard({
     required this.batch,
     required this.pendingCount,
     required this.categories,
     required this.isDark,
+    required this.isAdmin,
     required this.clientPhotoMap,
     required this.batchStatusBg,
     required this.batchStatusFg,
@@ -591,6 +654,7 @@ class _BatchCard extends StatelessWidget {
     required this.onDetail,
     required this.onApproveAll,
     required this.onRejectAll,
+    this.onDelete,
   });
 
   @override
@@ -838,6 +902,17 @@ class _BatchCard extends StatelessWidget {
                     onTap: onRejectAll!,
                   ),
                 ],
+                if (onDelete != null) ...[
+                  const SizedBox(width: 8),
+                  _IconActionButton(
+                    icon: Icons.delete_outline_rounded,
+                    color: isDark ? const Color(0xFFFF8A8A) : Colors.red,
+                    bgColor: isDark
+                        ? const Color(0xFF3A1A1A)
+                        : const Color(0xFFFCE8E8),
+                    onTap: onDelete!,
+                  ),
+                ],
               ],
             ),
           ],
@@ -881,6 +956,7 @@ class _IconActionButton extends StatelessWidget {
 class _DetailSheet extends StatefulWidget {
   final ConsignmentRequestModel batch;
   final bool isDark;
+  final bool isAdmin;
   final Color Function(ConsignmentItemStatus, bool) itemStatusBg;
   final Color Function(ConsignmentItemStatus, bool) itemStatusFg;
   final IconData Function(ConsignmentItemStatus) itemStatusIcon;
@@ -902,6 +978,7 @@ class _DetailSheet extends StatefulWidget {
   const _DetailSheet({
     required this.batch,
     required this.isDark,
+    required this.isAdmin,
     required this.itemStatusBg,
     required this.itemStatusFg,
     required this.itemStatusIcon,
@@ -955,6 +1032,7 @@ class _DetailSheetState extends State<_DetailSheet> {
         return _DetailSheetBody(
           batch: batch,
           isDark: widget.isDark,
+          isAdmin: widget.isAdmin,
           itemStatusBg: widget.itemStatusBg,
           itemStatusFg: widget.itemStatusFg,
           itemStatusIcon: widget.itemStatusIcon,
@@ -981,6 +1059,7 @@ class _DetailSheetState extends State<_DetailSheet> {
 class _DetailSheetBody extends StatelessWidget {
   final ConsignmentRequestModel batch;
   final bool isDark;
+  final bool isAdmin;
   final Color Function(ConsignmentItemStatus, bool) itemStatusBg;
   final Color Function(ConsignmentItemStatus, bool) itemStatusFg;
   final IconData Function(ConsignmentItemStatus) itemStatusIcon;
@@ -1002,6 +1081,7 @@ class _DetailSheetBody extends StatelessWidget {
   const _DetailSheetBody({
     required this.batch,
     required this.isDark,
+    required this.isAdmin,
     required this.itemStatusBg,
     required this.itemStatusFg,
     required this.itemStatusIcon,
@@ -1043,13 +1123,15 @@ class _DetailSheetBody extends StatelessWidget {
           (it) => it.itemStatus == ConsignmentItemStatus.rejected,
         );
     final bool canRejectBatch =
+        isAdmin &&
         batch.status == ConsignmentBatchStatus.processing && allItemsRejected;
     final bool canPack =
+        isAdmin &&
         batch.status == ConsignmentBatchStatus.processing &&
         !hasPendingItems &&
         !allItemsRejected;
-    final bool canReceive = batch.status == ConsignmentBatchStatus.packed;
-    final bool canCancelAll = !isLocked && hasNonPendingItems;
+    final bool canReceive = isAdmin && batch.status == ConsignmentBatchStatus.packed;
+    final bool canCancelAll = isAdmin && !isLocked && hasNonPendingItems;
 
     int getEffectiveQuantity(ConsignmentItemEntry item) {
       if (item.itemStatus == ConsignmentItemStatus.rejected) return 0;
@@ -1448,7 +1530,7 @@ class _DetailSheetBody extends StatelessWidget {
                             color: subColor,
                           ),
                         ),
-                        if (!isLocked && isPending) ...[
+                        if (isAdmin && !isLocked && isPending) ...[
                           const SizedBox(height: 10),
                           Row(
                             children: [
@@ -1494,7 +1576,7 @@ class _DetailSheetBody extends StatelessWidget {
                             ],
                           ),
                         ],
-                        if (!isLocked && !isPending) ...[
+                        if (isAdmin && !isLocked && !isPending) ...[
                           const SizedBox(height: 10),
                           Row(
                             children: [

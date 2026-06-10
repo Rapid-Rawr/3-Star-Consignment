@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../barang/katalog_page.dart';
 import '../barang/pengajuan_konsinyasi_page.dart';
 import '../barang/daftar_pengajuan_page.dart';
@@ -78,18 +78,20 @@ class ItemPage extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      MenuButton(
-                        svgPath: 'assets/icons/Request Consignment.svg',
-                        label: 'Pengajuan Konsinyasi',
-                        borderColor: context.borderColor,
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const ConsignmentRequestPage(),
+                      if (hasAccess(role, [Roles.client]))
+                        MenuButton(
+                          svgPath: 'assets/icons/Request Consignment.svg',
+                          label: 'Pengajuan Konsinyasi',
+                          borderColor: context.borderColor,
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const ConsignmentRequestPage(),
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 16),
+                      if (hasAccess(role, [Roles.client]))
+                        const SizedBox(height: 16),
                       if (hasAccess(role, [Roles.admin, Roles.karyawan]))
                         MenuButton(
                           svgPath: 'assets/icons/Catalog.svg',

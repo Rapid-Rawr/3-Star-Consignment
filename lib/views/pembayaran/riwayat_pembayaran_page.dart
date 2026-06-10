@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
+import 'package:provider/provider.dart';
 import '../../controllers/pembayaran_controllers/pembayaran_controller.dart';
 import '../../models/pembayaran_models/pembayaran_model.dart';
+import '../../service/auth_provider.dart';
 import '../../widgets/date_range_filter.dart';
 import '../../widgets/search_filter_bar.dart';
 import '../../widgets/detail_sheet_widgets.dart';
@@ -17,7 +20,6 @@ class PaymentHistoryPage extends StatefulWidget {
 
 class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
   late final PaymentController _controller;
-  late final Stream<QuerySnapshot> _stream;
 
   // Map<clientId, photoUrl> — loaded once from clients collection
   Map<String, String> _clientPhotoMap = {};
@@ -32,7 +34,6 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
   void initState() {
     super.initState();
     _controller = PaymentController(firestore: FirebaseFirestore.instance);
-    _stream = _controller.getPaymentsStream();
     _loadClientPhotos();
   }
 
@@ -89,6 +90,14 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
 
   @override
   Widget build(BuildContext context) {
+    final role = context.watch<AuthProvider>().role;
+    final user = FirebaseAuth.instance.currentUser;
+
+    final stream = _controller.getPaymentsByRole(
+      role: role ?? '',
+      email: user?.email ?? '',
+    );
+
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -123,7 +132,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
 
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
-              stream: _stream,
+              stream: stream,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());

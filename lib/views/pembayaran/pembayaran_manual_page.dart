@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
+import 'package:provider/provider.dart';
 import '../../controllers/pengguna_controllers/klien_controller.dart';
 import '../../controllers/pembayaran_controllers/pembayaran_controller.dart';
 import '../../models/pengguna_models/klien_model.dart';
 import '../../models/pembayaran_models/pembayaran_model.dart';
+import '../../service/auth_provider.dart';
 import '../../widgets/search_filter_bar.dart';
 import '../../widgets/catalog_image.dart';
 import '../../widgets/gradient_button.dart';
@@ -28,7 +30,6 @@ class ManualPaymentPage extends StatefulWidget {
 
 class _ManualPaymentPageState extends State<ManualPaymentPage> {
   late final ClientController _controller;
-  late final Stream<QuerySnapshot> _stream;
 
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
@@ -39,7 +40,6 @@ class _ManualPaymentPageState extends State<ManualPaymentPage> {
   void initState() {
     super.initState();
     _controller = ClientController(firestore: FirebaseFirestore.instance);
-    _stream = _controller.getClientsStream();
   }
 
   @override
@@ -64,6 +64,14 @@ class _ManualPaymentPageState extends State<ManualPaymentPage> {
     final Color emptyIcon = isDark ? Colors.white24 : Colors.black26;
     final Color emptyText = isDark ? Colors.white38 : const Color(0xFF9E9E9E);
 
+    final role = context.watch<AuthProvider>().role;
+    final user = FirebaseAuth.instance.currentUser;
+
+    final stream = _controller.getClientsByRole(
+      role: role ?? '',
+      email: user?.email ?? '',
+    );
+
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -72,7 +80,7 @@ class _ManualPaymentPageState extends State<ManualPaymentPage> {
         ),
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: _stream,
+        stream: stream,
         builder: (context, snap) {
           final allClients = (snap.data?.docs ?? [])
               .map(

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
+import 'package:provider/provider.dart';
 import '../../controllers/barang_controllers/konsinyasi_controller.dart';
 import '../../models/barang_models/konsinyasi_model.dart';
+import '../../service/auth_provider.dart';
 import '../../widgets/search_filter_bar.dart';
 import '../../widgets/date_range_filter.dart';
 import '../../widgets/detail_sheet_widgets.dart';
@@ -18,7 +21,6 @@ class RequestHistoryPage extends StatefulWidget {
 
 class _RequestHistoryPageState extends State<RequestHistoryPage> {
   late final ConsignmentRequestController _controller;
-  late final Stream<QuerySnapshot> _stream;
   Map<String, String> _clientPhotoMap = {};
 
   final TextEditingController _searchController = TextEditingController();
@@ -33,7 +35,6 @@ class _RequestHistoryPageState extends State<RequestHistoryPage> {
     _controller = ConsignmentRequestController(
       firestore: FirebaseFirestore.instance,
     );
-    _stream = _controller.getRequestsStream();
     _loadClientPhotos();
   }
 
@@ -94,6 +95,14 @@ class _RequestHistoryPageState extends State<RequestHistoryPage> {
 
   @override
   Widget build(BuildContext context) {
+    final role = context.watch<AuthProvider>().role;
+    final user = FirebaseAuth.instance.currentUser;
+
+    final stream = _controller.getRequestsByRole(
+      role: role ?? '',
+      email: user?.email ?? '',
+    );
+
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -129,7 +138,7 @@ class _RequestHistoryPageState extends State<RequestHistoryPage> {
           ),
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
-              stream: _stream,
+              stream: stream,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());

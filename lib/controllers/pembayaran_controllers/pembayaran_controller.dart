@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/pembayaran_models/pembayaran_model.dart';
+import '../../service/roles.dart';
 
 class PaymentController {
   final FirebaseFirestore firestore;
@@ -12,6 +13,24 @@ class PaymentController {
         .collection(collectionName)
         .orderBy('paidAt', descending: true)
         .snapshots();
+  }
+
+  Stream<QuerySnapshot> getPaymentsStreamForUser(String email) {
+    return firestore
+        .collection(collectionName)
+        .where('clientEmail', isEqualTo: email)
+        .orderBy('paidAt', descending: true)
+        .snapshots();
+  }
+
+  Stream<QuerySnapshot> getPaymentsByRole({
+    required String role,
+    required String email,
+  }) {
+    if (role == Roles.admin || role == Roles.karyawan) {
+      return getPaymentsStream();
+    }
+    return getPaymentsStreamForUser(email);
   }
 
   Future<Map<String, dynamic>> createPayment({

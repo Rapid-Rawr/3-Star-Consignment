@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -9,7 +9,7 @@ class AuthProvider extends ChangeNotifier {
 
   String? get role => _role;
 
-  /// init saat app start — cek SharedPreferences dulu,
+  /// init saat app start â€” cek SharedPreferences dulu,
   /// kalau kosong/null fetch ulang dari Firestore
   Future<void> init() async {
     final prefs = await SharedPreferences.getInstance();
@@ -20,7 +20,7 @@ class AuthProvider extends ChangeNotifier {
       _role = savedRole;
       notifyListeners();
     } else {
-      // SharedPreferences kosong — fetch dari Firestore
+      // SharedPreferences kosong â€” fetch dari Firestore
       await _fetchAndSaveRole();
     }
   }
@@ -81,7 +81,13 @@ class AuthProvider extends ChangeNotifier {
 
   /// set role setelah login
   Future<void> setRole(String? role) async {
-    if (role == null) return;
+    if (role == null) {
+      _role = null;
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('user_role');
+      notifyListeners();
+      return;
+    }
 
     if (![Roles.admin, Roles.karyawan, Roles.client].contains(role)) return;
 

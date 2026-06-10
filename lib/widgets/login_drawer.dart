@@ -1,4 +1,4 @@
-import 'package:firebase_auth/firebase_auth.dart';
+﻿import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../utils/theme_notifier.dart';
 import 'app_dialog.dart';
@@ -206,13 +206,6 @@ class LoginDrawer extends StatelessWidget {
                           );
                           if (confirmed && context.mounted) {
                             onSignOut();
-                            Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Anda telah berhasil keluar'),
-                                duration: Duration(seconds: 2),
-                              ),
-                            );
                           }
                         },
                       )

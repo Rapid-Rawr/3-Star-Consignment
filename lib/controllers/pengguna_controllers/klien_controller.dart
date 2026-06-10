@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../service/email_validator_service.dart';
+import '../../service/roles.dart';
 
 class ClientController {
   final FirebaseFirestore firestore;
@@ -12,6 +13,23 @@ class ClientController {
 
   Stream<QuerySnapshot> getClientsStream() {
     return firestore.collection(collectionName).snapshots();
+  }
+
+  Stream<QuerySnapshot> getClientsStreamForUser(String email) {
+    return firestore
+        .collection(collectionName)
+        .where('email', isEqualTo: email)
+        .snapshots();
+  }
+
+  Stream<QuerySnapshot> getClientsByRole({
+    required String role,
+    required String email,
+  }) {
+    if (role == Roles.admin || role == Roles.karyawan) {
+      return getClientsStream();
+    }
+    return getClientsStreamForUser(email);
   }
 
   String? validateName(String? value) {

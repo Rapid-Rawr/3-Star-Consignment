@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class CustomBottomNavItem {
@@ -25,6 +25,7 @@ class CustomBottomNav extends StatefulWidget {
   final List<CustomBottomNavItem> items;
   final double iconSize;
   final double activeIconSize;
+  final Set<int> disabledIndices;
 
   const CustomBottomNav({
     super.key,
@@ -33,6 +34,7 @@ class CustomBottomNav extends StatefulWidget {
     required this.items,
     this.iconSize = 26,
     this.activeIconSize = 28,
+    this.disabledIndices = const {},
   });
 
   @override
@@ -57,10 +59,12 @@ class _CustomBottomNavState extends State<CustomBottomNav> {
   }
 
   void _onTapDown(int index) {
+    if (widget.disabledIndices.contains(index)) return;
     setState(() => _scales[index] = 0.80);
   }
 
   void _onTapUp(int index) {
+    if (widget.disabledIndices.contains(index)) return;
     setState(() => _scales[index] = 1.0);
     widget.onTap(index);
   }
@@ -100,6 +104,7 @@ class _CustomBottomNavState extends State<CustomBottomNav> {
     final Color bgColor = Theme.of(context).scaffoldBackgroundColor;
     final Color activeColor = isDark ? Colors.white : const Color(0xFF1D1B20);
     final Color inactiveColor = isDark ? Colors.white38 : Colors.black38;
+    final Color disabledColor = isDark ? Colors.white12 : Colors.black12;
     final Color borderColor = isDark ? Colors.white24 : Colors.black12;
 
     return ShaderMask(
@@ -131,6 +136,12 @@ class _CustomBottomNavState extends State<CustomBottomNav> {
               children: List.generate(widget.items.length, (i) {
                 final item = widget.items[i];
                 final bool isActive = widget.currentIndex == i;
+                final bool isDisabled = widget.disabledIndices.contains(i);
+
+                final Color color = isDisabled
+                    ? disabledColor
+                    : (isActive ? activeColor : inactiveColor);
+
                 return Expanded(
                   child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
@@ -143,11 +154,11 @@ class _CustomBottomNavState extends State<CustomBottomNav> {
                       curve: Curves.easeOut,
                       child: _buildIcon(
                         item: item,
-                        isActive: isActive,
-                        size: isActive
+                        isActive: isActive && !isDisabled,
+                        size: isActive && !isDisabled
                             ? (item.activeIconSize ?? widget.activeIconSize)
                             : (item.iconSize ?? widget.iconSize),
-                        color: isActive ? activeColor : inactiveColor,
+                        color: color,
                       ),
                     ),
                   ),

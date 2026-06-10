@@ -1,15 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../service/auth_provider.dart';
+import '../../service/roles.dart';
 import '../pembayaran/pembayaran_otomatis_page.dart';
 import '../pembayaran/pembayaran_manual_page.dart';
 import '../pembayaran/riwayat_pembayaran_page.dart';
 import '../../widgets/menu_button.dart';
 import '../../utils/app_colors.dart';
 
+bool hasAccess(String? role, List<String> allowedRoles) {
+  if (role == null) return false;
+  return allowedRoles.contains(role);
+}
+
 class PaymentPage extends StatelessWidget {
   const PaymentPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final role = context.watch<AuthProvider>().role;
+
     return CustomScrollView(
       slivers: [
         SliverFillRemaining(
@@ -39,18 +49,20 @@ class PaymentPage extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      MenuButton(
-                        svgPath: 'assets/icons/Payment.svg',
-                        label: 'Pembayaran Manual',
-                        borderColor: context.borderColor,
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const ManualPaymentPage(),
+                      if (hasAccess(role, [Roles.admin, Roles.karyawan]))
+                        MenuButton(
+                          svgPath: 'assets/icons/Payment.svg',
+                          label: 'Pembayaran Manual',
+                          borderColor: context.borderColor,
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const ManualPaymentPage(),
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 16),
+                      if (hasAccess(role, [Roles.admin, Roles.karyawan]))
+                        const SizedBox(height: 16),
                       MenuButton(
                         svgPath: 'assets/icons/Payment History.svg',
                         label: 'Riwayat Pembayaran',

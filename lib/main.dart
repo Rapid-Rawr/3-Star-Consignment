@@ -1,5 +1,4 @@
-import 'dart:async';
-import 'dart:ui';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -151,21 +150,19 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     }
   }
 
-  // PERBAIKAN: uncomment dan tambahkan initialIndex
- void _updateTabController(int newLength) {
-  if (_tabController.length != newLength) {
-    _tabController.removeListener(_handleTabSelection);
-    _tabController.dispose();
-    _tabController = TabController(
-      length: newLength,
-      vsync: this,
-      initialIndex: 0,
-    );
-    _tabController.addListener(_handleTabSelection);
-    // JANGAN setState di sini — dipanggil dari build
-    _currentTabIndex = 0;
+  void _updateTabController(int newLength) {
+    if (_tabController.length != newLength) {
+      _tabController.removeListener(_handleTabSelection);
+      _tabController.dispose();
+      _tabController = TabController(
+        length: newLength,
+        vsync: this,
+        initialIndex: 0,
+      );
+      _tabController.addListener(_handleTabSelection);
+      _currentTabIndex = 0;
+    }
   }
-} 
 
   @override
   void dispose() {
@@ -175,113 +172,11 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  void _showLoginRequiredDialog() {
-    showGeneralDialog(
-      context: context,
-      barrierDismissible: false,
-      barrierLabel: 'Login Required',
-      barrierColor: Colors.black.withOpacity(0.2),
-      transitionDuration: const Duration(milliseconds: 300),
-      pageBuilder: (_, __, ___) {
-        return BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-          child: Center(
-            child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 24),
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Theme.of(context).cardColor.withOpacity(0.9),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: Colors.white.withOpacity(0.1)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.15),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: Material(
-                color: Colors.transparent,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.orange.withOpacity(0.15),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.lock_outline_rounded,
-                        size: 40,
-                        color: Colors.orange,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    const Text(
-                      'Login Diperlukan',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Anda harus login terlebih dahulu untuk mengakses fitur ini.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 15,
-                        color: Theme.of(context).textTheme.bodyMedium?.color,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        onPressed: () {
-                          Navigator.pop(context);
-                          Future.delayed(const Duration(milliseconds: 200), () {
-                            _scaffoldKey.currentState?.openEndDrawer();
-                          });
-                        },
-                        icon: const Icon(Icons.login_rounded),
-                        label: const Text('Login Sekarang'),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-      transitionBuilder: (_, animation, __, child) {
-        return FadeTransition(
-          opacity: animation,
-          child: ScaleTransition(
-            scale: CurvedAnimation(
-              parent: animation,
-              curve: Curves.easeOutBack,
-            ),
-            child: child,
-          ),
-        );
-      },
-    );
-  }
-
   List<Widget> getPages(String? role) {
     final isAdminOrKaryawan = role == Roles.admin || role == Roles.karyawan;
     return isAdminOrKaryawan
-        ? const [HomePage(), PaymentPage(), ItemPage(), UserPage()]
-        : const [HomePage(), PaymentPage(), ItemPage()];
+        ? const [BerandaPage(), PaymentPage(), ItemPage(), UserPage()]
+        : const [BerandaPage(), PaymentPage(), ItemPage()];
   }
 
   List<String> getTitles(String? role) {
@@ -338,67 +233,72 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     }
   }
 
-  Future<void> _handleSignOut() async {
-  await _auth.signOut(context);
-  if (mounted) {
+  void _handleSignOut() {
+    // 1. Clear role + reset tab — triggers instant UI rebuild
+    Provider.of<local.AuthProvider>(context, listen: false).clear();
     setState(() {
-      _currentTabIndex = 0; // 
+      _currentUser = null;
+      _currentTabIndex = 0;
     });
     _tabController.animateTo(0);
-    Future.delayed(const Duration(milliseconds: 300), () {
-      if (mounted) _showLoginRequiredDialog();
-    });
+
+    // 2. Close drawer
+    Navigator.of(context).pop();
+
+    // 3. Firebase/Google signout in background
+    _auth.signOut(context);
   }
-}
 
-@override
-Widget build(BuildContext context) {
-  final role = context.watch<local.AuthProvider>().role;
+  @override
+  Widget build(BuildContext context) {
+    final role = context.watch<local.AuthProvider>().role;
 
-  final pages = getPages(role);
-  final titles = getTitles(role);
-  final navItems = getNavItems(role);
+    final pages = getPages(role);
+    final titles = getTitles(role);
+    final navItems = getNavItems(role);
 
-  // Hitung safeIndex SEBELUM update controller
-  if (_currentTabIndex >= pages.length) {
-    _currentTabIndex = 0; // langsung mutasi, tidak perlu setState di sini
+    if (_currentTabIndex >= pages.length) {
+      _currentTabIndex = 0;
+    }
+    _updateTabController(pages.length);
+
+    final safeIndex = _currentTabIndex;
+
+    return Scaffold(
+      key: _scaffoldKey,
+      extendBody: true,
+      appBar: AppBar(
+        title: Text(titles[safeIndex]),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
+          ),
+        ],
+      ),
+      endDrawer: LoginDrawer(
+        currentUser: _currentUser,
+        isSigningIn: _isSigningIn,
+        onSignIn: _handleSignIn,
+        onSignOut: _handleSignOut,
+      ),
+      bottomNavigationBar: CustomBottomNav(
+        currentIndex: safeIndex,
+        disabledIndices: role == null
+            ? Set<int>.from(List.generate(navItems.length, (i) => i).where((i) => i != 0))
+            : {},
+        onTap: (i) {
+          if (role == null) return;
+          setState(() => _currentTabIndex = i);
+          _tabController.animateTo(i);
+        },
+        items: navItems,
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        physics: role == null ? const NeverScrollableScrollPhysics() : null,
+        children: pages,
+      ),
+    );
   }
-  _updateTabController(pages.length);
-
-  final safeIndex = _currentTabIndex; // sudah aman
-
-  return Scaffold(
-    key: _scaffoldKey,
-    extendBody: true,
-    appBar: AppBar(
-      title: Text(titles[safeIndex]), // ← pakai safeIndex
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.menu),
-          onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
-        ),
-      ],
-    ),
-    endDrawer: LoginDrawer(
-      currentUser: _currentUser,
-      isSigningIn: _isSigningIn,
-      onSignIn: _handleSignIn,
-      onSignOut: _handleSignOut,
-    ),
-    bottomNavigationBar: CustomBottomNav(
-      currentIndex: safeIndex, // ← pakai safeIndex
-      onTap: (i) {
-        final user = FirebaseAuth.instance.currentUser;
-        if (i != 0 && user == null) {
-          _showLoginRequiredDialog();
-          return;
-        }
-        setState(() => _currentTabIndex = i);
-        _tabController.animateTo(i);
-      },
-      items: navItems,
-    ),
-    body: TabBarView(controller: _tabController, children: pages),
-  );
-}
 }
