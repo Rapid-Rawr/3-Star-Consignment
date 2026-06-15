@@ -41,10 +41,10 @@ class CatalogController {
   }
 
   String? validateName(String? value) {
-    if (value == null || value.isEmpty) return 'Nama tidak boleh kosong';
-    if (value.length < 2) return 'Nama minimal 2 karakter';
-    return null;
-  }
+  if (value == null || value.trim().isEmpty) return 'Nama tidak boleh kosong';
+  if (value.trim().length < 2) return 'Nama minimal 2 karakter';
+  return null;
+}
 
   String? validatePrice(String? value) {
     if (value == null || value.isEmpty) return 'Harga tidak boleh kosong';
@@ -52,7 +52,7 @@ class CatalogController {
       value.replaceAll(',', '').replaceAll('.', ''),
     );
     if (parsed == null) return 'Masukkan angka yang valid';
-    if (parsed < 0) return 'Harga tidak boleh negatif';
+    if (parsed <= 0) return 'Harga tidak boleh negatif';
     return null;
   }
 
