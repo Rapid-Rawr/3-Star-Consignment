@@ -1672,8 +1672,16 @@ class _DetailSheetBody extends StatelessWidget {
                         );
                         if (confirm) {
                           final res = await onRejectBatch();
+
                           if (res['success'] == true && context.mounted) {
                             Navigator.pop(context);
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Pengajuan berhasil ditolak'),
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
                           }
                         }
                       },
@@ -1738,8 +1746,16 @@ class _DetailSheetBody extends StatelessWidget {
 
                         if (confirm) {
                           final res = await onPack();
+
                           if (res['success'] == true && context.mounted) {
                             Navigator.pop(context);
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Barang berhasil dikemas'),
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
                           }
                         }
                       },
