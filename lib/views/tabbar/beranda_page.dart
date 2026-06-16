@@ -10,6 +10,7 @@ import '../../views/barang/daftar_pengajuan_page.dart';
 import '../barang/barang_konsinyasi_page.dart';
 import '../../utils/currency_format.dart';
 
+
 class BerandaPage extends StatelessWidget {
   const BerandaPage({super.key});
 
@@ -28,11 +29,11 @@ class BerandaPage extends StatelessWidget {
     }
     switch (role) {
       case Roles.admin:
-        return const _AdminContent();
+        return const HomeAdminPage();
       case Roles.karyawan:
         return const _KaryawanContent();
       case Roles.client:
-        return const _ClientContent();
+        return const HomeClientPage();
       default:
         return const _UnregisteredView();
     }
@@ -88,8 +89,10 @@ class _NotLoggedInView extends StatelessWidget {
                 style: TextStyle(fontFamily: 'Poppins'),
               ),
               style: ElevatedButton.styleFrom(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -147,15 +150,18 @@ class _UnregisteredView extends StatelessWidget {
   }
 }
 
-class _AdminContent extends StatefulWidget {
-  const _AdminContent();
+class HomeAdminPage extends StatefulWidget {
+  final FirebaseFirestore? firestore;
+
+  const HomeAdminPage({super.key, this.firestore});
 
   @override
-  State<_AdminContent> createState() => _AdminContentState();
+  State<HomeAdminPage> createState() => _HomeAdminPageState();
 }
 
-class _AdminContentState extends State<_AdminContent> {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+class _HomeAdminPageState extends State<HomeAdminPage> {
+  FirebaseFirestore get _firestore =>
+      widget.firestore ?? FirebaseFirestore.instance;
 
   late final Stream<QuerySnapshot> _requestsStream;
   late final Stream<QuerySnapshot> _clientsStream;
@@ -248,27 +254,32 @@ class _AdminContentState extends State<_AdminContent> {
                             },
                           ),
                           IconButton(
-                            icon: const Icon(Icons.check_rounded,
-                                color: Colors.green),
+                            icon: const Icon(
+                              Icons.check_rounded,
+                              color: Colors.green,
+                            ),
                             onPressed: () async {
                               await _approveAllItems(batch.id);
                               if (!mounted) return;
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                    content:
-                                        Text('Request berhasil disetujui')),
+                                  content: Text('Request berhasil disetujui'),
+                                ),
                               );
                             },
                           ),
                           IconButton(
-                            icon: const Icon(Icons.cancel_outlined,
-                                color: Colors.red),
+                            icon: const Icon(
+                              Icons.cancel_outlined,
+                              color: Colors.red,
+                            ),
                             onPressed: () async {
                               await _rejectAllItems(batch.id);
                               if (!mounted) return;
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                    content: Text('Request ditolak')),
+                                  content: Text('Request ditolak'),
+                                ),
                               );
                             },
                           ),
@@ -285,8 +296,7 @@ class _AdminContentState extends State<_AdminContent> {
         Expanded(
           flex: 1,
           child: Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -304,9 +314,7 @@ class _AdminContentState extends State<_AdminContent> {
                       onPressed: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(
-                            builder: (_) => ConsignmentPage(),
-                          ),
+                          MaterialPageRoute(builder: (_) => ConsignmentPage()),
                         );
                       },
                       child: const Text("Lihat Semua"),
@@ -318,17 +326,14 @@ class _AdminContentState extends State<_AdminContent> {
                   child: StreamBuilder<QuerySnapshot>(
                     stream: _clientsStream,
                     builder: (context, snapshot) {
-                      if (snapshot.connectionState ==
-                          ConnectionState.waiting) {
-                        return const Center(
-                            child: CircularProgressIndicator());
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
                       }
                       if (snapshot.hasError) {
                         return _errorState(snapshot.error);
                       }
                       if (!snapshot.hasData) {
-                        return const Center(
-                            child: CircularProgressIndicator());
+                        return const Center(child: CircularProgressIndicator());
                       }
 
                       final clients = snapshot.data!.docs
@@ -338,8 +343,7 @@ class _AdminContentState extends State<_AdminContent> {
                               doc.data() as Map<String, dynamic>,
                             ),
                           )
-                          .where(
-                              (client) => client.borrowedItems.isNotEmpty)
+                          .where((client) => client.borrowedItems.isNotEmpty)
                           .take(5)
                           .toList();
 
@@ -357,11 +361,11 @@ class _AdminContentState extends State<_AdminContent> {
 
                           return ListTile(
                             contentPadding: EdgeInsets.zero,
-                            leading: item.catalogImagePath != null &&
+                            leading:
+                                item.catalogImagePath != null &&
                                     item.catalogImagePath!.isNotEmpty
                                 ? ClipRRect(
-                                    borderRadius:
-                                        BorderRadius.circular(8),
+                                    borderRadius: BorderRadius.circular(8),
                                     child: Image.network(
                                       item.catalogImagePath!,
                                       width: 50,
@@ -370,8 +374,7 @@ class _AdminContentState extends State<_AdminContent> {
                                     ),
                                   )
                                 : const CircleAvatar(
-                                    child: Icon(
-                                        Icons.inventory_2_outlined),
+                                    child: Icon(Icons.inventory_2_outlined),
                                   ),
                             title: Text(
                               item.catalogName,
@@ -380,8 +383,7 @@ class _AdminContentState extends State<_AdminContent> {
                               ),
                             ),
                             subtitle: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text('Peminjam: ${client.name}'),
                                 Text('Qty: ${item.quantity}'),
@@ -428,18 +430,23 @@ class _KaryawanContent extends StatelessWidget {
   }
 }
 
-class _ClientContent extends StatefulWidget {
-  const _ClientContent();
+class HomeClientPage extends StatefulWidget {
+
+  final FirebaseAuth? auth;
+  final FirebaseFirestore? firestore;
+
+  const HomeClientPage({super.key, this.auth, this.firestore});
+
 
   @override
-  State<_ClientContent> createState() => _ClientContentState();
+  State<HomeClientPage> createState() => HomeClientPageState();
 }
 
-class _ClientContentState extends State<_ClientContent> {
+class HomeClientPageState extends State<HomeClientPage> {
   static const int _previewLimit = 5;
 
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  FirebaseAuth get _auth => widget.auth ?? FirebaseAuth.instance;
+  FirebaseFirestore get _firestore => widget.firestore ?? FirebaseFirestore.instance;
 
   String? _clientId;
   bool _loadingClient = true;
@@ -521,12 +528,13 @@ class _ClientRequestCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color cardBg =
-        isDark ? const Color(0xFF2B2930) : Colors.white;
-    final Color headerBg =
-        isDark ? const Color(0xFF3A3540) : Colors.grey.shade100;
-    final Color borderColor =
-        isDark ? const Color(0xFF49454F) : Colors.grey.shade200;
+    final Color cardBg = isDark ? const Color(0xFF2B2930) : Colors.white;
+    final Color headerBg = isDark
+        ? const Color(0xFF3A3540)
+        : Colors.grey.shade100;
+    final Color borderColor = isDark
+        ? const Color(0xFF49454F)
+        : Colors.grey.shade200;
 
     if (clientId == null) {
       return _shell(
@@ -570,8 +578,7 @@ class _ClientRequestCard extends StatelessWidget {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: docs.length,
-            separatorBuilder: (_, __) =>
-                Divider(height: 1, color: borderColor),
+            separatorBuilder: (_, __) => Divider(height: 1, color: borderColor),
             itemBuilder: (context, i) {
               final data = docs[i].data() as Map<String, dynamic>;
               return _RequestItem(data: data, isDark: isDark);
@@ -584,14 +591,12 @@ class _ClientRequestCard extends StatelessWidget {
           headerBg: headerBg,
           borderColor: borderColor,
           showFooter: showFooter,
-           onMoreTap: showFooter
-            ? () => Navigator.push(
+          onMoreTap: showFooter
+              ? () => Navigator.push(
                   context,
-                  MaterialPageRoute(
-                     builder: (_) => RequestListPage(),
-                  ),
+                  MaterialPageRoute(builder: (_) => RequestListPage()),
                 )
-            : null,
+              : null,
           child: content,
         );
       },
@@ -626,8 +631,7 @@ class _ClientRequestCard extends StatelessWidget {
         children: [
           Container(
             width: double.infinity,
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
               color: headerBg,
               borderRadius: const BorderRadius.only(
@@ -646,7 +650,8 @@ class _ClientRequestCard extends StatelessWidget {
             ),
           ),
           child,
-         InkWell(
+          if (showFooter)
+          InkWell(
             onTap: onMoreTap,
             borderRadius: const BorderRadius.only(
               bottomLeft: Radius.circular(12),
@@ -666,10 +671,10 @@ class _ClientRequestCard extends StatelessWidget {
               ),
             ),
           ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+    );
+  }
 
   Widget _emptyState({required IconData icon, required String message}) {
     return Padding(
@@ -678,9 +683,11 @@ class _ClientRequestCard extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon,
-                size: 48,
-                color: isDark ? Colors.white24 : Colors.black26),
+            Icon(
+              icon,
+              size: 48,
+              color: isDark ? Colors.white24 : Colors.black26,
+            ),
             const SizedBox(height: 12),
             Text(
               message,
@@ -754,10 +761,8 @@ class _RequestItem extends StatelessWidget {
       }
     }
 
-    final Color nameColor =
-        isDark ? Colors.white : const Color(0xFF1D1B20);
-    final Color subColor =
-        isDark ? Colors.white54 : const Color(0xFF757575);
+    final Color nameColor = isDark ? Colors.white : const Color(0xFF1D1B20);
+    final Color subColor = isDark ? Colors.white54 : const Color(0xFF757575);
     final Color sColor = _statusColor(status);
 
     String dateLabel = '';
@@ -776,17 +781,13 @@ class _RequestItem extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: isDark
-                  ? const Color(0xFF1A3A2A)
-                  : const Color(0xFFE6F4EA),
+              color: isDark ? const Color(0xFF1A3A2A) : const Color(0xFFE6F4EA),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
               Icons.assignment_outlined,
               size: 20,
-              color: isDark
-                  ? const Color(0xFF80CBC4)
-                  : const Color(0xFF2E7D32),
+              color: isDark ? const Color(0xFF80CBC4) : const Color(0xFF2E7D32),
             ),
           ),
           const SizedBox(width: 12),
@@ -829,8 +830,7 @@ class _RequestItem extends StatelessWidget {
             ),
           ),
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
               color: sColor.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(20),

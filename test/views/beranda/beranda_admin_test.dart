@@ -2,7 +2,7 @@ import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:star_consignment/views/beranda/beranda.dart';
+import 'package:star_consignment/views/tabbar/beranda_page.dart';
 
 void main() {
   late FakeFirebaseFirestore firestore;
@@ -63,8 +63,10 @@ void main() {
 
   Widget buildWidget() {
     return MaterialApp(
-      home: HomeAdminPage(
-        firestore: firestore,
+      home: Scaffold(
+        body: HomeAdminPage(
+          firestore: firestore,
+        ),
       ),
     );
   }
