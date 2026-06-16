@@ -584,6 +584,14 @@ class _ClientRequestCard extends StatelessWidget {
           headerBg: headerBg,
           borderColor: borderColor,
           showFooter: showFooter,
+           onMoreTap: showFooter
+            ? () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                     builder: (_) => RequestListPage(),
+                  ),
+                )
+            : null,
           child: content,
         );
       },
@@ -596,6 +604,7 @@ class _ClientRequestCard extends StatelessWidget {
     required Color borderColor,
     required bool showFooter,
     required Widget child,
+    VoidCallback? onMoreTap,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -637,8 +646,13 @@ class _ClientRequestCard extends StatelessWidget {
             ),
           ),
           child,
-          if (showFooter)
-            Container(
+         InkWell(
+            onTap: onMoreTap,
+            borderRadius: const BorderRadius.only(
+              bottomLeft: Radius.circular(12),
+              bottomRight: Radius.circular(12),
+            ),
+            child: Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 14),
               alignment: Alignment.center,
@@ -651,10 +665,11 @@ class _ClientRequestCard extends StatelessWidget {
                 ),
               ),
             ),
-        ],
-      ),
-    );
-  }
+          ),
+      ],
+    ),
+  );
+}
 
   Widget _emptyState({required IconData icon, required String message}) {
     return Padding(
