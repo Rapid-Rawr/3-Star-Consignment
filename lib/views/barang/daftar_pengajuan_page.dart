@@ -24,7 +24,6 @@ class RequestListPage extends StatefulWidget {
 class _RequestListPageState extends State<RequestListPage> {
   late final ConsignmentRequestController _controller;
 
-  // Map<clientId, photoUrl> — loaded once from clients collection
   Map<String, String> _clientPhotoMap = {};
 
   final TextEditingController _searchController = TextEditingController();

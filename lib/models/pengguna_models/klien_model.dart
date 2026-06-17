@@ -9,6 +9,7 @@ class ClientModel {
   final String? photoUrl;
   final double debt;
   final List<BorrowedItem> borrowedItems;
+  final bool pendingDelete;
 
   ClientModel({
     required this.id,
@@ -19,6 +20,7 @@ class ClientModel {
     this.photoUrl,
     required this.debt,
     this.borrowedItems = const [],
+    this.pendingDelete = false,
   });
 
   Map<String, dynamic> toMap() {
@@ -48,6 +50,7 @@ class ClientModel {
       photoUrl: map['photoUrl'] as String?,
       debt: (map['debt'] as num?)?.toDouble() ?? 0.0,
       borrowedItems: borrowed,
+      pendingDelete: map['pendingDelete'] == true,
     );
   }
 
@@ -60,6 +63,7 @@ class ClientModel {
     String? photoUrl,
     double? debt,
     List<BorrowedItem>? borrowedItems,
+    bool? pendingDelete,
   }) {
     return ClientModel(
       id: id ?? this.id,
@@ -70,6 +74,7 @@ class ClientModel {
       photoUrl: photoUrl ?? this.photoUrl,
       debt: debt ?? this.debt,
       borrowedItems: borrowedItems ?? this.borrowedItems,
+      pendingDelete: pendingDelete ?? this.pendingDelete,
     );
   }
 

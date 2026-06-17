@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 extension AppColorsExtension on BuildContext {
   bool get isDark => Theme.of(this).brightness == Brightness.dark;
@@ -46,6 +46,11 @@ extension AppColorsExtension on BuildContext {
       : (isDark ? const Color(0xFF80CBC4) : const Color(0xFF00695C));
 
   Color get pendingColor => isDark ? Colors.amber.shade300 : Colors.orange;
+
+  Color get pendingDeleteBg =>
+      isDark ? const Color(0xFF3A1A1A) : const Color(0xFFFDECEA);
+  Color get pendingDeleteFg =>
+      isDark ? const Color(0xFFFF8A8A) : const Color(0xFFC62828);
 
   Color get primaryFg =>
       isDark ? const Color(0xFF4DB6AC) : const Color(0xFF00796B);

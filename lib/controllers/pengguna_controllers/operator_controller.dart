@@ -150,10 +150,46 @@ class OperatorController {
 
   Future<Map<String, dynamic>> deleteOperator(String id) async {
     try {
-      await firestore.collection(collectionName).doc(id).delete();
+      await firestore.collection(collectionName).doc(id).update({
+        'pendingDelete': true,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
       return {'success': true};
     } catch (e) {
       return {'success': false, 'error': e.toString()};
+    }
+  }
+
+  Future<Map<String, dynamic>> undoDeleteOperator(String id) async {
+    try {
+      await firestore.collection(collectionName).doc(id).update({
+        'pendingDelete': FieldValue.delete(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      return {'success': true};
+    } catch (e) {
+      return {'success': false, 'error': e.toString()};
+    }
+  }
+
+  /// Hapus permanen doc yang sudah di-mark pendingDelete.
+  /// Coba batch.delete — jika offline akan throw, doc tetap di UI.
+  Future<void> cleanupPendingDeletes(List<QueryDocumentSnapshot> docs) async {
+    final pendingDocs = docs.where((doc) {
+      final data = doc.data() as Map<String, dynamic>;
+      return data['pendingDelete'] == true;
+    }).toList();
+
+    if (pendingDocs.isEmpty) return;
+
+    try {
+      final batch = firestore.batch();
+      for (final doc in pendingDocs) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+    } catch (_) {
+      // Offline — doc tetap tampil di UI, cleanup dicoba lagi nanti
     }
   }
 }

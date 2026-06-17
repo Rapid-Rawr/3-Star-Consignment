@@ -10,7 +10,9 @@ import '../../widgets/catalog_image.dart';
 import '../../utils/currency_format.dart';
 
 class CatalogPage extends StatefulWidget {
-  const CatalogPage({super.key});
+  const CatalogPage({super.key, this.isReadOnly = false});
+
+  final bool isReadOnly;
 
   @override
   State<CatalogPage> createState() => _CatalogPageState();
@@ -705,8 +707,8 @@ class _CatalogPageState extends State<CatalogPage> {
                                       ],
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
-                                  Column(
+                                  if (!widget.isReadOnly) const SizedBox(width: 8),
+                                  if (!widget.isReadOnly) Column(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       InkWell(
@@ -763,7 +765,7 @@ class _CatalogPageState extends State<CatalogPage> {
           },
         ),
       ),
-      floatingActionButton: DecoratedBox(
+      floatingActionButton: widget.isReadOnly ? null : DecoratedBox(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.bottomLeft,
@@ -932,3 +934,6 @@ class _ImagePickerPreviewState extends State<_ImagePickerPreview> {
     );
   }
 }
+
+
+

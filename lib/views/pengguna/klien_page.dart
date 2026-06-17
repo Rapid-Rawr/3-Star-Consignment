@@ -292,6 +292,22 @@ class _ClientPageState extends State<ClientPage> {
   }
 
   void _showDeleteClientDialog(ClientModel client) {
+    if (client.borrowedItems.isNotEmpty) {
+      showAppDialog(
+        context: context,
+        titleIcon: const Icon(Icons.block_rounded),
+        title: 'Ditolak',
+        content: '${client.name} masih memiliki hutang.',
+        actions: [
+          AppDialogAction(
+            label: 'Mengerti',
+            onPressed: () => Navigator.pop(context),
+          ),
+        ],
+      );
+      return;
+    }
+
     showAppDialog(
       context: context,
       titleIcon: const Icon(Icons.warning_amber_rounded),
@@ -307,21 +323,7 @@ class _ClientPageState extends State<ClientPage> {
           type: AppDialogActionType.gradient,
           onPressed: () async {
             Navigator.pop(context);
-            final result = await _controller.deleteClient(client.id);
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    result['success'] == true
-                        ? '${client.name} telah dihapus'
-                        : (result['error'] ?? 'Terjadi kesalahan'),
-                  ),
-                  backgroundColor: result['success'] == true
-                      ? Colors.green
-                      : Colors.red,
-                ),
-              );
-            }
+            await _controller.deleteClient(client.id);
           },
         ),
       ],
@@ -413,6 +415,9 @@ class _ClientPageState extends State<ClientPage> {
                     );
                   }
 
+                  // Cleanup docs marked for deletion when online
+                  _controller.cleanupPendingDeletes(snapshot.data!.docs);
+
                   final clients = snapshot.data!.docs
                       .map(
                         (doc) => (
@@ -474,19 +479,22 @@ class _ClientPageState extends State<ClientPage> {
                     itemBuilder: (context, index) {
                       final client = filteredWithMeta[index].client;
                       final isPending = filteredWithMeta[index].isPending;
+                      final isPendingDelete = client.pendingDelete;
 
                       final hasDebt = client.computedDebt > 0;
                       final debtBg = context.debtBg(hasDebt);
                       final debtTextColor = context.debtTextColor(hasDebt);
 
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        decoration: BoxDecoration(
-                          color: context.cardBg,
+                      return Opacity(
+                        opacity: isPendingDelete ? 0.5 : 1.0,
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          decoration: BoxDecoration(
+                            color: isPendingDelete ? context.pendingDeleteBg : context.cardBg,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: context.cardBorder,
-                            width: 1,
+                            color: isPendingDelete ? context.pendingDeleteFg.withValues(alpha: 0.4) : context.cardBorder,
+                              width: 1,
                           ),
                           boxShadow: [
                             BoxShadow(
@@ -519,7 +527,17 @@ class _ClientPageState extends State<ClientPage> {
                                             overflow: TextOverflow.ellipsis,
                                           ),
                                         ),
-                                        if (isPending) ...[
+                                        if (isPendingDelete) ...[
+                                          const SizedBox(width: 4),
+                                          Tooltip(
+                                            message: 'Menunggu hapus...',
+                                            child: Icon(
+                                              Icons.delete_forever_rounded,
+                                              size: 14,
+                                              color: context.pendingDeleteFg,
+                                            ),
+                                          ),
+                                        ] else if (isPending) ...[
                                           const SizedBox(width: 4),
                                           Tooltip(
                                             message: 'Menunggu sinkronisasi...',
@@ -647,55 +665,77 @@ class _ClientPageState extends State<ClientPage> {
                               Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  InkWell(
-                                    onTap: () {
-                                      if (isKaryawan) {
-                                        showNoAccess(context);
-                                        return;
-                                      }
-                                      _showEditClientDialog(client);
-                                    },
-                                    borderRadius: BorderRadius.circular(20),
-                                    child: Container(
-                                      padding: const EdgeInsets.all(8),
-                                      decoration: BoxDecoration(
-                                        color: context.editBg,
+                                  if (isPendingDelete) ...[
+                                      InkWell(
+                                        onTap: () async {
+                                          await _controller.undoDeleteClient(client.id);
+                                        },
                                         borderRadius: BorderRadius.circular(20),
+                                        child: Container(
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            color: context.pendingDeleteBg,
+                                            borderRadius: BorderRadius.circular(20),
+                                          ),
+                                          child: Icon(
+                                            Icons.undo_rounded,
+                                            color: context.pendingDeleteFg,
+                                            size: 18,
+                                          ),
+                                        ),
                                       ),
-                                      child: Icon(
-                                        Icons.edit,
-                                        color: context.editIcon,
-                                        size: 18,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  InkWell(
-                                    onTap: () {
-                                      if (isKaryawan) {
-                                        showNoAccess(context);
-                                        return;
-                                      }
-                                      _showDeleteClientDialog(client);
-                                    },
-                                    borderRadius: BorderRadius.circular(20),
-                                    child: Container(
-                                      padding: const EdgeInsets.all(8),
-                                      decoration: BoxDecoration(
-                                        color: context.deleteBg,
+                                    ] else ...[
+                                      InkWell(
+                                        onTap: () {
+                                          if (isKaryawan) {
+                                            showNoAccess(context);
+                                            return;
+                                          }
+                                          _showEditClientDialog(client);
+                                        },
                                         borderRadius: BorderRadius.circular(20),
+                                        child: Container(
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            color: context.editBg,
+                                            borderRadius: BorderRadius.circular(20),
+                                          ),
+                                          child: Icon(
+                                            Icons.edit,
+                                            color: context.editIcon,
+                                            size: 18,
+                                          ),
+                                        ),
                                       ),
-                                      child: Icon(
-                                        Icons.delete_outline,
-                                        color: context.deleteIcon,
-                                        size: 18,
+                                      const SizedBox(height: 8),
+                                      InkWell(
+                                        onTap: () {
+                                          if (isKaryawan) {
+                                            showNoAccess(context);
+                                            return;
+                                          }
+                                          _showDeleteClientDialog(client);
+                                        },
+                                        borderRadius: BorderRadius.circular(20),
+                                        child: Container(
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            color: context.deleteBg,
+                                            borderRadius: BorderRadius.circular(20),
+                                          ),
+                                          child: Icon(
+                                            Icons.delete_outline,
+                                            color: context.deleteIcon,
+                                            size: 18,
+                                          ),
+                                        ),
                                       ),
-                                    ),
-                                  ),
+                                    ],
                                 ],
                               ),
                             ],
                           ),
+                        ),
                         ),
                       );
                     },

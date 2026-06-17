@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../controllers/pengguna_controllers/klien_controller.dart';
 import '../../controllers/barang_controllers/katalog_controller.dart';
@@ -10,7 +10,7 @@ import '../../widgets/search_filter_bar.dart';
 import '../../widgets/catalog_image.dart';
 import '../../widgets/gradient_button.dart';
 import '../../utils/currency_format.dart';
-
+import '../../widgets/date_range_filter.dart';
 
 class ConsignmentPage extends StatefulWidget {
   const ConsignmentPage({super.key});
@@ -42,26 +42,6 @@ class _ConsignmentPageState extends State<ConsignmentPage> {
     super.dispose();
   }
 
-  String _formatDate(DateTime? dt) {
-    if (dt == null) return '-';
-    const m = [
-      '',
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'Mei',
-      'Jun',
-      'Jul',
-      'Agu',
-      'Sep',
-      'Okt',
-      'Nov',
-      'Des',
-    ];
-    return '${dt.day} ${m[dt.month]} ${dt.year}';
-  }
-
   void _showDetail(BuildContext context, ClientModel client, bool isDark) {
     showModalBottomSheet(
       context: context,
@@ -70,7 +50,7 @@ class _ConsignmentPageState extends State<ConsignmentPage> {
       builder: (_) => _ClientDetailSheet(
         client: client,
         isDark: isDark,
-        formatDate: _formatDate,
+        formatDate: formatDateShort,
         initialCategory: _selectedCategory,
       ),
     );
@@ -239,7 +219,7 @@ class _ConsignmentPageState extends State<ConsignmentPage> {
                           client: client,
                           displayItems: displayItems,
                           isDark: isDark,
-                          formatDate: _formatDate,
+                          formatDate: formatDateShort,
                           onDetail: () => _showDetail(context, client, isDark),
                           onSerahkan: () => _showSerahkanSheet(
                             context,
@@ -471,7 +451,7 @@ class _ClientCard extends StatelessWidget {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                                 Text(
-                                  '${b.quantity}x  •  ${formatRupiah(b.catalogPrice * b.quantity)}',
+                                  '${b.quantity}x  â€¢  ${formatRupiah(b.catalogPrice * b.quantity)}',
                                   style: TextStyle(
                                     fontFamily: 'Poppins',
                                     fontSize: 11,
@@ -886,7 +866,7 @@ class _ClientDetailSheetState extends State<_ClientDetailSheet> {
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      '${b.quantity}× ${formatRupiah(b.catalogPrice)}',
+                                      '${b.quantity}Ã— ${formatRupiah(b.catalogPrice)}',
                                       style: TextStyle(
                                         fontFamily: 'Poppins',
                                         fontSize: 12,

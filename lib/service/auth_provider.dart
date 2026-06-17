@@ -9,8 +9,6 @@ class AuthProvider extends ChangeNotifier {
 
   String? get role => _role;
 
-  /// init saat app start â€” cek SharedPreferences dulu,
-  /// kalau kosong/null fetch ulang dari Firestore
   Future<void> init() async {
     final prefs = await SharedPreferences.getInstance();
     final savedRole = prefs.getString('user_role');
@@ -20,12 +18,10 @@ class AuthProvider extends ChangeNotifier {
       _role = savedRole;
       notifyListeners();
     } else {
-      // SharedPreferences kosong â€” fetch dari Firestore
       await _fetchAndSaveRole();
     }
   }
 
-  /// Fetch role dari Firestore berdasarkan user yang sedang login
   Future<void> _fetchAndSaveRole() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -42,7 +38,6 @@ class AuthProvider extends ChangeNotifier {
     }
 
     try {
-      // Cek collection clients
       final clientSnap = await FirebaseFirestore.instance
           .collection('clients')
           .where('email', isEqualTo: email)
@@ -54,7 +49,6 @@ class AuthProvider extends ChangeNotifier {
         return;
       }
 
-      // Cek collection users
       final userSnap = await FirebaseFirestore.instance
           .collection('users')
           .where('gmail', isEqualTo: email)
@@ -79,7 +73,6 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// set role setelah login
   Future<void> setRole(String? role) async {
     if (role == null) {
       _role = null;
@@ -99,7 +92,6 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// logout
   Future<void> clear() async {
     _role = null;
 

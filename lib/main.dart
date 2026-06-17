@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -7,6 +7,7 @@ import 'firebase_options.dart';
 import 'controllers/auth_controller.dart';
 import 'utils/theme_notifier.dart';
 import 'utils/supabase_service.dart';
+// import 'utils/cleanup_test_data.dart';
 import 'widgets/login_drawer.dart';
 import 'views/tabbar/beranda_page.dart';
 import 'views/tabbar/pembayaran_page.dart';
@@ -50,6 +51,10 @@ void main() async {
       'Warning: Supabase keys are missing, skipping Supabase intialization.',
     );
   }
+
+  // const bool enableCleanup = false;
+  // ignore: unused_local_variable
+  // if (enableCleanup) await cleanupTestData();
 
   final authProvider = local.AuthProvider();
   await authProvider.init();
@@ -173,21 +178,21 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   }
 
   List<Widget> getPages(String? role) {
-    final isAdminOrKaryawan = role == Roles.admin || role == Roles.karyawan;
-    return isAdminOrKaryawan
+    final isAdmin = role == Roles.admin;
+    return isAdmin
         ? const [BerandaPage(), PaymentPage(), ItemPage(), UserPage()]
         : const [BerandaPage(), PaymentPage(), ItemPage()];
   }
 
   List<String> getTitles(String? role) {
-    final isAdminOrKaryawan = role == Roles.admin || role == Roles.karyawan;
-    return isAdminOrKaryawan
+    final isAdmin = role == Roles.admin;
+    return isAdmin
         ? ['Beranda', 'Transaksi', 'Barang', 'Pengguna']
         : ['Beranda', 'Transaksi', 'Barang'];
   }
 
   List<CustomBottomNavItem> getNavItems(String? role) {
-    final isAdminOrKaryawan = role == Roles.admin || role == Roles.karyawan;
+    final isAdmin = role == Roles.admin;
     return [
       const CustomBottomNavItem(
         iconSvg: 'assets/icons/Home Outlined.svg',
@@ -205,7 +210,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
         iconSize: 24,
         activeIconSize: 26,
       ),
-      if (isAdminOrKaryawan)
+      if (isAdmin)
         const CustomBottomNavItem(
           icon: Icons.group_outlined,
           activeIcon: Icons.group_rounded,
@@ -234,25 +239,20 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   }
 
   void _handleSignOut() {
-    // 1. Clear role + reset tab — triggers instant UI rebuild
     Provider.of<local.AuthProvider>(context, listen: false).clear();
     setState(() {
       _currentUser = null;
       _currentTabIndex = 0;
     });
+
     _tabController.animateTo(0);
-
-    // 2. Close drawer
     Navigator.of(context).pop();
-
-    // 3. Firebase/Google signout in background
     _auth.signOut(context);
   }
 
   @override
   Widget build(BuildContext context) {
     final role = context.watch<local.AuthProvider>().role;
-
     final pages = getPages(role);
     final titles = getTitles(role);
     final navItems = getNavItems(role);
@@ -285,7 +285,9 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
       bottomNavigationBar: CustomBottomNav(
         currentIndex: safeIndex,
         disabledIndices: role == null
-            ? Set<int>.from(List.generate(navItems.length, (i) => i).where((i) => i != 0))
+            ? Set<int>.from(
+                List.generate(navItems.length, (i) => i).where((i) => i != 0),
+              )
             : {},
         onTap: (i) {
           if (role == null) return;

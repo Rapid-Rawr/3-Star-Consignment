@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../controllers/barang_controllers/katalog_controller.dart';
@@ -13,8 +13,8 @@ import '../../utils/currency_format.dart';
 
 class _SelectedItem {
   final CatalogModel catalog;
-  int quantity;
-  _SelectedItem({required this.catalog, this.quantity = 1});
+  int quantity = 1;
+  _SelectedItem({required this.catalog});
 }
 
 class ConsignmentRequestPage extends StatefulWidget {

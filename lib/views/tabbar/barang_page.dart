@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../barang/katalog_page.dart';
 import '../barang/pengajuan_konsinyasi_page.dart';
 import '../barang/daftar_pengajuan_page.dart';
@@ -39,7 +39,7 @@ class ItemPage extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      if (hasAccess(role, [Roles.admin, Roles.karyawan]))
+                      if (hasAccess(role, [Roles.admin]))
                         MenuButton(
                           svgPath: 'assets/icons/ConsignmentItem.svg',
                           label: 'Barang Konsinyasi',
@@ -51,7 +51,7 @@ class ItemPage extends StatelessWidget {
                             ),
                           ),
                         ),
-                      if (hasAccess(role, [Roles.admin, Roles.karyawan]))
+                      if (hasAccess(role, [Roles.admin]))
                         const SizedBox(height: 16),
                       MenuButton(
                         svgPath: 'assets/icons/ConsignmentHistory.svg',
@@ -92,7 +92,7 @@ class ItemPage extends StatelessWidget {
                         ),
                       if (hasAccess(role, [Roles.client]))
                         const SizedBox(height: 16),
-                      if (hasAccess(role, [Roles.admin, Roles.karyawan]))
+                      if (hasAccess(role, [Roles.admin]))
                         MenuButton(
                           svgPath: 'assets/icons/Catalog.svg',
                           label: 'Manajemen Katalog',
@@ -102,6 +102,21 @@ class ItemPage extends StatelessWidget {
                             context,
                             MaterialPageRoute(
                               builder: (_) => const CatalogPage(),
+                            ),
+                          ),
+                        ),
+
+                      if (hasAccess(role, [Roles.karyawan]))
+                        MenuButton(
+                          svgPath: 'assets/icons/Catalog.svg',
+                          label: 'Katalog',
+                          borderColor: context.borderColor,
+                          imageOffset: const Offset(8, 0),
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  const CatalogPage(isReadOnly: true),
                             ),
                           ),
                         ),

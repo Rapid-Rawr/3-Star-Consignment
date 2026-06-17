@@ -4,6 +4,7 @@ class OperatorModel {
   final String email;
   final String role;
   final String? photoUrl;
+  final bool pendingDelete;
 
   OperatorModel({
     required this.id,
@@ -11,6 +12,7 @@ class OperatorModel {
     required this.email,
     required this.role,
     this.photoUrl,
+    this.pendingDelete = false,
   });
 
   Map<String, dynamic> toMap() {
@@ -24,6 +26,7 @@ class OperatorModel {
       email: map['gmail'] ?? '',
       role: map['Role'] ?? '',
       photoUrl: map['photoUrl'] as String?,
+      pendingDelete: map['pendingDelete'] == true,
     );
   }
 
@@ -33,6 +36,7 @@ class OperatorModel {
     String? email,
     String? role,
     String? photoUrl,
+    bool? pendingDelete,
   }) {
     return OperatorModel(
       id: id ?? this.id,
@@ -40,6 +44,7 @@ class OperatorModel {
       email: email ?? this.email,
       role: role ?? this.role,
       photoUrl: photoUrl ?? this.photoUrl,
+      pendingDelete: pendingDelete ?? this.pendingDelete,
     );
   }
 }
