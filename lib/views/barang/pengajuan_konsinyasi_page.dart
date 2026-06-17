@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../controllers/barang_controllers/katalog_controller.dart';
@@ -143,7 +143,9 @@ class _ConsignmentRequestPageState extends State<ConsignmentRequestPage> {
           content: Text(
             allSuccess
                 ? 'Pengajuan konsinyasi berhasil dikirim'
-                : 'Gagal mengirim pengajuan: ${result['error'] ?? ''}',
+                : (result['error']?.toString().toLowerCase().contains('unavailable') == true
+                    ? 'Tidak ada koneksi internet, tidak bisa mengirim pengajuan'
+                    : 'Gagal mengirim pengajuan: ${result['error']}'),
           ),
           backgroundColor: allSuccess ? Colors.green : Colors.red,
         ),

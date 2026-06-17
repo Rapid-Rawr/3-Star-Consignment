@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../controllers/pengguna_controllers/klien_controller.dart';
 import '../../controllers/barang_controllers/katalog_controller.dart';
@@ -451,7 +451,7 @@ class _ClientCard extends StatelessWidget {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                                 Text(
-                                  '${b.quantity}x  â€¢  ${formatRupiah(b.catalogPrice * b.quantity)}',
+                                  '${b.quantity}x  •  ${formatRupiah(b.catalogPrice * b.quantity)}',
                                   style: TextStyle(
                                     fontFamily: 'Poppins',
                                     fontSize: 11,
@@ -1114,7 +1114,9 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
           content: Text(
             result['success'] == true
                 ? 'Barang berhasil diserahkan ke ${_selectedClient!.name}'
-                : 'Gagal: ${result['error'] ?? 'Terjadi kesalahan'}',
+                : (result['error']?.toString().toLowerCase().contains('unavailable') == true
+                    ? 'Tidak ada koneksi internet, tidak bisa mencatat penyerahan barang'
+                    : 'Gagal: ${result['error']}'),
           ),
           backgroundColor: result['success'] == true
               ? Colors.green
