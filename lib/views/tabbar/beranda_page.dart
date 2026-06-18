@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
@@ -9,6 +9,8 @@ import '../../models/pengguna_models/klien_model.dart';
 import '../../views/barang/daftar_pengajuan_page.dart';
 import '../barang/barang_konsinyasi_page.dart';
 import '../../utils/currency_format.dart';
+import '../../utils/app_colors.dart';
+import '../../widgets/gradient_button.dart';
 
 
 class BerandaPage extends StatelessWidget {
@@ -79,24 +81,13 @@ class _NotLoggedInView extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
-            ElevatedButton.icon(
+            GradientButton(
+              label: 'Login',
+              icon: const Icon(Icons.login_rounded, color: Colors.white, size: 18),
               onPressed: () {
                 Scaffold.maybeOf(context)?.openEndDrawer();
               },
-              icon: const Icon(Icons.login_rounded),
-              label: const Text(
-                'Login',
-                style: TextStyle(fontFamily: 'Poppins'),
-              ),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
           ],
         ),
@@ -171,7 +162,7 @@ class _HomeAdminPageState extends State<HomeAdminPage> {
     super.initState();
     _requestsStream = _firestore
         .collection('consignment_requests')
-        .where('status', isEqualTo: 'pending')
+        .where('status', whereIn: ['pending', 'processing', 'packed'])
         .snapshots();
     _clientsStream = _firestore.collection('clients').snapshots();
   }
@@ -208,6 +199,21 @@ class _HomeAdminPageState extends State<HomeAdminPage> {
   Widget build(BuildContext context) {
     return Column(
       children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          child: Row(
+            children: [
+              const Text(
+                'Daftar Pengajuan',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Poppins',
+                ),
+              ),
+            ],
+          ),
+        ),
         Expanded(
           flex: 1,
           child: StreamBuilder<QuerySnapshot>(
@@ -237,6 +243,10 @@ class _HomeAdminPageState extends State<HomeAdminPage> {
                   return Card(
                     margin: const EdgeInsets.only(bottom: 10),
                     child: ListTile(
+                      leading: _ClientAvatar(
+                        clientId: batch.clientId,
+                        name: batch.clientName,
+                      ),
                       title: Text(batch.clientName),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -421,12 +431,153 @@ class _HomeAdminPageState extends State<HomeAdminPage> {
   }
 }
 
-class _KaryawanContent extends StatelessWidget {
+class _KaryawanContent extends StatefulWidget {
   const _KaryawanContent();
 
   @override
+  State<_KaryawanContent> createState() => _KaryawanContentState();
+}
+
+class _KaryawanContentState extends State<_KaryawanContent> {
+  late final Stream<QuerySnapshot> _requestsStream;
+
+  @override
+  void initState() {
+    super.initState();
+    _requestsStream = FirebaseFirestore.instance
+        .collection('consignment_requests')
+        .where('status', whereIn: ['pending', 'processing', 'packed'])
+        .snapshots();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return const Center(child: Text('Beranda Karyawan'));
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Text(
+            'Daftar Pengajuan',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Poppins',
+            ),
+          ),
+        ),
+        Expanded(
+          child: StreamBuilder<QuerySnapshot>(
+            stream: _requestsStream,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (snapshot.hasError) {
+                return Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Gagal memuat data:\n${snapshot.error}',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.red, fontSize: 13),
+                ),
+              ],
+            ),
+          );
+        }
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.inbox_outlined,
+                  size: 64,
+                  color: context.emptyIcon,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Belum ada pengajuan masuk',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: context.emptyText,
+                    fontFamily: 'Poppins',
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        final docs = snapshot.data!.docs;
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return ListView.separated(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          itemCount: docs.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 10),
+          itemBuilder: (context, index) {
+            final batch = ConsignmentRequestModel.fromMap(
+              docs[index].id,
+              docs[index].data() as Map<String, dynamic>,
+            );
+            return _RequestItem(batch: batch, isDark: isDark);
+          },
+            );
+          },
+        ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ClientAvatar extends StatelessWidget {
+  final String clientId;
+  final String name;
+
+  const _ClientAvatar({required this.clientId, required this.name});
+
+  @override
+  Widget build(BuildContext context) {
+    if (clientId.isEmpty) {
+      return CircleAvatar(
+        radius: 21,
+        child: Text(
+          name.isNotEmpty ? name[0].toUpperCase() : '?',
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+      );
+    }
+    return FutureBuilder<DocumentSnapshot>(
+      future: FirebaseFirestore.instance
+          .collection('clients')
+          .doc(clientId)
+          .get(),
+      builder: (context, snap) {
+        String? photoUrl;
+        if (snap.hasData && snap.data!.exists) {
+          final data = snap.data!.data() as Map<String, dynamic>?;
+          photoUrl = data?['photoUrl'] as String?;
+        }
+        if (photoUrl != null && photoUrl.isNotEmpty) {
+          return CircleAvatar(
+            radius: 21,
+            backgroundImage: NetworkImage(photoUrl),
+          );
+        }
+        return CircleAvatar(
+          radius: 21,
+          child: Text(
+            name.isNotEmpty ? name[0].toUpperCase() : '?',
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+        );
+      },
+    );
   }
 }
 
@@ -580,8 +731,11 @@ class _ClientRequestCard extends StatelessWidget {
             itemCount: docs.length,
             separatorBuilder: (_, __) => Divider(height: 1, color: borderColor),
             itemBuilder: (context, i) {
-              final data = docs[i].data() as Map<String, dynamic>;
-              return _RequestItem(data: data, isDark: isDark);
+              final batch = ConsignmentRequestModel.fromMap(
+                docs[i].id,
+                docs[i].data() as Map<String, dynamic>,
+              );
+              return _RequestItem(batch: batch, isDark: isDark);
             },
           );
         }
@@ -706,64 +860,72 @@ class _ClientRequestCard extends StatelessWidget {
 }
 
 class _RequestItem extends StatelessWidget {
-  final Map<String, dynamic> data;
+  final ConsignmentRequestModel batch;
   final bool isDark;
 
-  const _RequestItem({required this.data, required this.isDark});
+  const _RequestItem({required this.batch, required this.isDark});
 
-  Color _statusColor(String s) {
-    switch (s.toLowerCase()) {
-      case 'received':
+  Color _statusColor(ConsignmentBatchStatus s) {
+    switch (s) {
+      case ConsignmentBatchStatus.received:
         return const Color(0xFF1565C0);
-      case 'packed':
+      case ConsignmentBatchStatus.packed:
         return const Color(0xFF6A1B9A);
-      case 'processing':
+      case ConsignmentBatchStatus.processing:
         return const Color(0xFF0277BD);
-      case 'rejected':
+      case ConsignmentBatchStatus.rejected:
         return const Color(0xFFC62828);
-      case 'pending':
-      default:
+      case ConsignmentBatchStatus.pending:
         return const Color(0xFFF57F17);
     }
   }
 
-  String _statusLabel(String s) {
-    switch (s.toLowerCase()) {
-      case 'received':
-        return 'Diterima';
-      case 'packed':
+  IconData _statusIcon(ConsignmentBatchStatus s) {
+    switch (s) {
+      case ConsignmentBatchStatus.received:
+        return Icons.verified_outlined;
+      case ConsignmentBatchStatus.packed:
+        return Icons.inventory_2_rounded;
+      case ConsignmentBatchStatus.processing:
+        return Icons.pending_actions_rounded;
+      case ConsignmentBatchStatus.rejected:
+        return Icons.cancel_outlined;
+      case ConsignmentBatchStatus.pending:
+        return Icons.hourglass_empty_rounded;
+    }
+  }
+
+  String _statusLabel(ConsignmentBatchStatus s) {
+    switch (s) {
+      case ConsignmentBatchStatus.received:
+        return 'Diserahkan';
+      case ConsignmentBatchStatus.packed:
         return 'Dikemas';
-      case 'processing':
+      case ConsignmentBatchStatus.processing:
         return 'Diproses';
-      case 'rejected':
+      case ConsignmentBatchStatus.rejected:
         return 'Ditolak';
-      case 'pending':
-      default:
+      case ConsignmentBatchStatus.pending:
         return 'Menunggu';
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final String status = (data['status'] as String?) ?? 'pending';
-    final String clientName = (data['clientName'] as String?) ?? '-';
-    final Timestamp? createdAt = data['createdAt'] as Timestamp?;
+    final status = batch.status;
+        final clientName = batch.clientName;
+    final createdAt = batch.createdAt != null ? Timestamp.fromDate(batch.createdAt!) : null;
 
-    final List rawItems = (data['items'] as List?) ?? [];
     int totalQty = 0;
     double totalPrice = 0;
-    for (final e in rawItems) {
-      if (e is Map) {
-        final qty = (e['quantity'] as num?)?.toInt() ?? 0;
-        final price = (e['catalogPrice'] as num?)?.toDouble() ?? 0.0;
-        totalQty += qty;
-        totalPrice += qty * price;
-      }
+    for (final item in batch.items) {
+      totalQty += item.quantity;
+      totalPrice += item.quantity * item.catalogPrice;
     }
 
     final Color nameColor = isDark ? Colors.white : const Color(0xFF1D1B20);
     final Color subColor = isDark ? Colors.white54 : const Color(0xFF757575);
-    final Color sColor = _statusColor(status);
+    final sColor = _statusColor(status);
 
     String dateLabel = '';
     if (createdAt != null) {
@@ -777,18 +939,9 @@ class _RequestItem extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1A3A2A) : const Color(0xFFE6F4EA),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(
-              Icons.assignment_outlined,
-              size: 20,
-              color: isDark ? const Color(0xFF80CBC4) : const Color(0xFF2E7D32),
-            ),
+          _ClientAvatar(
+            clientId: batch.clientId,
+            name: batch.clientName,
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -835,14 +988,25 @@ class _RequestItem extends StatelessWidget {
               color: sColor.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(20),
             ),
-            child: Text(
-              _statusLabel(status),
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: sColor,
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  _statusIcon(status),
+                  size: 12,
+                  color: sColor,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  _statusLabel(status),
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: sColor,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
