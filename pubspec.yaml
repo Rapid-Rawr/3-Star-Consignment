@@ -33,6 +33,8 @@ dev_dependencies:
   firebase_auth_mocks: ^0.15.1
   mockito: ^5.4.4
   build_runner: ^2.4.9
+  integration_test:
+    sdk: flutter
 
 flutter:
   uses-material-design: true
@@ -40,7 +42,7 @@ flutter:
   assets:
     - assets/icons/
     - assets/images/
-    - .env 
+    - .env
 
   fonts:
     - family: Poppins
