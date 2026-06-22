@@ -40,21 +40,8 @@ Future<String> _addRequest(
 
 void main() {
   group('createRequest', () {
-    // Menguji apakah request konsinyasi berhasil dibuat
-    test('creates request successfully', () async {
-      final firestore = FakeFirebaseFirestore();
+  bv
 
-      final controller = ConsignmentRequestController(
-        firestore: firestore,
-      );
-
-      final result = await controller.createRequest(
-        catalogItems: [_catalog()],
-        quantities: [2],
-        clientId: 'client1',
-        clientName: 'John Doe',
-        clientEmail: 'john@test.com',
-      );
 
       expect(result['success'], isTrue);
 

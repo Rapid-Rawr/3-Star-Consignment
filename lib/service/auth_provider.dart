@@ -100,4 +100,9 @@ class AuthProvider extends ChangeNotifier {
 
     notifyListeners();
   }
+
+  void setRoleForTest(String role) {
+      _role = role;
+      notifyListeners();
+    }
 }
