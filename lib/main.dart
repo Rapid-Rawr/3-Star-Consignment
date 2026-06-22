@@ -8,6 +8,8 @@ import 'controllers/auth_controller.dart';
 import 'utils/theme_notifier.dart';
 import 'utils/supabase_service.dart';
 // import 'utils/cleanup_test_data.dart';
+import 'widgets/gradient_button.dart';
+import 'widgets/app_dialog.dart';
 import 'widgets/login_drawer.dart';
 import 'views/tabbar/beranda_page.dart';
 import 'views/tabbar/pembayaran_page.dart';
@@ -239,14 +241,17 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   }
 
   void _handleSignOut() {
-    Provider.of<local.AuthProvider>(context, listen: false).clear();
+    _scaffoldKey.currentState?.closeEndDrawer();
+    if (_tabController.length > 0) {
+      _tabController.index = 0;
+    }
+
     setState(() {
       _currentUser = null;
       _currentTabIndex = 0;
     });
 
-    _tabController.animateTo(0);
-    Navigator.of(context).pop();
+    Provider.of<local.AuthProvider>(context, listen: false).clear();
     _auth.signOut(context);
   }
 
@@ -270,6 +275,61 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
       appBar: AppBar(
         title: Text(titles[safeIndex]),
         actions: [
+          if (_currentUser == null)
+            _isSigningIn
+                ? const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: Center(
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                  )
+                : Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: Center(
+                      child: GradientButton(
+                        label: 'Login',
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 6,
+                        ),
+                        onPressed: _handleSignIn,
+                      ),
+                    ),
+                  ),
+          if (_currentUser != null)
+            IconButton(
+              icon: const Icon(Icons.logout),
+              onPressed: () async {
+                bool confirm = false;
+                await showAppDialog(
+                  context: context,
+                  title: 'Keluar',
+                  titleIcon: const Icon(Icons.warning_amber_rounded),
+                  content: 'Apakah anda yakin ingin keluar?',
+                  actions: [
+                    AppDialogAction(
+                      label: 'Batal',
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                    AppDialogAction(
+                      label: 'Keluar',
+                      type: AppDialogActionType.gradient,
+                      onPressed: () {
+                        confirm = true;
+                        Navigator.pop(context);
+                      },
+                    ),
+                  ],
+                );
+                if (confirm && mounted) {
+                  _handleSignOut();
+                }
+              },
+            ),
           IconButton(
             icon: const Icon(Icons.menu),
             onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
