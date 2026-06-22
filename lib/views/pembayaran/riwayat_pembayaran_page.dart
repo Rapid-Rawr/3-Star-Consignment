@@ -424,7 +424,7 @@ class _PaymentHistoryCard extends StatelessWidget {
                 Icon(Icons.calendar_month, size: 14, color: context.subColor),
                 const SizedBox(width: 6),
                 Text(
-                'Dibayar: ${formatDateShort(payment.paidAt)}',
+                  'Dibayar: ${formatDateShort(payment.paidAt)}',
                   style: TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 12,
@@ -449,11 +449,7 @@ class _PaymentHistoryCard extends StatelessWidget {
               const SizedBox(height: 4),
               Row(
                 children: [
-                  Icon(
-                    Icons.person_outline,
-                    size: 14,
-                    color: context.subColor,
-                  ),
+                  Icon(Icons.person_outline, size: 14, color: context.subColor),
                   const SizedBox(width: 6),
                   Text(
                     'Dikonfirmasi oleh: ${payment.confirmedBy}',
@@ -541,191 +537,203 @@ class _PaymentDetailSheet extends StatelessWidget {
       initialChildSize: 0.88,
       minChildSize: 0.5,
       maxChildSize: 0.97,
-      builder: (context, sc) => Container(
-        decoration: BoxDecoration(
-          color: sheetBg,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          children: [
-            const SheetDragHandle(),
+      builder: (context, sc) => SafeArea(
+        top: false,
+        child: Container(
+          decoration: BoxDecoration(
+            color: sheetBg,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            children: [
+              const SheetDragHandle(),
 
-            SheetClientHeader(
-              clientName: payment.clientName,
-              clientAddress: payment.clientAddress,
-              photoUrl: clientPhotoUrl,
-              countBadgeText: '$totalItems unit',
-              extraBadge: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: context.infoBg,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.payments_outlined, size: 12, color: context.infoFg),
-                    const SizedBox(width: 4),
-                    Text(
-                      payment.paymentMethod == 'cash' ? 'Cash' : payment.paymentMethod,
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
+              SheetClientHeader(
+                clientName: payment.clientName,
+                clientAddress: payment.clientAddress,
+                photoUrl: clientPhotoUrl,
+                countBadgeText: '$totalItems unit',
+                extraBadge: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: context.infoBg,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.payments_outlined,
+                        size: 12,
                         color: context.infoFg,
                       ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            Divider(height: 1, color: divider),
-
-            Expanded(
-              child: ListView(
-                controller: sc,
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-                children: [
-                  // Badge chips: tanggal + dikonfirmasi oleh
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: context.infoBg,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.calendar_month,
-                              size: 11,
-                              color: context.infoFg,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'Dibayar: ${formatDateShort(payment.paidAt)}',
-                              style: TextStyle(
-                                fontFamily: 'Poppins',
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                                color: context.infoFg,
-                              ),
-                            ),
-                          ],
+                      const SizedBox(width: 4),
+                      Text(
+                        payment.paymentMethod == 'cash'
+                            ? 'Cash'
+                            : payment.paymentMethod,
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: context.infoFg,
                         ),
                       ),
-                      if (payment.confirmedBy != null &&
-                          payment.confirmedBy!.isNotEmpty)
+                    ],
+                  ),
+                ),
+              ),
+
+              Divider(height: 1, color: divider),
+
+              Expanded(
+                child: ListView(
+                  controller: sc,
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                  children: [
+                    // Badge chips: tanggal + dikonfirmasi oleh
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 8,
                             vertical: 3,
                           ),
                           decoration: BoxDecoration(
-                            color: context.primaryBg,
+                            color: context.infoBg,
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
-                                Icons.person_outline,
+                                Icons.calendar_month,
                                 size: 11,
-                                color: context.primaryFg,
+                                color: context.infoFg,
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                'Dikonfirmasi: ${payment.confirmedBy}',
+                                'Dibayar: ${formatDateShort(payment.paidAt)}',
                                 style: TextStyle(
                                   fontFamily: 'Poppins',
                                   fontSize: 10,
                                   fontWeight: FontWeight.w600,
-                                  color: context.primaryFg,
+                                  color: context.infoFg,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-
-                  SheetSectionHeader(
-                    title: 'Barang Dibayar',
-                    countBadgeText: '${payment.items.length} item',
-                  ),
-                  const SizedBox(height: 12),
-                  // List item barang
-                  ...payment.items.map((item) {
-                    return SheetItemCard(
-                      imagePath: item.catalogImagePath,
-                      imageSize: 52,
-                      imageBorderRadius: 10,
-                      trailing: Text(
-                        formatRupiah(item.catalogPrice * item.quantity),
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontWeight: FontWeight.w700,
-                          fontSize: 13,
-                          color: context.primaryFg,
-                        ),
-                      ),
-                      contentChildren: [
-                        Text(
-                          item.catalogName,
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: context.nameColor,
+                        if (payment.confirmedBy != null &&
+                            payment.confirmedBy!.isNotEmpty)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: context.primaryBg,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.person_outline,
+                                  size: 11,
+                                  color: context.primaryFg,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Dikonfirmasi: ${payment.confirmedBy}',
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    color: context.primaryFg,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          item.catalogCategory,
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 11,
-                            color: context.subColor,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${item.quantity}× ${formatRupiah(item.catalogPrice)}',
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 12,
-                            color: context.successFg,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
                       ],
-                    );
-                  }),
-                ],
-              ),
-            ),
+                    ),
+                    const SizedBox(height: 20),
 
-            Container(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
-              decoration: BoxDecoration(
-                color: sheetBg,
-                border: Border(top: BorderSide(color: divider)),
+                    SheetSectionHeader(
+                      title: 'Barang Dibayar',
+                      countBadgeText: '${payment.items.length} item',
+                    ),
+                    const SizedBox(height: 12),
+                    // List item barang
+                    ...payment.items.map((item) {
+                      return SheetItemCard(
+                        imagePath: item.catalogImagePath,
+                        imageSize: 52,
+                        imageBorderRadius: 10,
+                        trailing: Text(
+                          formatRupiah(item.catalogPrice * item.quantity),
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                            color: context.primaryFg,
+                          ),
+                        ),
+                        contentChildren: [
+                          Text(
+                            item.catalogName,
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: context.nameColor,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            item.catalogCategory,
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 11,
+                              color: context.subColor,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${item.quantity}× ${formatRupiah(item.catalogPrice)}',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 12,
+                              color: context.successFg,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      );
+                    }),
+                  ],
+                ),
               ),
-              child: SheetTotalFooter(
-                label: 'Total Pembayaran',
-                amount: formatRupiah(payment.totalAmount),
+
+              Container(
+                padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
+                decoration: BoxDecoration(
+                  color: sheetBg,
+                  border: Border(top: BorderSide(color: divider)),
+                ),
+                child: SheetTotalFooter(
+                  label: 'Total Pembayaran',
+                  amount: formatRupiah(payment.totalAmount),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

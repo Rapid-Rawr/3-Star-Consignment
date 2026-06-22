@@ -606,7 +606,8 @@ class _RequestListPageState extends State<RequestListPage> {
                       onDelete:
                           role == Roles.client &&
                               (batch.status == ConsignmentBatchStatus.pending ||
-                               batch.status == ConsignmentBatchStatus.processing)
+                                  batch.status ==
+                                      ConsignmentBatchStatus.processing)
                           ? () => _deleteRequest(context, batch)
                           : null,
                     );
@@ -1123,13 +1124,15 @@ class _DetailSheetBody extends StatelessWidget {
         );
     final bool canRejectBatch =
         isAdmin &&
-        batch.status == ConsignmentBatchStatus.processing && allItemsRejected;
+        batch.status == ConsignmentBatchStatus.processing &&
+        allItemsRejected;
     final bool canPack =
         isAdmin &&
         batch.status == ConsignmentBatchStatus.processing &&
         !hasPendingItems &&
         !allItemsRejected;
-    final bool canReceive = isAdmin && batch.status == ConsignmentBatchStatus.packed;
+    final bool canReceive =
+        isAdmin && batch.status == ConsignmentBatchStatus.packed;
     final bool canCancelAll = isAdmin && !isLocked && hasNonPendingItems;
 
     int getEffectiveQuantity(ConsignmentItemEntry item) {
@@ -1154,688 +1157,714 @@ class _DetailSheetBody extends StatelessWidget {
       minChildSize: 0.4,
       maxChildSize: 0.92,
       expand: false,
-      builder: (ctx, scrollController) => DecoratedBox(
-        decoration: BoxDecoration(
-          color: sheetBg,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 12, bottom: 8),
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: divider,
-                  borderRadius: BorderRadius.circular(2),
+      builder: (ctx, scrollController) => SafeArea(
+        top: false,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: sheetBg,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 12, bottom: 8),
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: divider,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-            ),
 
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-              child: Row(
-                children: [
-                  Icon(Icons.person_outline, size: 16, color: subColor),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      batch.clientName.isNotEmpty
-                          ? batch.clientName
-                          : 'Klien Tidak Dikenal',
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
-                        color: nameColor,
-                      ),
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: batchStatusBg(batch.status, isDark),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          batchStatusIcon(batch.status),
-                          size: 11,
-                          color: batchStatusFg(batch.status, isDark),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          batchStatusLabel(batch.status),
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: batchStatusFg(batch.status, isDark),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            if (batch.clientAddress.isNotEmpty)
               Padding(
-                padding: const EdgeInsets.only(left: 16, right: 16, bottom: 6),
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
                 child: Row(
                   children: [
-                    Icon(Icons.location_on_outlined, size: 13, color: subColor),
+                    Icon(Icons.person_outline, size: 16, color: subColor),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
-                        batch.clientAddress,
+                        batch.clientName.isNotEmpty
+                            ? batch.clientName
+                            : 'Klien Tidak Dikenal',
                         style: TextStyle(
                           fontFamily: 'Poppins',
-                          fontSize: 12,
-                          color: subColor,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                          color: nameColor,
                         ),
                       ),
                     ),
-                  ],
-                ),
-              ),
-            Padding(
-              padding: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.calendar_today_outlined,
-                    size: 13,
-                    color: subColor,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    formatDate(batch.createdAt),
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 12,
-                      color: subColor,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    '${batch.items.length} barang',
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 12,
-                      color: subColor,
-                    ),
-                  ),
-                  const Spacer(),
-                  if (batch.status == ConsignmentBatchStatus.packed &&
-                      batch.packedBy != null)
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,
                         vertical: 3,
                       ),
                       decoration: BoxDecoration(
-                        color: isDark
-                            ? const Color(0xFF1D2F3C)
-                            : const Color(0xFFE3F2FD),
+                        color: batchStatusBg(batch.status, isDark),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
-                            Icons.person_outline,
+                            batchStatusIcon(batch.status),
                             size: 11,
-                            color: isDark
-                                ? const Color(0xFF64B5F6)
-                                : const Color(0xFF1976D2),
+                            color: batchStatusFg(batch.status, isDark),
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            'Oleh ${batch.packedBy}',
+                            batchStatusLabel(batch.status),
                             style: TextStyle(
                               fontFamily: 'Poppins',
                               fontSize: 10,
                               fontWeight: FontWeight.w600,
-                              color: isDark
-                                  ? const Color(0xFF64B5F6)
-                                  : const Color(0xFF1976D2),
+                              color: batchStatusFg(batch.status, isDark),
                             ),
                           ),
                         ],
                       ),
                     ),
-                  if (canCancelAll) ...[
-                    const SizedBox(width: 8),
-                    GestureDetector(
-                      onTap: () async {
-                        bool confirm = false;
-                        await showAppDialog(
-                          context: context,
-                          title: 'Batal Semua',
-                          contentWidget: const Text(
-                            'Reset semua item ke status Menunggu?',
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 13,
-                            ),
+                  ],
+                ),
+              ),
+
+              if (batch.clientAddress.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(
+                    left: 16,
+                    right: 16,
+                    bottom: 6,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.location_on_outlined,
+                        size: 13,
+                        color: subColor,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          batch.clientAddress,
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 12,
+                            color: subColor,
                           ),
-                          actions: [
-                            AppDialogAction(
-                              label: 'Tidak',
-                              onPressed: () => Navigator.pop(context),
-                            ),
-                            AppDialogAction(
-                              label: 'Ya, Reset',
-                              type: AppDialogActionType.gradient,
-                              onPressed: () {
-                                confirm = true;
-                                Navigator.pop(context);
-                              },
-                            ),
-                          ],
-                        );
-                        if (confirm) {
-                          await onCancelAll();
-                        }
-                      },
-                      child: Container(
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              Padding(
+                padding: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_today_outlined,
+                      size: 13,
+                      color: subColor,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      formatDate(batch.createdAt),
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 12,
+                        color: subColor,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      '${batch.items.length} barang',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 12,
+                        color: subColor,
+                      ),
+                    ),
+                    const Spacer(),
+                    if (batch.status == ConsignmentBatchStatus.packed &&
+                        batch.packedBy != null)
+                      Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
+                          horizontal: 8,
+                          vertical: 3,
                         ),
                         decoration: BoxDecoration(
                           color: isDark
-                              ? const Color(0xFF3A2A2A)
-                              : const Color(0xFFFCE8E8),
+                              ? const Color(0xFF1D2F3C)
+                              : const Color(0xFFE3F2FD),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              Icons.restart_alt_rounded,
-                              size: 12,
+                              Icons.person_outline,
+                              size: 11,
                               color: isDark
-                                  ? const Color(0xFFFF8A8A)
-                                  : Colors.red,
+                                  ? const Color(0xFF64B5F6)
+                                  : const Color(0xFF1976D2),
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              'Batal Semua',
+                              'Oleh ${batch.packedBy}',
                               style: TextStyle(
                                 fontFamily: 'Poppins',
-                                fontSize: 11,
+                                fontSize: 10,
                                 fontWeight: FontWeight.w600,
                                 color: isDark
-                                    ? const Color(0xFFFF8A8A)
-                                    : Colors.red,
+                                    ? const Color(0xFF64B5F6)
+                                    : const Color(0xFF1976D2),
                               ),
                             ),
                           ],
                         ),
                       ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-
-            Divider(height: 1, color: divider),
-
-            Expanded(
-              child: ListView.separated(
-                controller: scrollController,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                itemCount: batch.items.length,
-                separatorBuilder: (_, __) => Divider(height: 1, color: divider),
-                itemBuilder: (ctx, i) {
-                  final item = batch.items[i];
-                  final isPending =
-                      item.itemStatus == ConsignmentItemStatus.pending;
-                  final fg = itemStatusFg(item.itemStatus, isDark);
-                  final bg = itemStatusBg(item.itemStatus, isDark);
-                  final accentGreen = isDark
-                      ? const Color(0xFF80CBC4)
-                      : const Color(0xFF2E7D32);
-
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            CatalogImage(
-                              imagePath: item.catalogImagePath,
-                              size: 56,
-                              borderRadius: 10,
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    item.catalogName,
-                                    style: TextStyle(
-                                      fontFamily: 'Poppins',
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 14,
-                                      color: nameColor,
-                                    ),
-                                  ),
-                                  Text(
-                                    item.catalogCategory,
-                                    style: TextStyle(
-                                      fontFamily: 'Poppins',
-                                      fontSize: 11,
-                                      color: subColor,
-                                    ),
-                                  ),
-                                  Text(
-                                    formatRupiah(item.catalogPrice),
-                                    style: TextStyle(
-                                      fontFamily: 'Poppins',
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: accentGreen,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.layers_outlined,
-                              size: 12,
-                              color: subColor,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${item.quantity} pcs',
+                    if (canCancelAll) ...[
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: () async {
+                          bool confirm = false;
+                          await showAppDialog(
+                            context: context,
+                            title: 'Batal Semua',
+                            contentWidget: const Text(
+                              'Reset semua item ke status Menunggu?',
                               style: TextStyle(
                                 fontFamily: 'Poppins',
-                                fontSize: 11,
-                                color: subColor,
+                                fontSize: 13,
                               ),
                             ),
-                            if (item.approvedQty != null) ...[
-                              const SizedBox(width: 8),
-                              Icon(Icons.done_all, size: 12, color: fg),
+                            actions: [
+                              AppDialogAction(
+                                label: 'Tidak',
+                                onPressed: () => Navigator.pop(context),
+                              ),
+                              AppDialogAction(
+                                label: 'Ya, Reset',
+                                type: AppDialogActionType.gradient,
+                                onPressed: () {
+                                  confirm = true;
+                                  Navigator.pop(context);
+                                },
+                              ),
+                            ],
+                          );
+                          if (confirm) {
+                            await onCancelAll();
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? const Color(0xFF3A2A2A)
+                                : const Color(0xFFFCE8E8),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.restart_alt_rounded,
+                                size: 12,
+                                color: isDark
+                                    ? const Color(0xFFFF8A8A)
+                                    : Colors.red,
+                              ),
                               const SizedBox(width: 4),
                               Text(
-                                '${item.approvedQty} dipenuhi',
+                                'Batal Semua',
                                 style: TextStyle(
                                   fontFamily: 'Poppins',
                                   fontSize: 11,
-                                  color: fg,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDark
+                                      ? const Color(0xFFFF8A8A)
+                                      : Colors.red,
                                 ),
                               ),
                             ],
-                            const Spacer(),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 3,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+
+              Divider(height: 1, color: divider),
+
+              Expanded(
+                child: ListView.separated(
+                  controller: scrollController,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  itemCount: batch.items.length,
+                  separatorBuilder: (_, __) =>
+                      Divider(height: 1, color: divider),
+                  itemBuilder: (ctx, i) {
+                    final item = batch.items[i];
+                    final isPending =
+                        item.itemStatus == ConsignmentItemStatus.pending;
+                    final fg = itemStatusFg(item.itemStatus, isDark);
+                    final bg = itemStatusBg(item.itemStatus, isDark);
+                    final accentGreen = isDark
+                        ? const Color(0xFF80CBC4)
+                        : const Color(0xFF2E7D32);
+
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              CatalogImage(
+                                imagePath: item.catalogImagePath,
+                                size: 56,
+                                borderRadius: 10,
                               ),
-                              decoration: BoxDecoration(
-                                color: bg,
-                                borderRadius: BorderRadius.circular(20),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      item.catalogName,
+                                      style: TextStyle(
+                                        fontFamily: 'Poppins',
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 14,
+                                        color: nameColor,
+                                      ),
+                                    ),
+                                    Text(
+                                      item.catalogCategory,
+                                      style: TextStyle(
+                                        fontFamily: 'Poppins',
+                                        fontSize: 11,
+                                        color: subColor,
+                                      ),
+                                    ),
+                                    Text(
+                                      formatRupiah(item.catalogPrice),
+                                      style: TextStyle(
+                                        fontFamily: 'Poppins',
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: accentGreen,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    itemStatusIcon(item.itemStatus),
-                                    size: 11,
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.layers_outlined,
+                                size: 12,
+                                color: subColor,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${item.quantity} pcs',
+                                style: TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 11,
+                                  color: subColor,
+                                ),
+                              ),
+                              if (item.approvedQty != null) ...[
+                                const SizedBox(width: 8),
+                                Icon(Icons.done_all, size: 12, color: fg),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '${item.approvedQty} dipenuhi',
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 11,
                                     color: fg,
                                   ),
-                                  const SizedBox(width: 3),
-                                  Text(
-                                    itemStatusLabel(item.itemStatus),
-                                    style: TextStyle(
-                                      fontFamily: 'Poppins',
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w600,
+                                ),
+                              ],
+                              const Spacer(),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 3,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: bg,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      itemStatusIcon(item.itemStatus),
+                                      size: 11,
                                       color: fg,
                                     ),
-                                  ),
-                                ],
+                                    const SizedBox(width: 3),
+                                    Text(
+                                      itemStatusLabel(item.itemStatus),
+                                      style: TextStyle(
+                                        fontFamily: 'Poppins',
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
+                                        color: fg,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Subtotal: ${formatRupiah(item.catalogPrice * getEffectiveQuantity(item))}',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 10,
+                              color: subColor,
+                            ),
+                          ),
+                          if (isAdmin && !isLocked && isPending) ...[
+                            const SizedBox(height: 10),
+                            Row(
+                              children: [
+                                _IconActionButton(
+                                  icon: Icons.check_rounded,
+                                  color: const Color(0xFF2E7D32),
+                                  bgColor: isDark
+                                      ? const Color(0xFF1A3A2A)
+                                      : const Color(0xFFE6F4EA),
+                                  onTap: () => onApproveItem(i),
+                                ),
+                                const SizedBox(width: 8),
+                                _IconActionButton(
+                                  icon: Icons.rule_outlined,
+                                  color: const Color(0xFF1565C0),
+                                  bgColor: isDark
+                                      ? const Color(0xFF1A2A3A)
+                                      : const Color(0xFFE3F2FD),
+                                  onTap: () async {
+                                    await onPartialItem(i);
+                                  },
+                                ),
+                                const SizedBox(width: 8),
+                                _IconActionButton(
+                                  icon: Icons.close_rounded,
+                                  color: isDark
+                                      ? const Color(0xFFFF8A8A)
+                                      : Colors.red,
+                                  bgColor: isDark
+                                      ? const Color(0xFF3A1A1A)
+                                      : const Color(0xFFFCE8E8),
+                                  onTap: () => onRejectItem(i),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Terima · Sebagian · Tolak',
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 10,
+                                    color: subColor,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Subtotal: ${formatRupiah(item.catalogPrice * getEffectiveQuantity(item))}',
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 10,
-                            color: subColor,
+                          if (isAdmin && !isLocked && !isPending) ...[
+                            const SizedBox(height: 10),
+                            Row(
+                              children: [
+                                _IconActionButton(
+                                  icon: Icons.undo_rounded,
+                                  color: isDark
+                                      ? Colors.white70
+                                      : Colors.black54,
+                                  bgColor: isDark
+                                      ? const Color(0xFF333333)
+                                      : const Color(0xFFE0E0E0),
+                                  onTap: () => onCancelItem(i),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Batal',
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 10,
+                                    color: subColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+
+              Container(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                decoration: BoxDecoration(
+                  color: sheetBg,
+                  border: Border(top: BorderSide(color: divider, width: 1)),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Total Disetujui',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 11,
+                              color: subColor,
+                            ),
                           ),
-                        ),
-                        if (isAdmin && !isLocked && isPending) ...[
-                          const SizedBox(height: 10),
-                          Row(
-                            children: [
-                              _IconActionButton(
-                                icon: Icons.check_rounded,
-                                color: const Color(0xFF2E7D32),
-                                bgColor: isDark
-                                    ? const Color(0xFF1A3A2A)
-                                    : const Color(0xFFE6F4EA),
-                                onTap: () => onApproveItem(i),
+                          Text(
+                            formatRupiah(overallTotal),
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.w700,
+                              fontSize: 15,
+                              color: nameColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    if (canRejectBatch) ...[
+                      const SizedBox(width: 12),
+                      OutlinedButton.icon(
+                        onPressed: () async {
+                          bool confirm = false;
+                          await showAppDialog(
+                            context: context,
+                            title: 'Tolak Pengajuan',
+                            contentWidget: const Text(
+                              'Semua item ditolak. Yakin ingin menolak pengajuan ini secara keseluruhan? Pengajuan akan masuk ke riwayat.',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 13,
                               ),
-                              const SizedBox(width: 8),
-                              _IconActionButton(
-                                icon: Icons.rule_outlined,
-                                color: const Color(0xFF1565C0),
-                                bgColor: isDark
-                                    ? const Color(0xFF1A2A3A)
-                                    : const Color(0xFFE3F2FD),
-                                onTap: () async {
-                                  await onPartialItem(i);
+                            ),
+                            actions: [
+                              AppDialogAction(
+                                label: 'Batal',
+                                onPressed: () => Navigator.pop(context),
+                              ),
+                              AppDialogAction(
+                                label: 'Tolak',
+                                type: AppDialogActionType.gradient,
+                                onPressed: () {
+                                  confirm = true;
+                                  Navigator.pop(context);
                                 },
                               ),
-                              const SizedBox(width: 8),
-                              _IconActionButton(
-                                icon: Icons.close_rounded,
-                                color: isDark
-                                    ? const Color(0xFFFF8A8A)
-                                    : Colors.red,
-                                bgColor: isDark
-                                    ? const Color(0xFF3A1A1A)
-                                    : const Color(0xFFFCE8E8),
-                                onTap: () => onRejectItem(i),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Terima · Sebagian · Tolak',
-                                style: TextStyle(
-                                  fontFamily: 'Poppins',
-                                  fontSize: 10,
-                                  color: subColor,
-                                ),
-                              ),
                             ],
-                          ),
-                        ],
-                        if (isAdmin && !isLocked && !isPending) ...[
-                          const SizedBox(height: 10),
-                          Row(
-                            children: [
-                              _IconActionButton(
-                                icon: Icons.undo_rounded,
-                                color: isDark ? Colors.white70 : Colors.black54,
-                                bgColor: isDark
-                                    ? const Color(0xFF333333)
-                                    : const Color(0xFFE0E0E0),
-                                onTap: () => onCancelItem(i),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Batal',
-                                style: TextStyle(
-                                  fontFamily: 'Poppins',
-                                  fontSize: 10,
-                                  color: subColor,
+                          );
+                          if (confirm) {
+                            final res = await onRejectBatch();
+
+                            if (res['success'] == true && context.mounted) {
+                              Navigator.pop(context);
+
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Pengajuan berhasil ditolak'),
+                                  duration: Duration(seconds: 2),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ),
-
-            Container(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-              decoration: BoxDecoration(
-                color: sheetBg,
-                border: Border(top: BorderSide(color: divider, width: 1)),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Total Disetujui',
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 11,
-                            color: subColor,
-                          ),
-                        ),
-                        Text(
-                          formatRupiah(overallTotal),
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontWeight: FontWeight.w700,
-                            fontSize: 15,
-                            color: nameColor,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  if (canRejectBatch) ...[
-                    const SizedBox(width: 12),
-                    OutlinedButton.icon(
-                      onPressed: () async {
-                        bool confirm = false;
-                        await showAppDialog(
-                          context: context,
-                          title: 'Tolak Pengajuan',
-                          contentWidget: const Text(
-                            'Semua item ditolak. Yakin ingin menolak pengajuan ini secara keseluruhan? Pengajuan akan masuk ke riwayat.',
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 13,
-                            ),
-                          ),
-                          actions: [
-                            AppDialogAction(
-                              label: 'Batal',
-                              onPressed: () => Navigator.pop(context),
-                            ),
-                            AppDialogAction(
-                              label: 'Tolak',
-                              type: AppDialogActionType.gradient,
-                              onPressed: () {
-                                confirm = true;
-                                Navigator.pop(context);
-                              },
-                            ),
-                          ],
-                        );
-                        if (confirm) {
-                          final res = await onRejectBatch();
-
-                          if (res['success'] == true && context.mounted) {
-                            Navigator.pop(context);
-
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Pengajuan berhasil ditolak'),
-                                duration: Duration(seconds: 2),
-                              ),
-                            );
+                              );
+                            }
                           }
-                        }
-                      },
-                      icon: Icon(
-                        Icons.cancel_outlined,
-                        size: 18,
-                        color: isDark ? const Color(0xFFFF8A8A) : Colors.red,
+                        },
+                        icon: Icon(
+                          Icons.cancel_outlined,
+                          size: 18,
+                          color: isDark ? const Color(0xFFFF8A8A) : Colors.red,
+                        ),
+                        label: Text(
+                          'Tolak Pengajuan',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                            color: isDark
+                                ? const Color(0xFFFF8A8A)
+                                : Colors.red,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(
+                            color: isDark
+                                ? const Color(0xFFFF8A8A)
+                                : Colors.red,
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
                       ),
-                      label: Text(
-                        'Tolak Pengajuan',
-                        style: TextStyle(
+                    ],
+                    if (canPack) ...[
+                      const SizedBox(width: 12),
+                      GradientButton(
+                        onPressed: () async {
+                          bool confirm = false;
+                          await showAppDialog(
+                            context: context,
+                            title: 'Kemas Pengajuan',
+                            contentWidget: const Text(
+                              'Apakah Anda yakin pengajuan ini sudah selesai diproses dan siap dikemas? Tindakan ini tidak dapat dibatalkan.',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 13,
+                              ),
+                            ),
+                            actions: [
+                              AppDialogAction(
+                                label: 'Batal',
+                                onPressed: () => Navigator.pop(context),
+                              ),
+                              AppDialogAction(
+                                label: 'Kemas',
+                                type: AppDialogActionType.gradient,
+                                onPressed: () {
+                                  confirm = true;
+                                  Navigator.pop(context);
+                                },
+                              ),
+                            ],
+                          );
+
+                          if (confirm) {
+                            final res = await onPack();
+
+                            if (res['success'] == true && context.mounted) {
+                              Navigator.pop(context);
+
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Barang berhasil dikemas'),
+                                  duration: Duration(seconds: 2),
+                                ),
+                              );
+                            }
+                          }
+                        },
+                        icon: Icon(
+                          Icons.inventory_2_rounded,
+                          size: 18,
+                          color: isDark
+                              ? const Color(0xFF1D1B20)
+                              : Colors.white,
+                        ),
+                        label: 'Kemas Pengajuan',
+                        textStyle: TextStyle(
                           fontFamily: 'Poppins',
                           fontWeight: FontWeight.w600,
-                          fontSize: 13,
-                          color: isDark ? const Color(0xFFFF8A8A) : Colors.red,
-                        ),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(
-                          color: isDark ? const Color(0xFFFF8A8A) : Colors.red,
+                          color: isDark
+                              ? const Color(0xFF1D1B20)
+                              : Colors.white,
                         ),
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
+                          horizontal: 20,
                           vertical: 12,
                         ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                        borderRadius: 12,
                       ),
-                    ),
-                  ],
-                  if (canPack) ...[
-                    const SizedBox(width: 12),
-                    GradientButton(
-                      onPressed: () async {
-                        bool confirm = false;
-                        await showAppDialog(
-                          context: context,
-                          title: 'Kemas Pengajuan',
-                          contentWidget: const Text(
-                            'Apakah Anda yakin pengajuan ini sudah selesai diproses dan siap dikemas? Tindakan ini tidak dapat dibatalkan.',
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 13,
-                            ),
-                          ),
-                          actions: [
-                            AppDialogAction(
-                              label: 'Batal',
-                              onPressed: () => Navigator.pop(context),
-                            ),
-                            AppDialogAction(
-                              label: 'Kemas',
-                              type: AppDialogActionType.gradient,
-                              onPressed: () {
-                                confirm = true;
-                                Navigator.pop(context);
-                              },
-                            ),
-                          ],
-                        );
-
-                        if (confirm) {
-                          final res = await onPack();
-
-                          if (res['success'] == true && context.mounted) {
-                            Navigator.pop(context);
-
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Barang berhasil dikemas'),
-                                duration: Duration(seconds: 2),
+                    ],
+                    if (canReceive) ...[
+                      const SizedBox(width: 12),
+                      GradientButton(
+                        onPressed: () async {
+                          bool confirm = false;
+                          await showAppDialog(
+                            context: context,
+                            title: 'Serahkan Pengajuan',
+                            contentWidget: const Text(
+                              'Apakah Anda yakin barang sudah diserahkan ke klien? Tindakan ini tidak dapat dibatalkan.',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 13,
                               ),
-                            );
-                          }
-                        }
-                      },
-                      icon: Icon(
-                        Icons.inventory_2_rounded,
-                        size: 18,
-                        color: isDark ? const Color(0xFF1D1B20) : Colors.white,
-                      ),
-                      label: 'Kemas Pengajuan',
-                      textStyle: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontWeight: FontWeight.w600,
-                        color: isDark ? const Color(0xFF1D1B20) : Colors.white,
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 12,
-                      ),
-                      borderRadius: 12,
-                    ),
-                  ],
-                  if (canReceive) ...[
-                    const SizedBox(width: 12),
-                    GradientButton(
-                      onPressed: () async {
-                        bool confirm = false;
-                        await showAppDialog(
-                          context: context,
-                          title: 'Serahkan Pengajuan',
-                          contentWidget: const Text(
-                            'Apakah Anda yakin barang sudah diserahkan ke klien? Tindakan ini tidak dapat dibatalkan.',
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 13,
                             ),
-                          ),
-                          actions: [
-                            AppDialogAction(
-                              label: 'Batal',
-                              onPressed: () => Navigator.pop(context),
-                            ),
-                            AppDialogAction(
-                              label: 'Serahkan',
-                              type: AppDialogActionType.gradient,
-                              onPressed: () {
-                                confirm = true;
-                                Navigator.pop(context);
-                              },
-                            ),
-                          ],
-                        );
+                            actions: [
+                              AppDialogAction(
+                                label: 'Batal',
+                                onPressed: () => Navigator.pop(context),
+                              ),
+                              AppDialogAction(
+                                label: 'Serahkan',
+                                type: AppDialogActionType.gradient,
+                                onPressed: () {
+                                  confirm = true;
+                                  Navigator.pop(context);
+                                },
+                              ),
+                            ],
+                          );
 
-                        if (confirm) {
-                          final res = await onReceive();
-                          if (res['success'] == true && context.mounted) {
-                            Navigator.pop(context);
+                          if (confirm) {
+                            final res = await onReceive();
+                            if (res['success'] == true && context.mounted) {
+                              Navigator.pop(context);
+                            }
                           }
-                        }
-                      },
-                      icon: Icon(
-                        Icons.local_shipping_outlined,
-                        size: 18,
-                        color: isDark ? const Color(0xFF1D1B20) : Colors.white,
+                        },
+                        icon: Icon(
+                          Icons.local_shipping_outlined,
+                          size: 18,
+                          color: isDark
+                              ? const Color(0xFF1D1B20)
+                              : Colors.white,
+                        ),
+                        label: 'Serahkan Pengajuan',
+                        textStyle: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w600,
+                          color: isDark
+                              ? const Color(0xFF1D1B20)
+                              : Colors.white,
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 12,
+                        ),
+                        borderRadius: 12,
                       ),
-                      label: 'Serahkan Pengajuan',
-                      textStyle: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontWeight: FontWeight.w600,
-                        color: isDark ? const Color(0xFF1D1B20) : Colors.white,
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 12,
-                      ),
-                      borderRadius: 12,
-                    ),
+                    ],
                   ],
-                ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

@@ -222,7 +222,6 @@ class _ClientPayCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     final bool hasBorrowed = displayItems.isNotEmpty;
     final int totalQty = displayItems.fold(0, (s, b) => s + b.quantity);
     final double totalVal = displayItems.fold(
@@ -614,7 +613,8 @@ class _PaymentBottomSheetState extends State<_PaymentBottomSheet> {
         paymentMethod: 'cash',
         items: paidItems,
         totalAmount: totalAmount,
-        confirmedBy: FirebaseAuth.instance.currentUser?.displayName ??
+        confirmedBy:
+            FirebaseAuth.instance.currentUser?.displayName ??
             FirebaseAuth.instance.currentUser?.email,
       );
     }
@@ -640,7 +640,6 @@ class _PaymentBottomSheetState extends State<_PaymentBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-
     final allItems = widget.client.borrowedItems;
     final selectedList = _selected.values.toList();
 
@@ -670,331 +669,344 @@ class _PaymentBottomSheetState extends State<_PaymentBottomSheet> {
         minChildSize: 0.5,
         maxChildSize: 0.97,
         expand: false,
-        builder: (context, sc) => Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 10, bottom: 6),
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: context.cardBorder,
-                  borderRadius: BorderRadius.circular(2),
+        builder: (context, sc) => SafeArea(
+          top: false,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 10, bottom: 6),
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: context.cardBorder,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-              child: Row(
-                children: [
-                  Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      color: context.primaryBg,
-                      shape: BoxShape.circle,
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: context.primaryBg,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.store_outlined,
+                        color: context.primaryFg,
+                        size: 20,
+                      ),
                     ),
-                    child: Icon(Icons.store_outlined, color: context.primaryFg, size: 20),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.client.name,
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontWeight: FontWeight.w700,
-                            fontSize: 15,
-                            color: context.nameColor,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        if (widget.client.address.isNotEmpty)
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                           Text(
-                            widget.client.address,
+                            widget.client.name,
                             style: TextStyle(
                               fontFamily: 'Poppins',
-                              fontSize: 11,
-                              color: context.subColor,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 15,
+                              color: context.nameColor,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: context.primaryBg,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      '$totalItems unit dipilih',
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: context.primaryFg,
+                          if (widget.client.address.isNotEmpty)
+                            Text(
+                              widget.client.address,
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 11,
+                                color: context.subColor,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                        ],
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 4),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-            ),
-
-            Divider(height: 1, color: context.cardBorder),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
-              child: Row(
-                children: [
-                  Text(
-                    'Pilih Barang yang Akan Dibayar',
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                      color: context.nameColor,
-                    ),
-                  ),
-                  const Spacer(),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: context.primaryBg,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      '${_selected.length}/${allItems.length} item',
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: context.primaryFg,
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
                       ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Divider(height: 1, color: context.cardBorder),
-            Expanded(
-              child: allItems.isEmpty
-                  ? Center(
+                      decoration: BoxDecoration(
+                        color: context.primaryBg,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
                       child: Text(
-                        'Tidak ada barang konsinyasi',
+                        '$totalItems unit dipilih',
                         style: TextStyle(
                           fontFamily: 'Poppins',
-                          fontSize: 13,
-                          color: context.subColor,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: context.primaryFg,
                         ),
                       ),
-                    )
-                  : ListView.separated(
-                      controller: sc,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      itemCount: allItems.length,
-                      separatorBuilder: (_, __) =>
-                          Divider(height: 1, color: context.cardBorder),
-                      itemBuilder: (_, i) {
-                        final b = allItems[i];
-                        final key = i;
-                        final isSelected = _selected.containsKey(key);
-                        final payItem = _selected[key];
+                    ),
+                    const SizedBox(width: 4),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+              ),
 
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              GestureDetector(
-                                onTap: () => _toggle(b, i),
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 160),
-                                  width: 24,
-                                  height: 24,
-                                  decoration: BoxDecoration(
-                                    color: isSelected
-                                        ? context.primaryFg
-                                        : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(6),
-                                    border: Border.all(
-                                      color: isSelected ? context.primaryFg : context.cardBorder,
-                                      width: 1.5,
-                                    ),
-                                  ),
-                                  child: isSelected
-                                      ? const Icon(
-                                          Icons.check,
-                                          size: 16,
-                                          color: Colors.white,
-                                        )
-                                      : null,
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              CatalogImage(
-                                imagePath: b.catalogImagePath,
-                                size: 46,
-                                borderRadius: 10,
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      b.catalogName,
-                                      style: TextStyle(
-                                        fontFamily: 'Poppins',
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
-                                        color: context.nameColor,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    Text(
-                                      b.catalogCategory,
-                                      style: TextStyle(
-                                        fontFamily: 'Poppins',
-                                        fontSize: 11,
-                                        color: context.subColor,
-                                      ),
-                                    ),
-                                    Text(
-                                      formatRupiah(b.catalogPrice),
-                                      style: TextStyle(
-                                        fontFamily: 'Poppins',
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                        color: context.isDark ? const Color(0xFF80CBC4) : const Color(0xFF2E7D32),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              if (isSelected && payItem != null)
-                                QuantityStepper(
-                                  quantity: payItem.qty,
-                                  maxQuantity: b.quantity,
-                                  onDecrement: () => _changeQty(key, -1),
-                                  onIncrement: () => _changeQty(key, 1),
-                                  onChanged: (val) => _setQty(key, val),
-                                )
-                              else
-                                Text(
-                                  'Jumlah: ${b.quantity}',
-                                  style: TextStyle(
-                                    fontFamily: 'Poppins',
-                                    fontSize: 11,
-                                    color: context.subColor,
-                                  ),
-                                ),
-                            ],
-                          ),
-                        );
-                      },
+              Divider(height: 1, color: context.cardBorder),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+                child: Row(
+                  children: [
+                    Text(
+                      'Pilih Barang yang Akan Dibayar',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                        color: context.nameColor,
+                      ),
                     ),
-            ),
-            Container(
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
-              decoration: BoxDecoration(
-                color: context.cardBg,
-                border: Border(top: BorderSide(color: context.cardBorder, width: 1)),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: context.primaryBg,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '${_selected.length}/${allItems.length} item',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: context.primaryFg,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Total Pembayaran',
+              Divider(height: 1, color: context.cardBorder),
+              Expanded(
+                child: allItems.isEmpty
+                    ? Center(
+                        child: Text(
+                          'Tidak ada barang konsinyasi',
                           style: TextStyle(
                             fontFamily: 'Poppins',
-                            fontSize: 11,
-                            color: context.isDark
-                                ? Colors.white54
-                                : Colors.grey,
+                            fontSize: 13,
+                            color: context.subColor,
                           ),
                         ),
-                        Text(
-                          formatRupiah(totalPrice),
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontWeight: FontWeight.w700,
-                            fontSize: 15,
-                            color: context.nameColor,
-                          ),
+                      )
+                    : ListView.separated(
+                        controller: sc,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
                         ),
-                      ],
-                    ),
+                        itemCount: allItems.length,
+                        separatorBuilder: (_, __) =>
+                            Divider(height: 1, color: context.cardBorder),
+                        itemBuilder: (_, i) {
+                          final b = allItems[i];
+                          final key = i;
+                          final isSelected = _selected.containsKey(key);
+                          final payItem = _selected[key];
+
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                GestureDetector(
+                                  onTap: () => _toggle(b, i),
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 160),
+                                    width: 24,
+                                    height: 24,
+                                    decoration: BoxDecoration(
+                                      color: isSelected
+                                          ? context.primaryFg
+                                          : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(
+                                        color: isSelected
+                                            ? context.primaryFg
+                                            : context.cardBorder,
+                                        width: 1.5,
+                                      ),
+                                    ),
+                                    child: isSelected
+                                        ? const Icon(
+                                            Icons.check,
+                                            size: 16,
+                                            color: Colors.white,
+                                          )
+                                        : null,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                CatalogImage(
+                                  imagePath: b.catalogImagePath,
+                                  size: 46,
+                                  borderRadius: 10,
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        b.catalogName,
+                                        style: TextStyle(
+                                          fontFamily: 'Poppins',
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                          color: context.nameColor,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      Text(
+                                        b.catalogCategory,
+                                        style: TextStyle(
+                                          fontFamily: 'Poppins',
+                                          fontSize: 11,
+                                          color: context.subColor,
+                                        ),
+                                      ),
+                                      Text(
+                                        formatRupiah(b.catalogPrice),
+                                        style: TextStyle(
+                                          fontFamily: 'Poppins',
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                          color: context.isDark
+                                              ? const Color(0xFF80CBC4)
+                                              : const Color(0xFF2E7D32),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                if (isSelected && payItem != null)
+                                  QuantityStepper(
+                                    quantity: payItem.qty,
+                                    maxQuantity: b.quantity,
+                                    onDecrement: () => _changeQty(key, -1),
+                                    onIncrement: () => _changeQty(key, 1),
+                                    onChanged: (val) => _setQty(key, val),
+                                  )
+                                else
+                                  Text(
+                                    'Jumlah: ${b.quantity}',
+                                    style: TextStyle(
+                                      fontFamily: 'Poppins',
+                                      fontSize: 11,
+                                      color: context.subColor,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+              ),
+              Container(
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+                decoration: BoxDecoration(
+                  color: context.cardBg,
+                  border: Border(
+                    top: BorderSide(color: context.cardBorder, width: 1),
                   ),
-                  _isPaying
-                      ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : GradientButton(
-                          label: 'Bayar',
-                          onPressed: _selected.isEmpty
-                              ? () {}
-                              : () => showAppDialog(
-                                  context: context,
-                                  titleIcon: const Icon(
-                                    Icons.warning_amber_rounded,
-                                  ),
-                                  title: 'Pembayaran',
-                                  content:
-                                      'Bayar ${_selected.length} item senilai ${formatRupiah(totalPrice)} untuk ${widget.client.name}?',
-                                  actions: [
-                                    AppDialogAction(
-                                      label: 'Batal',
-                                      onPressed: () => Navigator.pop(context),
-                                    ),
-                                    AppDialogAction(
-                                      label: 'Bayar',
-                                      type: AppDialogActionType.gradient,
-                                      onPressed: () {
-                                        Navigator.pop(context);
-                                        _pay();
-                                      },
-                                    ),
-                                  ],
-                                ),
-                          borderRadius: 12,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 28,
-                            vertical: 12,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Total Pembayaran',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 11,
+                              color: context.isDark
+                                  ? Colors.white54
+                                  : Colors.grey,
+                            ),
                           ),
-                        ),
-                ],
+                          Text(
+                            formatRupiah(totalPrice),
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.w700,
+                              fontSize: 15,
+                              color: context.nameColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    _isPaying
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : GradientButton(
+                            label: 'Bayar',
+                            onPressed: _selected.isEmpty
+                                ? () {}
+                                : () => showAppDialog(
+                                    context: context,
+                                    titleIcon: const Icon(
+                                      Icons.warning_amber_rounded,
+                                    ),
+                                    title: 'Pembayaran',
+                                    content:
+                                        'Bayar ${_selected.length} item senilai ${formatRupiah(totalPrice)} untuk ${widget.client.name}?',
+                                    actions: [
+                                      AppDialogAction(
+                                        label: 'Batal',
+                                        onPressed: () => Navigator.pop(context),
+                                      ),
+                                      AppDialogAction(
+                                        label: 'Bayar',
+                                        type: AppDialogActionType.gradient,
+                                        onPressed: () {
+                                          Navigator.pop(context);
+                                          _pay();
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                            borderRadius: 12,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 28,
+                              vertical: 12,
+                            ),
+                          ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 }
-

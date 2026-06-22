@@ -668,270 +668,281 @@ class _ClientDetailSheetState extends State<_ClientDetailSheet> {
       initialChildSize: 0.88,
       minChildSize: 0.5,
       maxChildSize: 0.97,
-      builder: (context, sc) => Container(
-        decoration: BoxDecoration(
-          color: sheetBg,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              child: Row(
-                children: [
-                  Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      color: tealBg,
-                      shape: BoxShape.circle,
+      builder: (context, sc) => SafeArea(
+        top: false,
+        child: Container(
+          decoration: BoxDecoration(
+            color: sheetBg,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 16,
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: tealBg,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.store_outlined,
+                        color: tealFg,
+                        size: 20,
+                      ),
                     ),
-                    child: Icon(Icons.store_outlined, color: tealFg, size: 20),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.client.name,
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontWeight: FontWeight.w700,
-                            fontSize: 15,
-                            color: nameColor,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        if (widget.client.address.isNotEmpty)
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                           Text(
-                            widget.client.address,
+                            widget.client.name,
                             style: TextStyle(
                               fontFamily: 'Poppins',
-                              fontSize: 11,
-                              color: subColor,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 15,
+                              color: nameColor,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: tealBg,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      '$totalQty unit',
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: tealFg,
+                          if (widget.client.address.isNotEmpty)
+                            Text(
+                              widget.client.address,
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 11,
+                                color: subColor,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                        ],
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 4),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-            ),
-            Divider(height: 1, color: divider),
-
-            if (allCats.length > 1)
-              SizedBox(
-                height: 44,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 4,
-                  ),
-                  children: [
-                    _chip('Semua', null),
-                    ...allCats.map((c) => _chip(c, c)),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: tealBg,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '$totalQty unit',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: tealFg,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                    ),
                   ],
                 ),
               ),
+              Divider(height: 1, color: divider),
 
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
-              child: Row(
-                children: [
-                  Text(
-                    'Barang yang Dipinjam',
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                      color: nameColor,
-                    ),
-                  ),
-                  const Spacer(),
-                  Container(
+              if (allCats.length > 1)
+                SizedBox(
+                  height: 44,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 3,
+                      horizontal: 16,
+                      vertical: 4,
                     ),
-                    decoration: BoxDecoration(
-                      color: tealBg,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      '${items.length} item',
+                    children: [
+                      _chip('Semua', null),
+                      ...allCats.map((c) => _chip(c, c)),
+                    ],
+                  ),
+                ),
+
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+                child: Row(
+                  children: [
+                    Text(
+                      'Barang yang Dipinjam',
                       style: TextStyle(
                         fontFamily: 'Poppins',
-                        fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        color: tealFg,
+                        fontSize: 13,
+                        color: nameColor,
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-            Divider(height: 1, color: divider),
-
-            Expanded(
-              child: items.isEmpty
-                  ? Center(
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: tealBg,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
                       child: Text(
-                        'Tidak ada barang di kategori ini',
+                        '${items.length} item',
                         style: TextStyle(
                           fontFamily: 'Poppins',
-                          fontSize: 13,
-                          color: subColor,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: tealFg,
                         ),
                       ),
-                    )
-                  : ListView.separated(
-                      controller: sc,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 8,
-                      ),
-                      itemCount: items.length,
-                      separatorBuilder: (_, __) =>
-                          Divider(height: 1, color: divider),
-                      itemBuilder: (_, i) {
-                        final b = items[i];
+                    ),
+                  ],
+                ),
+              ),
+              Divider(height: 1, color: divider),
 
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              CatalogImage(
-                                imagePath: b.catalogImagePath,
-                                size: 52,
-                                borderRadius: 10,
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            b.catalogName,
-                                            style: TextStyle(
-                                              fontFamily: 'Poppins',
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w600,
-                                              color: nameColor,
+              Expanded(
+                child: items.isEmpty
+                    ? Center(
+                        child: Text(
+                          'Tidak ada barang di kategori ini',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 13,
+                            color: subColor,
+                          ),
+                        ),
+                      )
+                    : ListView.separated(
+                        controller: sc,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 8,
+                        ),
+                        itemCount: items.length,
+                        separatorBuilder: (_, __) =>
+                            Divider(height: 1, color: divider),
+                        itemBuilder: (_, i) {
+                          final b = items[i];
+
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                CatalogImage(
+                                  imagePath: b.catalogImagePath,
+                                  size: 52,
+                                  borderRadius: 10,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              b.catalogName,
+                                              style: TextStyle(
+                                                fontFamily: 'Poppins',
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w600,
+                                                color: nameColor,
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      b.catalogCategory,
-                                      style: TextStyle(
-                                        fontFamily: 'Poppins',
-                                        fontSize: 11,
-                                        color: subColor,
+                                        ],
                                       ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      '${b.quantity}Ã— ${formatRupiah(b.catalogPrice)}',
-                                      style: TextStyle(
-                                        fontFamily: 'Poppins',
-                                        fontSize: 12,
-                                        color: subColor,
-                                      ),
-                                    ),
-                                    if (b.lastReceivedAt != null)
+                                      const SizedBox(height: 2),
                                       Text(
-                                        'Terakhir diterima: ${widget.formatDate(b.lastReceivedAt)}',
+                                        b.catalogCategory,
                                         style: TextStyle(
                                           fontFamily: 'Poppins',
-                                          fontSize: 10,
+                                          fontSize: 11,
                                           color: subColor,
                                         ),
                                       ),
-                                  ],
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        '${b.quantity}Ã— ${formatRupiah(b.catalogPrice)}',
+                                        style: TextStyle(
+                                          fontFamily: 'Poppins',
+                                          fontSize: 12,
+                                          color: subColor,
+                                        ),
+                                      ),
+                                      if (b.lastReceivedAt != null)
+                                        Text(
+                                          'Terakhir diterima: ${widget.formatDate(b.lastReceivedAt)}',
+                                          style: TextStyle(
+                                            fontFamily: 'Poppins',
+                                            fontSize: 10,
+                                            color: subColor,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                formatRupiah(b.catalogPrice * b.quantity),
-                                style: TextStyle(
-                                  fontFamily: 'Poppins',
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 13,
-                                  color: tealFg,
+                                const SizedBox(width: 8),
+                                Text(
+                                  formatRupiah(b.catalogPrice * b.quantity),
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 13,
+                                    color: tealFg,
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-            ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+              ),
 
-            Container(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
-              decoration: BoxDecoration(
-                color: sheetBg,
-                border: Border(top: BorderSide(color: divider)),
-              ),
-              child: Row(
-                children: [
-                  Text(
-                    'Total Nilai Konsinyasi',
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 12,
-                      color: subColor,
+              Container(
+                padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
+                decoration: BoxDecoration(
+                  color: sheetBg,
+                  border: Border(top: BorderSide(color: divider)),
+                ),
+                child: Row(
+                  children: [
+                    Text(
+                      'Total Nilai Konsinyasi',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 12,
+                        color: subColor,
+                      ),
                     ),
-                  ),
-                  const Spacer(),
-                  Text(
-                    formatRupiah(grandTotal),
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontWeight: FontWeight.w700,
-                      fontSize: 16,
-                      color: tealFg,
+                    const Spacer(),
+                    Text(
+                      formatRupiah(grandTotal),
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                        color: tealFg,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -1114,9 +1125,12 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
           content: Text(
             result['success'] == true
                 ? 'Barang berhasil diserahkan ke ${_selectedClient!.name}'
-                : (result['error']?.toString().toLowerCase().contains('unavailable') == true
-                    ? 'Tidak ada koneksi internet, tidak bisa mencatat penyerahan barang'
-                    : 'Gagal: ${result['error']}'),
+                : (result['error']?.toString().toLowerCase().contains(
+                            'unavailable',
+                          ) ==
+                          true
+                      ? 'Tidak ada koneksi internet, tidak bisa mencatat penyerahan barang'
+                      : 'Gagal: ${result['error']}'),
           ),
           backgroundColor: result['success'] == true
               ? Colors.green
@@ -1176,468 +1190,477 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
         minChildSize: 0.5,
         maxChildSize: 0.97,
         expand: false,
-        builder: (context, sc) => Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 10, bottom: 6),
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: divider,
-                  borderRadius: BorderRadius.circular(2),
+        builder: (context, sc) => SafeArea(
+          top: false,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 10, bottom: 6),
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: divider,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 2, 8, 10),
-              child: Row(
-                children: [
-                  Icon(Icons.local_shipping_outlined, color: tealFg, size: 22),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'Tambah Barang Konsinyasi',
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
-                        color: nameColor,
-                      ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 2, 8, 10),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.local_shipping_outlined,
+                      color: tealFg,
+                      size: 22,
                     ),
-                  ),
-                  if (totalQty > 0)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: tealBg,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
+                    const SizedBox(width: 10),
+                    Expanded(
                       child: Text(
-                        '$totalQty item dipilih',
+                        'Tambah Barang Konsinyasi',
                         style: TextStyle(
                           fontFamily: 'Poppins',
-                          fontSize: 11,
                           fontWeight: FontWeight.w700,
-                          color: tealFg,
+                          fontSize: 15,
+                          color: nameColor,
                         ),
                       ),
                     ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
+                    if (totalQty > 0)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: tealBg,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          '$totalQty item dipilih',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: tealFg,
+                          ),
+                        ),
+                      ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-              child: _selectedClient == null
-                  ? Autocomplete<ClientModel>(
-                      optionsBuilder: (TextEditingValue textValue) {
-                        if (textValue.text.isEmpty) {
-                          return widget.clients;
-                        }
-                        final q = textValue.text.toLowerCase();
-                        return widget.clients.where(
-                          (c) =>
-                              c.name.toLowerCase().contains(q) ||
-                              c.address.toLowerCase().contains(q) ||
-                              c.phone.toLowerCase().contains(q),
-                        );
-                      },
-                      displayStringForOption: (c) => c.name,
-                      fieldViewBuilder:
-                          (
-                            context,
-                            textEditingController,
-                            focusNode,
-                            onFieldSubmitted,
-                          ) {
-                            return TextField(
-                              controller: textEditingController,
-                              focusNode: focusNode,
-                              decoration: InputDecoration(
-                                hintText: 'Cari nama klien...',
-                                hintStyle: TextStyle(
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                child: _selectedClient == null
+                    ? Autocomplete<ClientModel>(
+                        optionsBuilder: (TextEditingValue textValue) {
+                          if (textValue.text.isEmpty) {
+                            return widget.clients;
+                          }
+                          final q = textValue.text.toLowerCase();
+                          return widget.clients.where(
+                            (c) =>
+                                c.name.toLowerCase().contains(q) ||
+                                c.address.toLowerCase().contains(q) ||
+                                c.phone.toLowerCase().contains(q),
+                          );
+                        },
+                        displayStringForOption: (c) => c.name,
+                        fieldViewBuilder:
+                            (
+                              context,
+                              textEditingController,
+                              focusNode,
+                              onFieldSubmitted,
+                            ) {
+                              return TextField(
+                                controller: textEditingController,
+                                focusNode: focusNode,
+                                decoration: InputDecoration(
+                                  hintText: 'Cari nama klien...',
+                                  hintStyle: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 13,
+                                    color: widget.isDark
+                                        ? Colors.white38
+                                        : Colors.black38,
+                                  ),
+                                  prefixIcon: const Icon(
+                                    Icons.person_search_outlined,
+                                    size: 20,
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(color: divider),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(color: divider),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(color: tealFg),
+                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 10,
+                                  ),
+                                  isDense: true,
+                                ),
+                                style: TextStyle(
                                   fontFamily: 'Poppins',
                                   fontSize: 13,
-                                  color: widget.isDark
-                                      ? Colors.white38
-                                      : Colors.black38,
+                                  color: nameColor,
                                 ),
-                                prefixIcon: const Icon(
-                                  Icons.person_search_outlined,
-                                  size: 20,
+                              );
+                            },
+                        optionsViewBuilder: (context, onSelected, options) {
+                          return Align(
+                            alignment: Alignment.topLeft,
+                            child: Material(
+                              elevation: 4,
+                              borderRadius: BorderRadius.circular(12),
+                              color: sheetBg,
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(
+                                  maxHeight: 200,
+                                  maxWidth: 380,
                                 ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: divider),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: divider),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: tealFg),
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 10,
-                                ),
-                                isDense: true,
-                              ),
-                              style: TextStyle(
-                                fontFamily: 'Poppins',
-                                fontSize: 13,
-                                color: nameColor,
-                              ),
-                            );
-                          },
-                      optionsViewBuilder: (context, onSelected, options) {
-                        return Align(
-                          alignment: Alignment.topLeft,
-                          child: Material(
-                            elevation: 4,
-                            borderRadius: BorderRadius.circular(12),
-                            color: sheetBg,
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(
-                                maxHeight: 200,
-                                maxWidth: 380,
-                              ),
-                              child: ListView.builder(
-                                padding: EdgeInsets.zero,
-                                shrinkWrap: true,
-                                itemCount: options.length,
-                                itemBuilder: (context, index) {
-                                  final client = options.elementAt(index);
-                                  return InkWell(
-                                    onTap: () => onSelected(client),
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 12,
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          Icon(
-                                            Icons.store_outlined,
-                                            size: 16,
-                                            color: tealFg,
-                                          ),
-                                          const SizedBox(width: 10),
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  client.name.isNotEmpty
-                                                      ? client.name
-                                                      : 'Klien Tanpa Nama',
-                                                  style: TextStyle(
-                                                    fontFamily: 'Poppins',
-                                                    fontSize: 13,
-                                                    fontWeight: FontWeight.w600,
-                                                    color: nameColor,
-                                                  ),
-                                                ),
-                                                if (client.address.isNotEmpty)
+                                child: ListView.builder(
+                                  padding: EdgeInsets.zero,
+                                  shrinkWrap: true,
+                                  itemCount: options.length,
+                                  itemBuilder: (context, index) {
+                                    final client = options.elementAt(index);
+                                    return InkWell(
+                                      onTap: () => onSelected(client),
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                          vertical: 12,
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Icon(
+                                              Icons.store_outlined,
+                                              size: 16,
+                                              color: tealFg,
+                                            ),
+                                            const SizedBox(width: 10),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
                                                   Text(
-                                                    client.address,
+                                                    client.name.isNotEmpty
+                                                        ? client.name
+                                                        : 'Klien Tanpa Nama',
                                                     style: TextStyle(
                                                       fontFamily: 'Poppins',
-                                                      fontSize: 11,
-                                                      color: subColor,
+                                                      fontSize: 13,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      color: nameColor,
                                                     ),
-                                                    maxLines: 1,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
                                                   ),
-                                              ],
+                                                  if (client.address.isNotEmpty)
+                                                    Text(
+                                                      client.address,
+                                                      style: TextStyle(
+                                                        fontFamily: 'Poppins',
+                                                        fontSize: 11,
+                                                        color: subColor,
+                                                      ),
+                                                      maxLines: 1,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                    ),
+                                                ],
+                                              ),
                                             ),
-                                          ),
-                                        ],
+                                          ],
+                                        ),
                                       ),
-                                    ),
-                                  );
-                                },
+                                    );
+                                  },
+                                ),
                               ),
                             ),
+                          );
+                        },
+                        onSelected: (client) =>
+                            setState(() => _selectedClient = client),
+                      )
+                    : Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: tealFg),
+                          borderRadius: BorderRadius.circular(12),
+                          color: tealBg,
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.store_outlined, color: tealFg, size: 18),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                _selectedClient!.name.isNotEmpty
+                                    ? _selectedClient!.name
+                                    : 'Klien Tanpa Nama',
+                                style: TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: tealFg,
+                                ),
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: () =>
+                                  setState(() => _selectedClient = null),
+                              child: Icon(Icons.close, size: 18, color: tealFg),
+                            ),
+                          ],
+                        ),
+                      ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: (_) => setState(() {}),
+                  decoration: InputDecoration(
+                    hintText: 'Cari katalog...',
+                    hintStyle: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 13,
+                      color: widget.isDark ? Colors.white38 : Colors.black38,
+                    ),
+                    prefixIcon: const Icon(Icons.search, size: 20),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: divider),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: divider),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: tealFg),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    isDense: true,
+                  ),
+                ),
+              ),
+              Divider(height: 1, color: divider),
+              Expanded(
+                child: StreamBuilder<QuerySnapshot>(
+                  stream: _catalogStream,
+                  builder: (ctx, snap) {
+                    if (snap.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    final query = _searchController.text.trim().toLowerCase();
+                    final allItems = (snap.data?.docs ?? [])
+                        .map(
+                          (d) => CatalogModel.fromMap(
+                            d.id,
+                            d.data() as Map<String, dynamic>,
+                          ),
+                        )
+                        .where(
+                          (c) =>
+                              query.isEmpty ||
+                              c.name.toLowerCase().contains(query) ||
+                              c.category.toLowerCase().contains(query),
+                        )
+                        .toList();
+
+                    if (allItems.isEmpty) {
+                      return Center(
+                        child: Text(
+                          'Katalog tidak ditemukan',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 13,
+                            color: subColor,
+                          ),
+                        ),
+                      );
+                    }
+
+                    return ListView.separated(
+                      controller: sc,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      itemCount: allItems.length,
+                      separatorBuilder: (_, __) =>
+                          Divider(height: 1, color: divider),
+                      itemBuilder: (_, i) {
+                        final catalog = allItems[i];
+                        final isSelected = _selected.containsKey(catalog.id);
+                        final selItem = _selected[catalog.id];
+
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          child: Row(
+                            children: [
+                              GestureDetector(
+                                onTap: () => _toggle(catalog),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 160),
+                                  width: 24,
+                                  height: 24,
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? tealFg
+                                        : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(
+                                      color: isSelected ? tealFg : divider,
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                  child: isSelected
+                                      ? const Icon(
+                                          Icons.check,
+                                          size: 16,
+                                          color: Colors.white,
+                                        )
+                                      : null,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              CatalogImage(
+                                imagePath: catalog.imagePath,
+                                size: 46,
+                                borderRadius: 10,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      catalog.name,
+                                      style: TextStyle(
+                                        fontFamily: 'Poppins',
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        color: nameColor,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    Text(
+                                      catalog.category,
+                                      style: TextStyle(
+                                        fontFamily: 'Poppins',
+                                        fontSize: 11,
+                                        color: subColor,
+                                      ),
+                                    ),
+                                    Text(
+                                      formatRupiah(catalog.price),
+                                      style: TextStyle(
+                                        fontFamily: 'Poppins',
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                        color: priceColor,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              if (isSelected && selItem != null)
+                                _InlineQtyStepper(
+                                  quantity: selItem.quantity,
+                                  isDark: widget.isDark,
+                                  onDecrement: () => _changeQty(catalog.id, -1),
+                                  onIncrement: () => _changeQty(catalog.id, 1),
+                                ),
+                            ],
                           ),
                         );
                       },
-                      onSelected: (client) =>
-                          setState(() => _selectedClient = client),
-                    )
-                  : Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: tealFg),
-                        borderRadius: BorderRadius.circular(12),
-                        color: tealBg,
-                      ),
-                      child: Row(
+                    );
+                  },
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 20),
+                decoration: BoxDecoration(
+                  color: sheetBg,
+                  border: Border(top: BorderSide(color: divider, width: 1)),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(Icons.store_outlined, color: tealFg, size: 18),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              _selectedClient!.name.isNotEmpty
-                                  ? _selectedClient!.name
-                                  : 'Klien Tanpa Nama',
-                              style: TextStyle(
-                                fontFamily: 'Poppins',
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: tealFg,
-                              ),
+                          Text(
+                            'Total Estimasi',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 11,
+                              color: subColor,
                             ),
                           ),
-                          GestureDetector(
-                            onTap: () => setState(() => _selectedClient = null),
-                            child: Icon(Icons.close, size: 18, color: tealFg),
+                          Text(
+                            formatRupiah(totalEst),
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.w700,
+                              fontSize: 15,
+                              color: nameColor,
+                            ),
                           ),
                         ],
                       ),
                     ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: TextField(
-                controller: _searchController,
-                onChanged: (_) => setState(() {}),
-                decoration: InputDecoration(
-                  hintText: 'Cari katalog...',
-                  hintStyle: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 13,
-                    color: widget.isDark ? Colors.white38 : Colors.black38,
-                  ),
-                  prefixIcon: const Icon(Icons.search, size: 20),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: divider),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: divider),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: tealFg),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 10,
-                  ),
-                  isDense: true,
+                    _isSubmitting
+                        ? const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 16),
+                            child: SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          )
+                        : GradientButton(
+                            label: 'Serahkan',
+                            onPressed:
+                                (_selectedClient == null || _selected.isEmpty)
+                                ? () {}
+                                : _serahkan,
+                            borderRadius: 12,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 28,
+                              vertical: 12,
+                            ),
+                          ),
+                  ],
                 ),
               ),
-            ),
-            Divider(height: 1, color: divider),
-            Expanded(
-              child: StreamBuilder<QuerySnapshot>(
-                stream: _catalogStream,
-                builder: (ctx, snap) {
-                  if (snap.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  final query = _searchController.text.trim().toLowerCase();
-                  final allItems = (snap.data?.docs ?? [])
-                      .map(
-                        (d) => CatalogModel.fromMap(
-                          d.id,
-                          d.data() as Map<String, dynamic>,
-                        ),
-                      )
-                      .where(
-                        (c) =>
-                            query.isEmpty ||
-                            c.name.toLowerCase().contains(query) ||
-                            c.category.toLowerCase().contains(query),
-                      )
-                      .toList();
-
-                  if (allItems.isEmpty) {
-                    return Center(
-                      child: Text(
-                        'Katalog tidak ditemukan',
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 13,
-                          color: subColor,
-                        ),
-                      ),
-                    );
-                  }
-
-                  return ListView.separated(
-                    controller: sc,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    itemCount: allItems.length,
-                    separatorBuilder: (_, __) =>
-                        Divider(height: 1, color: divider),
-                    itemBuilder: (_, i) {
-                      final catalog = allItems[i];
-                      final isSelected = _selected.containsKey(catalog.id);
-                      final selItem = _selected[catalog.id];
-
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        child: Row(
-                          children: [
-                            GestureDetector(
-                              onTap: () => _toggle(catalog),
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 160),
-                                width: 24,
-                                height: 24,
-                                decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? tealFg
-                                      : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(
-                                    color: isSelected ? tealFg : divider,
-                                    width: 1.5,
-                                  ),
-                                ),
-                                child: isSelected
-                                    ? const Icon(
-                                        Icons.check,
-                                        size: 16,
-                                        color: Colors.white,
-                                      )
-                                    : null,
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            CatalogImage(
-                              imagePath: catalog.imagePath,
-                              size: 46,
-                              borderRadius: 10,
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    catalog.name,
-                                    style: TextStyle(
-                                      fontFamily: 'Poppins',
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color: nameColor,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  Text(
-                                    catalog.category,
-                                    style: TextStyle(
-                                      fontFamily: 'Poppins',
-                                      fontSize: 11,
-                                      color: subColor,
-                                    ),
-                                  ),
-                                  Text(
-                                    formatRupiah(catalog.price),
-                                    style: TextStyle(
-                                      fontFamily: 'Poppins',
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                      color: priceColor,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            if (isSelected && selItem != null)
-                              _InlineQtyStepper(
-                                quantity: selItem.quantity,
-                                isDark: widget.isDark,
-                                onDecrement: () => _changeQty(catalog.id, -1),
-                                onIncrement: () => _changeQty(catalog.id, 1),
-                              ),
-                          ],
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 20),
-              decoration: BoxDecoration(
-                color: sheetBg,
-                border: Border(top: BorderSide(color: divider, width: 1)),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Total Estimasi',
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 11,
-                            color: subColor,
-                          ),
-                        ),
-                        Text(
-                          formatRupiah(totalEst),
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontWeight: FontWeight.w700,
-                            fontSize: 15,
-                            color: nameColor,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  _isSubmitting
-                      ? const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 16),
-                          child: SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                        )
-                      : GradientButton(
-                          label: 'Serahkan',
-                          onPressed:
-                              (_selectedClient == null || _selected.isEmpty)
-                              ? () {}
-                              : _serahkan,
-                          borderRadius: 12,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 28,
-                            vertical: 12,
-                          ),
-                        ),
-                ],
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

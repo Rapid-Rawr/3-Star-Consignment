@@ -505,7 +505,7 @@ class _DetailSheetBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Color sheetBg = context.cardBg;
-    final Color divider  = context.cardBorder;
+    final Color divider = context.cardBorder;
 
     int getEffectiveQuantity(ConsignmentItemEntry item) {
       if (item.itemStatus == ConsignmentItemStatus.rejected) return 0;
@@ -530,145 +530,129 @@ class _DetailSheetBody extends StatelessWidget {
       minChildSize: 0.5,
       maxChildSize: 0.97,
       builder: (context, scrollController) {
-        return Container(
-          decoration: BoxDecoration(
-            color: sheetBg,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Column(
-            children: [
-              const SheetDragHandle(),
-
-              SheetClientHeader(
-                clientName: batch.clientName,
-                clientAddress: batch.clientAddress,
-                photoUrl: clientPhotoUrl,
-                countBadgeText: '$totalUnits unit',
+        return SafeArea(
+          top: false,
+          child: Container(
+            decoration: BoxDecoration(
+              color: sheetBg,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(20),
               ),
+            ),
+            child: Column(
+              children: [
+                const SheetDragHandle(),
 
-              Divider(height: 1, color: divider),
+                SheetClientHeader(
+                  clientName: batch.clientName,
+                  clientAddress: batch.clientAddress,
+                  photoUrl: clientPhotoUrl,
+                  countBadgeText: '$totalUnits unit',
+                ),
 
-              Expanded(
-                child: ListView(
-                  controller: scrollController,
-                  padding: const EdgeInsets.all(20),
-                  children: [
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: batchStatusBg(batch.status, isDark),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                batch.receivedAt != null
-                                    ? Icons.calendar_month
-                                    : batchStatusIcon(batch.status),
-                                size: 12,
-                                color: batchStatusFg(batch.status, isDark),
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                batch.receivedAt != null
-                                    ? '${batchStatusLabel(batch.status)}: ${formatDateShort(batch.receivedAt)}'
-                                    : batchStatusLabel(batch.status),
-                                style: TextStyle(
-                                  fontFamily: 'Poppins',
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                  color: batchStatusFg(batch.status, isDark),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        if (batch.packedBy != null)
+                Divider(height: 1, color: divider),
+
+                Expanded(
+                  child: ListView(
+                    controller: scrollController,
+                    padding: const EdgeInsets.all(20),
+                    children: [
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 8,
                               vertical: 3,
                             ),
                             decoration: BoxDecoration(
-                              color: context.successBg,
+                              color: batchStatusBg(batch.status, isDark),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(
-                                  Icons.person_outline,
-                                  size: 11,
-                                  color: context.successFg,
+                                  batch.receivedAt != null
+                                      ? Icons.calendar_month
+                                      : batchStatusIcon(batch.status),
+                                  size: 12,
+                                  color: batchStatusFg(batch.status, isDark),
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  'Dikemas: ${batch.packedBy}',
+                                  batch.receivedAt != null
+                                      ? '${batchStatusLabel(batch.status)}: ${formatDateShort(batch.receivedAt)}'
+                                      : batchStatusLabel(batch.status),
                                   style: TextStyle(
                                     fontFamily: 'Poppins',
                                     fontSize: 10,
                                     fontWeight: FontWeight.w600,
-                                    color: context.successFg,
+                                    color: batchStatusFg(batch.status, isDark),
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                        if (batch.receivedBy != null)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 3,
+                          if (batch.packedBy != null)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: context.successBg,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.person_outline,
+                                    size: 11,
+                                    color: context.successFg,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Dikemas: ${batch.packedBy}',
+                                    style: TextStyle(
+                                      fontFamily: 'Poppins',
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
+                                      color: context.successFg,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                            decoration: BoxDecoration(
-                              color:
-                                  batch.status ==
-                                      ConsignmentBatchStatus.rejected
-                                  ? (isDark
-                                        ? const Color(0xFF3A1A1A)
-                                        : const Color(0xFFFCE8E8))
-                                  : (isDark
-                                        ? const Color(0xFF1E3A5F)
-                                        : const Color(0xFFE8F4FD)),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  batch.status ==
-                                          ConsignmentBatchStatus.rejected
-                                      ? Icons.cancel_outlined
-                                      : Icons.verified_user_outlined,
-                                  size: 11,
-                                  color:
-                                      batch.status ==
-                                          ConsignmentBatchStatus.rejected
-                                      ? (isDark
-                                            ? const Color(0xFFFF8A8A)
-                                            : Colors.red)
-                                      : (isDark
-                                            ? const Color(0xFF64B5F6)
-                                            : const Color(0xFF1976D2)),
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  batch.status ==
-                                          ConsignmentBatchStatus.rejected
-                                      ? 'Ditolak: ${batch.receivedBy}'
-                                      : 'Diserahkan: ${batch.receivedBy}',
-                                  style: TextStyle(
-                                    fontFamily: 'Poppins',
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w600,
+                          if (batch.receivedBy != null)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color:
+                                    batch.status ==
+                                        ConsignmentBatchStatus.rejected
+                                    ? (isDark
+                                          ? const Color(0xFF3A1A1A)
+                                          : const Color(0xFFFCE8E8))
+                                    : (isDark
+                                          ? const Color(0xFF1E3A5F)
+                                          : const Color(0xFFE8F4FD)),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    batch.status ==
+                                            ConsignmentBatchStatus.rejected
+                                        ? Icons.cancel_outlined
+                                        : Icons.verified_user_outlined,
+                                    size: 11,
                                     color:
                                         batch.status ==
                                             ConsignmentBatchStatus.rejected
@@ -679,110 +663,134 @@ class _DetailSheetBody extends StatelessWidget {
                                               ? const Color(0xFF64B5F6)
                                               : const Color(0xFF1976D2)),
                                   ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    batch.status ==
+                                            ConsignmentBatchStatus.rejected
+                                        ? 'Ditolak: ${batch.receivedBy}'
+                                        : 'Diserahkan: ${batch.receivedBy}',
+                                    style: TextStyle(
+                                      fontFamily: 'Poppins',
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
+                                      color:
+                                          batch.status ==
+                                              ConsignmentBatchStatus.rejected
+                                          ? (isDark
+                                                ? const Color(0xFFFF8A8A)
+                                                : Colors.red)
+                                          : (isDark
+                                                ? const Color(0xFF64B5F6)
+                                                : const Color(0xFF1976D2)),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      SheetSectionHeader(
+                        title: 'Daftar Barang',
+                        countBadgeText: '${batch.items.length} barang',
+                      ),
+                      const SizedBox(height: 12),
+
+                      ...batch.items.map((item) {
+                        final effectiveQty = getEffectiveQuantity(item);
+                        return SheetItemCard(
+                          imagePath: item.catalogImagePath,
+                          trailing: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: itemStatusBg(item.itemStatus, isDark),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  itemStatusIcon(item.itemStatus),
+                                  size: 10,
+                                  color: itemStatusFg(item.itemStatus, isDark),
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  itemStatusLabel(item.itemStatus),
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w600,
+                                    color: itemStatusFg(
+                                      item.itemStatus,
+                                      isDark,
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),
                           ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    SheetSectionHeader(
-                      title: 'Daftar Barang',
-                      countBadgeText: '${batch.items.length} barang',
-                    ),
-                    const SizedBox(height: 12),
-
-                    ...batch.items.map((item) {
-                      final effectiveQty = getEffectiveQuantity(item);
-                      return SheetItemCard(
-                        imagePath: item.catalogImagePath,
-                        trailing: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: itemStatusBg(item.itemStatus, isDark),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                itemStatusIcon(item.itemStatus),
-                                size: 10,
-                                color: itemStatusFg(item.itemStatus, isDark),
+                          contentChildren: [
+                            Text(
+                              item.catalogName,
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                                color: context.nameColor,
                               ),
-                              const SizedBox(width: 4),
-                              Text(
-                                itemStatusLabel(item.itemStatus),
-                                style: TextStyle(
-                                  fontFamily: 'Poppins',
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w600,
-                                  color: itemStatusFg(item.itemStatus, isDark),
-                                ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Harga: ${formatRupiah(item.catalogPrice)}',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 11,
+                                color: context.subColor,
                               ),
-                            ],
-                          ),
-                        ),
-                        contentChildren: [
-                          Text(
-                            item.catalogName,
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontWeight: FontWeight.w600,
-                              fontSize: 13,
-                              color: context.nameColor,
                             ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Harga: ${formatRupiah(item.catalogPrice)}',
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 11,
-                              color: context.subColor,
+                            Text(
+                              item.itemStatus == ConsignmentItemStatus.partial
+                                  ? 'Pengajuan awal: ${item.quantity}  •  Disetujui: $effectiveQty'
+                                  : 'Jumlah Disetujui: $effectiveQty',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 11,
+                                color: context.subColor,
+                              ),
                             ),
-                          ),
-                          Text(
-                            item.itemStatus == ConsignmentItemStatus.partial
-                                ? 'Pengajuan awal: ${item.quantity}  •  Disetujui: $effectiveQty'
-                                : 'Jumlah Disetujui: $effectiveQty',
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 11,
-                              color: context.subColor,
+                            const SizedBox(height: 4),
+                            Text(
+                              'Subtotal: ${formatRupiah(item.catalogPrice * effectiveQty)}',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 10,
+                                color: context.subColor,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Subtotal: ${formatRupiah(item.catalogPrice * effectiveQty)}',
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 10,
-                              color: context.subColor,
-                            ),
-                          ),
-                        ],
-                      );
-                    }),
-                  ],
+                          ],
+                        );
+                      }),
+                    ],
+                  ),
                 ),
-              ),
 
-              Container(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-                decoration: BoxDecoration(
-                  color: sheetBg,
-                  border: Border(top: BorderSide(color: divider, width: 1)),
+                Container(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                  decoration: BoxDecoration(
+                    color: sheetBg,
+                    border: Border(top: BorderSide(color: divider, width: 1)),
+                  ),
+                  child: SheetTotalFooter(
+                    label: 'Total Keseluruhan',
+                    amount: formatRupiah(overallTotal),
+                  ),
                 ),
-                child: SheetTotalFooter(
-                  label: 'Total Keseluruhan',
-                  amount: formatRupiah(overallTotal),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },

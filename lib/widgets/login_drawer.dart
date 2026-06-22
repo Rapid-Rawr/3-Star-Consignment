@@ -1,4 +1,4 @@
-﻿import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../utils/theme_notifier.dart';
 import 'app_dialog.dart';
@@ -142,116 +142,121 @@ class LoginDrawer extends StatelessWidget {
               ),
             ),
           ),
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.bottomLeft,
-                end: Alignment.topRight,
-                colors: isDark
-                    ? [const Color(0xFFA3A3A3), const Color(0xFFFFFFFF)]
-                    : [const Color(0xFF67636D), const Color(0xFF1D1B20)],
+          SafeArea(
+            top: false,
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.bottomLeft,
+                  end: Alignment.topRight,
+                  colors: isDark
+                      ? [const Color(0xFFA3A3A3), const Color(0xFFFFFFFF)]
+                      : [const Color(0xFF67636D), const Color(0xFF1D1B20)],
+                ),
               ),
-            ),
-            child: Theme(
-              data: Theme.of(context).copyWith(
-                splashColor: isDark
-                    ? const Color(0xFF1D1B20).withValues(alpha: 0.25)
-                    : Colors.white.withValues(alpha: 0.2),
-                highlightColor: isDark
-                    ? const Color(0xFF1D1B20).withValues(alpha: 0.15)
-                    : Colors.white.withValues(alpha: 0.1),
-              ),
-              child: Material(
-                type: MaterialType.transparency,
-                child: Column(
-                  children: [
-                    if (currentUser != null)
-                      ListTile(
-                        leading: Icon(
-                          Icons.logout,
-                          color: isDark
-                              ? const Color(0xFF1D1B20)
-                              : Colors.white,
-                        ),
-                        title: Text(
-                          'Keluar',
-                          style: TextStyle(
+              child: Theme(
+                data: Theme.of(context).copyWith(
+                  splashColor: isDark
+                      ? const Color(0xFF1D1B20).withValues(alpha: 0.25)
+                      : Colors.white.withValues(alpha: 0.2),
+                  highlightColor: isDark
+                      ? const Color(0xFF1D1B20).withValues(alpha: 0.15)
+                      : Colors.white.withValues(alpha: 0.1),
+                ),
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: Column(
+                    children: [
+                      if (currentUser != null)
+                        ListTile(
+                          leading: Icon(
+                            Icons.logout,
                             color: isDark
                                 ? const Color(0xFF1D1B20)
                                 : Colors.white,
-                            fontWeight: FontWeight.w500,
                           ),
-                        ),
-                        onTap: () async {
-                          bool confirmed = false;
-                          await showAppDialog(
-                            context: context,
-                            title: 'Keluar',
-                            titleIcon: const Icon(Icons.warning_amber_rounded),
-                            content: 'Apakah anda yakin ingin keluar?',
-                            actions: [
-                              AppDialogAction(
-                                label: 'Batal',
-                                onPressed: () => Navigator.pop(context),
+                          title: Text(
+                            'Keluar',
+                            style: TextStyle(
+                              color: isDark
+                                  ? const Color(0xFF1D1B20)
+                                  : Colors.white,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          onTap: () async {
+                            bool confirmed = false;
+                            await showAppDialog(
+                              context: context,
+                              title: 'Keluar',
+                              titleIcon: const Icon(
+                                Icons.warning_amber_rounded,
                               ),
-                              AppDialogAction(
-                                label: 'Keluar',
-                                type: AppDialogActionType.gradient,
-                                onPressed: () {
-                                  confirmed = true;
-                                  Navigator.pop(context);
+                              content: 'Apakah anda yakin ingin keluar?',
+                              actions: [
+                                AppDialogAction(
+                                  label: 'Batal',
+                                  onPressed: () => Navigator.pop(context),
+                                ),
+                                AppDialogAction(
+                                  label: 'Keluar',
+                                  type: AppDialogActionType.gradient,
+                                  onPressed: () {
+                                    confirmed = true;
+                                    Navigator.pop(context);
+                                  },
+                                ),
+                              ],
+                            );
+                            if (confirmed && context.mounted) {
+                              onSignOut();
+                            }
+                          },
+                        )
+                      else
+                        isSigningIn
+                            ? ListTile(
+                                leading: SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: isDark
+                                        ? const Color(0xFF1D1B20)
+                                        : Colors.white,
+                                  ),
+                                ),
+                                title: Text(
+                                  'Masuk...',
+                                  style: TextStyle(
+                                    color: isDark
+                                        ? const Color(0xFF1D1B20)
+                                        : Colors.white,
+                                  ),
+                                ),
+                              )
+                            : ListTile(
+                                leading: Icon(
+                                  Icons.login,
+                                  color: isDark
+                                      ? const Color(0xFF1D1B20)
+                                      : Colors.white,
+                                ),
+                                title: Text(
+                                  'Masuk',
+                                  style: TextStyle(
+                                    color: isDark
+                                        ? const Color(0xFF1D1B20)
+                                        : Colors.white,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                onTap: () {
+                                  onSignIn();
                                 },
                               ),
-                            ],
-                          );
-                          if (confirmed && context.mounted) {
-                            onSignOut();
-                          }
-                        },
-                      )
-                    else
-                      isSigningIn
-                          ? ListTile(
-                              leading: SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: isDark
-                                      ? const Color(0xFF1D1B20)
-                                      : Colors.white,
-                                ),
-                              ),
-                              title: Text(
-                                'Masuk...',
-                                style: TextStyle(
-                                  color: isDark
-                                      ? const Color(0xFF1D1B20)
-                                      : Colors.white,
-                                ),
-                              ),
-                            )
-                          : ListTile(
-                              leading: Icon(
-                                Icons.login,
-                                color: isDark
-                                    ? const Color(0xFF1D1B20)
-                                    : Colors.white,
-                              ),
-                              title: Text(
-                                'Masuk',
-                                style: TextStyle(
-                                  color: isDark
-                                      ? const Color(0xFF1D1B20)
-                                      : Colors.white,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              onTap: () {
-                                onSignIn();
-                              },
-                            ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
