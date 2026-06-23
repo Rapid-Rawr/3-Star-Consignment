@@ -39,20 +39,18 @@ class ItemPage extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      if (hasAccess(role, [Roles.admin]))
-                        MenuButton(
-                          svgPath: 'assets/icons/ConsignmentItem.svg',
-                          label: 'Barang Konsinyasi',
-                          borderColor: context.borderColor,
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const ConsignmentPage(),
-                            ),
+                      MenuButton(
+                        svgPath: 'assets/icons/ConsignmentItem.svg',
+                        label: 'Barang Konsinyasi',
+                        borderColor: context.borderColor,
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ConsignmentPage(),
                           ),
                         ),
-                      if (hasAccess(role, [Roles.admin]))
-                        const SizedBox(height: 16),
+                      ),
+                      const SizedBox(height: 16),
                       MenuButton(
                         svgPath: 'assets/icons/ConsignmentHistory.svg',
                         label: 'Riwayat Pengajuan',

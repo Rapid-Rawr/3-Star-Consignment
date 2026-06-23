@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../service/auth_provider.dart' as app_auth;
+import '../../service/roles.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../controllers/pengguna_controllers/klien_controller.dart';
 import '../../controllers/barang_controllers/katalog_controller.dart';
@@ -42,12 +46,52 @@ class _ConsignmentPageState extends State<ConsignmentPage> {
     super.dispose();
   }
 
+  /// Mengfilter list klien berdasarkan role, search query, dan kategori.
+  /// Satu-satunya tempat logika filtering — dipakai oleh Admin dan Client view.
+  List<ClientModel> _filterClients(
+    List<ClientModel> all, {
+    required String? email,
+    required String? role,
+  }) {
+    var result = List<ClientModel>.from(all);
+
+    // Role-based: klien hanya melihat datanya sendiri
+    if (role == Roles.client) {
+      result = result.where((c) => c.email == email).toList();
+    }
+
+    // Pencarian teks
+    if (_searchQuery.isNotEmpty) {
+      result = result
+          .where(
+            (c) =>
+                c.name.toLowerCase().contains(_searchQuery) ||
+                c.address.toLowerCase().contains(_searchQuery) ||
+                c.phone.toLowerCase().contains(_searchQuery),
+          )
+          .toList();
+    }
+
+    // Filter kategori
+    if (_selectedCategory != null) {
+      result = result
+          .where(
+            (c) => c.borrowedItems.any(
+              (b) => b.catalogCategory == _selectedCategory,
+            ),
+          )
+          .toList();
+    }
+
+    return result;
+  }
+
   void _showDetail(BuildContext context, ClientModel client, bool isDark) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _ClientDetailSheet(
+      builder: (_) => ClientDetailSheet(
         client: client,
         isDark: isDark,
         formatDate: formatDateShort,
@@ -78,6 +122,10 @@ class _ConsignmentPageState extends State<ConsignmentPage> {
   @override
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final authProvider = context.watch<app_auth.AuthProvider>();
+    final role = authProvider.role;
+    final email = FirebaseAuth.instance.currentUser?.email;
+
     final Color emptyIcon = isDark ? Colors.white24 : Colors.black26;
     final Color emptyText = isDark ? Colors.white38 : const Color(0xFF9E9E9E);
 
@@ -91,33 +139,18 @@ class _ConsignmentPageState extends State<ConsignmentPage> {
             )
             .toList();
 
+        var clients = _filterClients(
+          allClients,
+          email: email,
+          role: role,
+        );
+
         final allCats =
-            allClients
+            clients
                 .expand((c) => c.borrowedItems.map((b) => b.catalogCategory))
                 .toSet()
                 .toList()
               ..sort();
-
-        var clients = List<ClientModel>.from(allClients);
-        if (_searchQuery.isNotEmpty) {
-          clients = clients
-              .where(
-                (c) =>
-                    c.name.toLowerCase().contains(_searchQuery) ||
-                    c.address.toLowerCase().contains(_searchQuery) ||
-                    c.phone.toLowerCase().contains(_searchQuery),
-              )
-              .toList();
-        }
-        if (_selectedCategory != null) {
-          clients = clients
-              .where(
-                (c) => c.borrowedItems.any(
-                  (b) => b.catalogCategory == _selectedCategory,
-                ),
-              )
-              .toList();
-        }
 
         final filterOptions = <FilterChipOption<String>>[
           const FilterChipOption(label: 'Semua', value: null),
@@ -131,27 +164,31 @@ class _ConsignmentPageState extends State<ConsignmentPage> {
               style: TextStyle(fontFamily: 'Poppins'),
             ),
           ),
-          floatingActionButton: FloatingActionButton.extended(
-            onPressed: () => _showSerahkanSheet(context, allClients, isDark),
-            icon: const Icon(Icons.add_rounded),
-            label: const Text(
-              'Konsinyasi',
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            backgroundColor: isDark
-                ? const Color(0xFF4DB6AC)
-                : const Color(0xFF00796B),
-            foregroundColor: Colors.white,
-          ),
+          floatingActionButton: role == Roles.admin
+              ? FloatingActionButton.extended(
+                  onPressed: () => _showSerahkanSheet(context, allClients, isDark),
+                  icon: const Icon(Icons.add_rounded),
+                  label: const Text(
+                    'Konsinyasi',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  backgroundColor: isDark
+                      ? const Color(0xFF4DB6AC)
+                      : const Color(0xFF00796B),
+                  foregroundColor: Colors.white,
+                )
+              : null,
           body: Column(
             children: [
               SearchFilterBar<String>(
                 searchController: _searchController,
                 searchFocusNode: _searchFocusNode,
-                hintText: 'Cari nama klien atau alamat...',
+                hintText: role == Roles.client
+                    ? 'Cari nama barang...'
+                    : 'Cari nama klien atau alamat...',
                 onSearchChanged: (val) =>
                     setState(() => _searchQuery = val.trim().toLowerCase()),
                 filters: filterOptions,
@@ -202,6 +239,16 @@ class _ConsignmentPageState extends State<ConsignmentPage> {
                         ),
                       );
                     }
+
+                    if (role == Roles.client) {
+                      final client = clients.first;
+                      return _ClientConsignmentView(
+                        client: client,
+                        isDark: isDark,
+                        selectedCategory: _selectedCategory,
+                      );
+                    }
+
                     return ListView.builder(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
                       itemCount: clients.length,
@@ -215,7 +262,7 @@ class _ConsignmentPageState extends State<ConsignmentPage> {
                                   )
                                   .toList()
                             : client.borrowedItems;
-                        return _ClientCard(
+                        return ClientCard(
                           client: client,
                           displayItems: displayItems,
                           isDark: isDark,
@@ -227,6 +274,7 @@ class _ConsignmentPageState extends State<ConsignmentPage> {
                             isDark,
                             initialClient: client,
                           ),
+                          role: role,
                         );
                       },
                     );
@@ -241,25 +289,312 @@ class _ConsignmentPageState extends State<ConsignmentPage> {
   }
 }
 
-class _ClientCard extends StatelessWidget {
+class _ClientConsignmentView extends StatelessWidget {
+  final ClientModel client;
+  final bool isDark;
+  final String? selectedCategory;
+
+  const _ClientConsignmentView({
+    required this.client,
+    required this.isDark,
+    required this.selectedCategory,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final Color bg = isDark ? const Color(0xFF1C1B1F) : const Color(0xFFF5F5F5);
+    final Color cardBg = isDark ? const Color(0xFF2B2930) : Colors.white;
+    final Color cardBorder = isDark ? const Color(0xFF49454F) : const Color(0xFFE0E0E0);
+    final Color tealFg = isDark ? const Color(0xFF4DB6AC) : const Color(0xFF00796B);
+    final Color tealBg = isDark ? const Color(0xFF1A3A3A) : const Color(0xFFE0F2F1);
+    final Color nameColor = isDark ? Colors.white : const Color(0xFF1D1B20);
+    final Color subColor = isDark ? Colors.white54 : const Color(0xFF757575);
+
+    final displayItems = selectedCategory != null
+        ? client.borrowedItems.where((b) => b.catalogCategory == selectedCategory).toList()
+        : client.borrowedItems;
+
+    return Container(
+      color: bg,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // ── Stats row ────────────────────────────────────────────────
+            Row(
+              children: [
+                _StatCard(
+                  isDark: isDark,
+                  label: 'Total Item',
+                  value: '${displayItems.fold(0, (s, b) => s + b.quantity)} unit',
+                  icon: Icons.inventory_2_outlined,
+                  tealFg: tealFg,
+                  tealBg: tealBg,
+                  nameColor: nameColor,
+                  subColor: subColor,
+                ),
+                const SizedBox(width: 12),
+                _StatCard(
+                  isDark: isDark,
+                  label: 'Total Nilai',
+                  value: formatRupiah(displayItems.fold(0.0, (s, b) => s + b.catalogPrice * b.quantity)),
+                  icon: Icons.monetization_on_outlined,
+                  tealFg: tealFg,
+                  tealBg: tealBg,
+                  nameColor: nameColor,
+                  subColor: subColor,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // ── Barang list card ─────────────────────────────────────────
+            Container(
+              decoration: BoxDecoration(
+                color: cardBg,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: cardBorder, width: 1),
+                boxShadow: [
+                  BoxShadow(
+                    color: isDark ? Colors.black26 : Colors.black.withValues(alpha: 0.06),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  // Header card
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+                    child: Row(
+                      children: [
+                        Icon(Icons.list_alt_rounded, color: tealFg, size: 18),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Daftar Barang',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                            color: nameColor,
+                          ),
+                        ),
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: tealBg,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            '${displayItems.length} item',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: tealFg,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Divider(height: 1, color: cardBorder),
+
+                  if (displayItems.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 32),
+                      child: Column(
+                        children: [
+                          Icon(Icons.inventory_2_outlined, size: 48, color: subColor),
+                          const SizedBox(height: 10),
+                          Text(
+                            'Belum ada barang konsinyasi',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 13,
+                              color: subColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    ...displayItems.asMap().entries.map((entry) {
+                      final i = entry.key;
+                      final b = entry.value;
+                      final isLast = i == displayItems.length - 1;
+                      return Column(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                CatalogImage(imagePath: b.catalogImagePath, size: 52, borderRadius: 10),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        b.catalogName,
+                                        style: TextStyle(
+                                          fontFamily: 'Poppins',
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                          color: nameColor,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        b.catalogCategory,
+                                        style: TextStyle(fontFamily: 'Poppins', fontSize: 11, color: subColor),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        '${b.quantity}x ${formatRupiah(b.catalogPrice)}',
+                                        style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: subColor),
+                                      ),
+                                      if (b.lastReceivedAt != null)
+                                        Text(
+                                          'Diterima: ${formatDateShort(b.lastReceivedAt)}',
+                                          style: TextStyle(fontFamily: 'Poppins', fontSize: 10, color: subColor),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                                Text(
+                                  formatRupiah(b.catalogPrice * b.quantity),
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 13,
+                                    color: tealFg,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (!isLast) Divider(height: 1, color: cardBorder),
+                        ],
+                      );
+                    }),
+
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StatCard extends StatelessWidget {
+  final bool isDark;
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color tealFg;
+  final Color tealBg;
+  final Color nameColor;
+  final Color subColor;
+
+  const _StatCard({
+    required this.isDark,
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.tealFg,
+    required this.tealBg,
+    required this.nameColor,
+    required this.subColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final Color cardBg = isDark ? const Color(0xFF2B2930) : Colors.white;
+    final Color cardBorder = isDark ? const Color(0xFF49454F) : const Color(0xFFE0E0E0);
+
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        decoration: BoxDecoration(
+          color: cardBg,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: cardBorder, width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: isDark ? Colors.black26 : Colors.black.withValues(alpha: 0.05),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(color: tealBg, shape: BoxShape.circle),
+              child: Icon(icon, color: tealFg, size: 18),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(fontFamily: 'Poppins', fontSize: 10, color: subColor),
+                  ),
+                  Text(
+                    value,
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: nameColor,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class ClientCard extends StatelessWidget {
   final ClientModel client;
   final List<BorrowedItem> displayItems;
   final bool isDark;
   final String Function(DateTime?) formatDate;
   final VoidCallback onDetail;
   final VoidCallback onSerahkan;
+  final String? role;
 
-  const _ClientCard({
+  const ClientCard({
+    super.key,
     required this.client,
     required this.displayItems,
     required this.isDark,
     required this.formatDate,
     required this.onDetail,
     required this.onSerahkan,
+    required this.role,
   });
 
   @override
   Widget build(BuildContext context) {
+    final bool isAdmin = role == Roles.admin;
+
     final Color cardBg = isDark ? const Color(0xFF2B2930) : Colors.white;
     final Color cardBorder = isDark
         ? const Color(0xFF49454F)
@@ -507,26 +842,28 @@ class _ClientCard extends StatelessWidget {
                     ],
                   ),
                   const Spacer(),
-                  Material(
-                    color: tealBg,
-                    shape: const CircleBorder(),
-                    clipBehavior: Clip.hardEdge,
-                    child: Tooltip(
-                      message: 'Tambah Konsinyasi',
-                      child: InkWell(
-                        onTap: onSerahkan,
-                        child: Container(
-                          padding: const EdgeInsets.all(10),
-                          child: Icon(
-                            Icons.add_rounded,
-                            color: tealFg,
-                            size: 22,
+                  if (isAdmin) ...[
+                    Material(
+                      color: tealBg,
+                      shape: const CircleBorder(),
+                      clipBehavior: Clip.hardEdge,
+                      child: Tooltip(
+                        message: 'Tambah Konsinyasi',
+                        child: InkWell(
+                          onTap: onSerahkan,
+                          child: Container(
+                            padding: const EdgeInsets.all(10),
+                            child: Icon(
+                              Icons.add_rounded,
+                              color: tealFg,
+                              size: 22,
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
+                    const SizedBox(width: 8),
+                  ],
                   OutlinedButton.icon(
                     onPressed: onDetail,
                     icon: const Icon(Icons.list_alt_rounded, size: 15),
@@ -567,26 +904,28 @@ class _ClientCard extends StatelessWidget {
                         color: subColor,
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    Material(
-                      color: tealBg,
-                      shape: const CircleBorder(),
-                      clipBehavior: Clip.hardEdge,
-                      child: Tooltip(
-                        message: 'Tambah Konsinyasi',
-                        child: InkWell(
-                          onTap: onSerahkan,
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            child: Icon(
-                              Icons.add_rounded,
-                              color: tealFg,
-                              size: 20,
+                    if (isAdmin) ...[
+                      const SizedBox(height: 12),
+                      Material(
+                        color: tealBg,
+                        shape: const CircleBorder(),
+                        clipBehavior: Clip.hardEdge,
+                        child: Tooltip(
+                          message: 'Tambah Konsinyasi',
+                          child: InkWell(
+                            onTap: onSerahkan,
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              child: Icon(
+                                Icons.add_rounded,
+                                color: tealFg,
+                                size: 20,
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),
@@ -598,13 +937,14 @@ class _ClientCard extends StatelessWidget {
   }
 }
 
-class _ClientDetailSheet extends StatefulWidget {
+class ClientDetailSheet extends StatefulWidget {
   final ClientModel client;
   final bool isDark;
   final String Function(DateTime?) formatDate;
   final String? initialCategory;
 
-  const _ClientDetailSheet({
+  const ClientDetailSheet({
+    super.key,
     required this.client,
     required this.isDark,
     required this.formatDate,
@@ -612,10 +952,10 @@ class _ClientDetailSheet extends StatefulWidget {
   });
 
   @override
-  State<_ClientDetailSheet> createState() => _ClientDetailSheetState();
+  State<ClientDetailSheet> createState() => _ClientDetailSheetState();
 }
 
-class _ClientDetailSheetState extends State<_ClientDetailSheet> {
+class _ClientDetailSheetState extends State<ClientDetailSheet> {
   String? _catFilter;
 
   @override
@@ -875,9 +1215,9 @@ class _ClientDetailSheetState extends State<_ClientDetailSheet> {
                                         ),
                                       ),
                                       const SizedBox(height: 4),
-                                      Text(
-                                        '${b.quantity}Ã— ${formatRupiah(b.catalogPrice)}',
-                                        style: TextStyle(
+                                        Text(
+                                          '${b.quantity}x ${formatRupiah(b.catalogPrice)}',
+                                          style: TextStyle(
                                           fontFamily: 'Poppins',
                                           fontSize: 12,
                                           color: subColor,
@@ -987,10 +1327,10 @@ class _ClientDetailSheetState extends State<_ClientDetailSheet> {
   }
 }
 
-class _SelectedItem {
+class SelectedItem {
   final CatalogModel catalog;
   int quantity;
-  _SelectedItem({required this.catalog}) : quantity = 1;
+  SelectedItem({required this.catalog}) : quantity = 1;
 }
 
 class _SerahkanBottomSheet extends StatefulWidget {
@@ -1018,7 +1358,7 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _clientSearchController = TextEditingController();
   final FocusNode _clientFocusNode = FocusNode();
-  final Map<String, _SelectedItem> _selected = {};
+  final Map<String, SelectedItem> _selected = {};
 
   ClientModel? _selectedClient;
   bool _isSubmitting = false;
@@ -1052,7 +1392,7 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
       if (_selected.containsKey(item.id)) {
         _selected.remove(item.id);
       } else {
-        _selected[item.id] = _SelectedItem(catalog: item);
+        _selected[item.id] = SelectedItem(catalog: item);
       }
     });
   }
@@ -1589,7 +1929,7 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
                               ),
                               const SizedBox(width: 8),
                               if (isSelected && selItem != null)
-                                _InlineQtyStepper(
+                                InlineQtyStepper(
                                   quantity: selItem.quantity,
                                   isDark: widget.isDark,
                                   onDecrement: () => _changeQty(catalog.id, -1),
@@ -1667,13 +2007,14 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
   }
 }
 
-class _InlineQtyStepper extends StatelessWidget {
+class InlineQtyStepper extends StatelessWidget {
   final int quantity;
   final bool isDark;
   final VoidCallback onDecrement;
   final VoidCallback onIncrement;
 
-  const _InlineQtyStepper({
+  const InlineQtyStepper({
+    super.key,
     required this.quantity,
     required this.isDark,
     required this.onDecrement,
@@ -1742,8 +2083,3 @@ class _InlineQtyStepper extends StatelessWidget {
     );
   }
 }
-
-typedef InlineQtyStepper = _InlineQtyStepper;
-typedef ClientCard = _ClientCard;
-typedef ClientDetailSheet = _ClientDetailSheet;
-typedef SelectedItem = _SelectedItem;

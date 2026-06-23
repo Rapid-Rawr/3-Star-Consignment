@@ -116,7 +116,7 @@ class _UnregisteredView extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'Gmail tidak terdaftar',
+              'Anda tidak berafiliasi dengan kami',
               style: TextStyle(
                 fontFamily: 'Poppins',
                 fontSize: 18,
@@ -126,7 +126,7 @@ class _UnregisteredView extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Akun Anda belum terdaftar di sistem.\nHubungi admin untuk pendaftaran.',
+              'Akun Gmail Anda tidak terdaftar di sistem.\nHubungi Toko Seragam 3 Jaya Star untuk informasi lebih lanjut.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontFamily: 'Poppins',

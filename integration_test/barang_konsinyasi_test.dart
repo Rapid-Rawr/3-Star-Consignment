@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -172,11 +172,62 @@ void main() {
       if (clientSearch.evaluate().isNotEmpty) {
         await tester.tap(clientSearch.first);
         await tester.pumpAndSettle();
-        await tester.enterText(clientSearch.first, 'Toko ABC');
+        await tester.enterText(clientSearch.first, 'SDN 3 Penganjuran');
         await tester.pumpAndSettle(const Duration(seconds: 1));
 
         expect(find.byType(TextField), findsAtLeastNWidgets(1));
       }
+    });
+
+    testWidgets('TC-BK-11: Menambahkan barang konsinyasi baru tampil di daftar riwayat',
+        (tester) async {
+      await tester.pumpWidget(buildTestApp());
+      await tester.pumpAndSettle(const Duration(seconds: 5));
+
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pumpAndSettle(const Duration(seconds: 2));
+
+      final clientSearch = find.widgetWithText(TextField, 'Cari nama klien...');
+      if (clientSearch.evaluate().isNotEmpty) {
+        await tester.tap(clientSearch.first);
+        await tester.pumpAndSettle();
+        await tester.enterText(clientSearch.first, 'SDN 3 Penganjuran');
+        await tester.pumpAndSettle(const Duration(seconds: 1));
+        
+        final clientResult = find.text('SDN 3 Penganjuran');
+        if (clientResult.evaluate().isNotEmpty) {
+            await tester.tap(clientResult.first);
+            await tester.pumpAndSettle();
+        }
+      }
+
+      final catalogSearch = find.widgetWithText(TextField, 'Cari katalog...');
+      if (catalogSearch.evaluate().isNotEmpty) {
+        await tester.tap(catalogSearch.first);
+        await tester.pumpAndSettle();
+        await tester.enterText(catalogSearch.first, 'Gas');
+        await tester.pumpAndSettle(const Duration(seconds: 1));
+        
+        final addQtyButton = find.byIcon(Icons.add);
+        if (addQtyButton.evaluate().isNotEmpty) {
+          await tester.tap(addQtyButton.first);
+          await tester.pumpAndSettle();
+        }
+      }
+
+      // Tekan tombol Serahkan
+      final submitButton = find.text('Serahkan');
+      if (submitButton.evaluate().isNotEmpty) {
+        // Scroll jika tertutup
+        await tester.ensureVisible(submitButton);
+        await tester.tap(submitButton);
+        
+        // Tunggu request API ke firebase selesai
+        await tester.pumpAndSettle(const Duration(seconds: 4));
+      }
+
+      // Verifikasi data (SDN 3 Penganjuran) sekarang ada di halaman utama
+      expect(find.textContaining('SDN 3 Penganjuran'), findsWidgets);
     });
   });
 }
