@@ -1,18 +1,11 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
 
 // Sesuaikan path import dengan project kamu
 import 'package:star_consignment/views/barang/barang_konsinyasi_page.dart';
-import 'package:star_consignment/controllers/pengguna_controllers/klien_controller.dart';
-import 'package:star_consignment/controllers/barang_controllers/katalog_controller.dart';
 import 'package:star_consignment/models/pengguna_models/klien_model.dart';
 import 'package:star_consignment/models/barang_models/katalog_model.dart';
-
-@GenerateMocks([ClientController, CatalogController, FirebaseFirestore])
-import 'konsinyasi_page_test.mocks.dart';
+import 'package:star_consignment/service/roles.dart';
 
 // ─── Helper: data dummy ──────────────────────────────────────────────────────
 
@@ -225,6 +218,7 @@ void main() {
               formatDate: (_) => '-',
               onDetail: () {},
               onSerahkan: () {},
+              role: Roles.admin,
             ),
           ),
         ),
@@ -243,6 +237,7 @@ void main() {
               formatDate: (_) => '-',
               onDetail: () {},
               onSerahkan: () {},
+              role: Roles.admin,
             ),
           ),
         ),
@@ -261,6 +256,7 @@ void main() {
               formatDate: (_) => '-',
               onDetail: () {},
               onSerahkan: () {},
+              role: Roles.admin,
             ),
           ),
         ),
@@ -280,6 +276,7 @@ void main() {
               formatDate: (_) => '-',
               onDetail: () {},
               onSerahkan: () {},
+              role: Roles.admin,
             ),
           ),
         ),
@@ -300,6 +297,7 @@ void main() {
               formatDate: (_) => '-',
               onDetail: () {},
               onSerahkan: () {},
+              role: Roles.karyawan,
             ),
           ),
         ),
@@ -319,6 +317,7 @@ void main() {
               formatDate: (_) => '-',
               onDetail: () => called = true,
               onSerahkan: () {},
+              role: Roles.admin,
             ),
           ),
         ),
@@ -341,6 +340,7 @@ void main() {
               formatDate: (_) => '-',
               onDetail: () {},
               onSerahkan: () => called = true,
+              role: Roles.admin,
             ),
           ),
         ),
@@ -373,6 +373,7 @@ void main() {
                 formatDate: (_) => '-',
                 onDetail: () {},
                 onSerahkan: () {},
+                role: Roles.admin,
               ),
             ),
           ),

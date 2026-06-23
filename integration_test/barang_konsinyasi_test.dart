@@ -172,7 +172,7 @@ void main() {
       if (clientSearch.evaluate().isNotEmpty) {
         await tester.tap(clientSearch.first);
         await tester.pumpAndSettle();
-        await tester.enterText(clientSearch.first, 'Toko ABC');
+        await tester.enterText(clientSearch.first, 'SDN 3 Penganjuran');
         await tester.pumpAndSettle(const Duration(seconds: 1));
 
         expect(find.byType(TextField), findsAtLeastNWidgets(1));
@@ -183,7 +183,7 @@ void main() {
         (tester) async {
       await tester.pumpWidget(buildTestApp());
       await tester.pumpAndSettle(const Duration(seconds: 5));
-      
+
       await tester.tap(find.byType(FloatingActionButton));
       await tester.pumpAndSettle(const Duration(seconds: 2));
 
@@ -191,10 +191,10 @@ void main() {
       if (clientSearch.evaluate().isNotEmpty) {
         await tester.tap(clientSearch.first);
         await tester.pumpAndSettle();
-        await tester.enterText(clientSearch.first, 'Toko ABC');
+        await tester.enterText(clientSearch.first, 'SDN 3 Penganjuran');
         await tester.pumpAndSettle(const Duration(seconds: 1));
         
-        final clientResult = find.text('Toko ABC');
+        final clientResult = find.text('SDN 3 Penganjuran');
         if (clientResult.evaluate().isNotEmpty) {
             await tester.tap(clientResult.first);
             await tester.pumpAndSettle();
@@ -205,7 +205,7 @@ void main() {
       if (catalogSearch.evaluate().isNotEmpty) {
         await tester.tap(catalogSearch.first);
         await tester.pumpAndSettle();
-        await tester.enterText(catalogSearch.first, 'Alat');
+        await tester.enterText(catalogSearch.first, 'Gas');
         await tester.pumpAndSettle(const Duration(seconds: 1));
         
         final addQtyButton = find.byIcon(Icons.add);
@@ -226,8 +226,8 @@ void main() {
         await tester.pumpAndSettle(const Duration(seconds: 4));
       }
 
-      // Verifikasi data (Toko ABC) sekarang ada di halaman utama
-      expect(find.textContaining('Toko ABC'), findsWidgets);
+      // Verifikasi data (SDN 3 Penganjuran) sekarang ada di halaman utama
+      expect(find.textContaining('SDN 3 Penganjuran'), findsWidgets);
     });
   });
 }

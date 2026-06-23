@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../service/auth_provider.dart' as app_auth;
+import '../../service/roles.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../controllers/pengguna_controllers/klien_controller.dart';
 import '../../controllers/barang_controllers/katalog_controller.dart';
@@ -47,7 +51,7 @@ class _ConsignmentPageState extends State<ConsignmentPage> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _ClientDetailSheet(
+      builder: (_) => ClientDetailSheet(
         client: client,
         isDark: isDark,
         formatDate: formatDateShort,
@@ -78,6 +82,10 @@ class _ConsignmentPageState extends State<ConsignmentPage> {
   @override
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final authProvider = context.watch<app_auth.AuthProvider>();
+    final role = authProvider.role;
+    final email = FirebaseAuth.instance.currentUser?.email;
+
     final Color emptyIcon = isDark ? Colors.white24 : Colors.black26;
     final Color emptyText = isDark ? Colors.white38 : const Color(0xFF9E9E9E);
 
@@ -91,14 +99,20 @@ class _ConsignmentPageState extends State<ConsignmentPage> {
             )
             .toList();
 
+        var clients = List<ClientModel>.from(allClients);
+
+        // Apply role-based filtering
+        if (role == Roles.client) {
+          clients = clients.where((c) => c.email == email).toList();
+        }
+
         final allCats =
-            allClients
+            clients
                 .expand((c) => c.borrowedItems.map((b) => b.catalogCategory))
                 .toSet()
                 .toList()
               ..sort();
 
-        var clients = List<ClientModel>.from(allClients);
         if (_searchQuery.isNotEmpty) {
           clients = clients
               .where(
@@ -131,21 +145,23 @@ class _ConsignmentPageState extends State<ConsignmentPage> {
               style: TextStyle(fontFamily: 'Poppins'),
             ),
           ),
-          floatingActionButton: FloatingActionButton.extended(
-            onPressed: () => _showSerahkanSheet(context, allClients, isDark),
-            icon: const Icon(Icons.add_rounded),
-            label: const Text(
-              'Konsinyasi',
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            backgroundColor: isDark
-                ? const Color(0xFF4DB6AC)
-                : const Color(0xFF00796B),
-            foregroundColor: Colors.white,
-          ),
+          floatingActionButton: role == Roles.admin
+              ? FloatingActionButton.extended(
+                  onPressed: () => _showSerahkanSheet(context, allClients, isDark),
+                  icon: const Icon(Icons.add_rounded),
+                  label: const Text(
+                    'Konsinyasi',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  backgroundColor: isDark
+                      ? const Color(0xFF4DB6AC)
+                      : const Color(0xFF00796B),
+                  foregroundColor: Colors.white,
+                )
+              : null,
           body: Column(
             children: [
               SearchFilterBar<String>(
@@ -215,7 +231,7 @@ class _ConsignmentPageState extends State<ConsignmentPage> {
                                   )
                                   .toList()
                             : client.borrowedItems;
-                        return _ClientCard(
+                        return ClientCard(
                           client: client,
                           displayItems: displayItems,
                           isDark: isDark,
@@ -227,6 +243,7 @@ class _ConsignmentPageState extends State<ConsignmentPage> {
                             isDark,
                             initialClient: client,
                           ),
+                          role: role,
                         );
                       },
                     );
@@ -241,25 +258,30 @@ class _ConsignmentPageState extends State<ConsignmentPage> {
   }
 }
 
-class _ClientCard extends StatelessWidget {
+class ClientCard extends StatelessWidget {
   final ClientModel client;
   final List<BorrowedItem> displayItems;
   final bool isDark;
   final String Function(DateTime?) formatDate;
   final VoidCallback onDetail;
   final VoidCallback onSerahkan;
+  final String? role;
 
-  const _ClientCard({
+  const ClientCard({
+    super.key,
     required this.client,
     required this.displayItems,
     required this.isDark,
     required this.formatDate,
     required this.onDetail,
     required this.onSerahkan,
+    required this.role,
   });
 
   @override
   Widget build(BuildContext context) {
+    final bool isAdmin = role == Roles.admin;
+
     final Color cardBg = isDark ? const Color(0xFF2B2930) : Colors.white;
     final Color cardBorder = isDark
         ? const Color(0xFF49454F)
@@ -507,26 +529,28 @@ class _ClientCard extends StatelessWidget {
                     ],
                   ),
                   const Spacer(),
-                  Material(
-                    color: tealBg,
-                    shape: const CircleBorder(),
-                    clipBehavior: Clip.hardEdge,
-                    child: Tooltip(
-                      message: 'Tambah Konsinyasi',
-                      child: InkWell(
-                        onTap: onSerahkan,
-                        child: Container(
-                          padding: const EdgeInsets.all(10),
-                          child: Icon(
-                            Icons.add_rounded,
-                            color: tealFg,
-                            size: 22,
+                  if (isAdmin) ...[
+                    Material(
+                      color: tealBg,
+                      shape: const CircleBorder(),
+                      clipBehavior: Clip.hardEdge,
+                      child: Tooltip(
+                        message: 'Tambah Konsinyasi',
+                        child: InkWell(
+                          onTap: onSerahkan,
+                          child: Container(
+                            padding: const EdgeInsets.all(10),
+                            child: Icon(
+                              Icons.add_rounded,
+                              color: tealFg,
+                              size: 22,
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
+                    const SizedBox(width: 8),
+                  ],
                   OutlinedButton.icon(
                     onPressed: onDetail,
                     icon: const Icon(Icons.list_alt_rounded, size: 15),
@@ -567,26 +591,28 @@ class _ClientCard extends StatelessWidget {
                         color: subColor,
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    Material(
-                      color: tealBg,
-                      shape: const CircleBorder(),
-                      clipBehavior: Clip.hardEdge,
-                      child: Tooltip(
-                        message: 'Tambah Konsinyasi',
-                        child: InkWell(
-                          onTap: onSerahkan,
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            child: Icon(
-                              Icons.add_rounded,
-                              color: tealFg,
-                              size: 20,
+                    if (isAdmin) ...[
+                      const SizedBox(height: 12),
+                      Material(
+                        color: tealBg,
+                        shape: const CircleBorder(),
+                        clipBehavior: Clip.hardEdge,
+                        child: Tooltip(
+                          message: 'Tambah Konsinyasi',
+                          child: InkWell(
+                            onTap: onSerahkan,
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              child: Icon(
+                                Icons.add_rounded,
+                                color: tealFg,
+                                size: 20,
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),
@@ -598,13 +624,14 @@ class _ClientCard extends StatelessWidget {
   }
 }
 
-class _ClientDetailSheet extends StatefulWidget {
+class ClientDetailSheet extends StatefulWidget {
   final ClientModel client;
   final bool isDark;
   final String Function(DateTime?) formatDate;
   final String? initialCategory;
 
-  const _ClientDetailSheet({
+  const ClientDetailSheet({
+    super.key,
     required this.client,
     required this.isDark,
     required this.formatDate,
@@ -612,10 +639,10 @@ class _ClientDetailSheet extends StatefulWidget {
   });
 
   @override
-  State<_ClientDetailSheet> createState() => _ClientDetailSheetState();
+  State<ClientDetailSheet> createState() => _ClientDetailSheetState();
 }
 
-class _ClientDetailSheetState extends State<_ClientDetailSheet> {
+class _ClientDetailSheetState extends State<ClientDetailSheet> {
   String? _catFilter;
 
   @override
@@ -875,9 +902,9 @@ class _ClientDetailSheetState extends State<_ClientDetailSheet> {
                                         ),
                                       ),
                                       const SizedBox(height: 4),
-                                      Text(
-                                        '${b.quantity}Ã— ${formatRupiah(b.catalogPrice)}',
-                                        style: TextStyle(
+                                        Text(
+                                          '${b.quantity}x ${formatRupiah(b.catalogPrice)}',
+                                          style: TextStyle(
                                           fontFamily: 'Poppins',
                                           fontSize: 12,
                                           color: subColor,
@@ -987,10 +1014,10 @@ class _ClientDetailSheetState extends State<_ClientDetailSheet> {
   }
 }
 
-class _SelectedItem {
+class SelectedItem {
   final CatalogModel catalog;
   int quantity;
-  _SelectedItem({required this.catalog}) : quantity = 1;
+  SelectedItem({required this.catalog}) : quantity = 1;
 }
 
 class _SerahkanBottomSheet extends StatefulWidget {
@@ -1018,7 +1045,7 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _clientSearchController = TextEditingController();
   final FocusNode _clientFocusNode = FocusNode();
-  final Map<String, _SelectedItem> _selected = {};
+  final Map<String, SelectedItem> _selected = {};
 
   ClientModel? _selectedClient;
   bool _isSubmitting = false;
@@ -1052,7 +1079,7 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
       if (_selected.containsKey(item.id)) {
         _selected.remove(item.id);
       } else {
-        _selected[item.id] = _SelectedItem(catalog: item);
+        _selected[item.id] = SelectedItem(catalog: item);
       }
     });
   }
@@ -1589,7 +1616,7 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
                               ),
                               const SizedBox(width: 8),
                               if (isSelected && selItem != null)
-                                _InlineQtyStepper(
+                                InlineQtyStepper(
                                   quantity: selItem.quantity,
                                   isDark: widget.isDark,
                                   onDecrement: () => _changeQty(catalog.id, -1),
@@ -1667,13 +1694,14 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
   }
 }
 
-class _InlineQtyStepper extends StatelessWidget {
+class InlineQtyStepper extends StatelessWidget {
   final int quantity;
   final bool isDark;
   final VoidCallback onDecrement;
   final VoidCallback onIncrement;
 
-  const _InlineQtyStepper({
+  const InlineQtyStepper({
+    super.key,
     required this.quantity,
     required this.isDark,
     required this.onDecrement,
@@ -1742,8 +1770,3 @@ class _InlineQtyStepper extends StatelessWidget {
     );
   }
 }
-
-typedef InlineQtyStepper = _InlineQtyStepper;
-typedef ClientCard = _ClientCard;
-typedef ClientDetailSheet = _ClientDetailSheet;
-typedef SelectedItem = _SelectedItem;
