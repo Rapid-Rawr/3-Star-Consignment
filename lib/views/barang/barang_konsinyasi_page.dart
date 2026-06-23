@@ -46,6 +46,46 @@ class _ConsignmentPageState extends State<ConsignmentPage> {
     super.dispose();
   }
 
+  /// Mengfilter list klien berdasarkan role, search query, dan kategori.
+  /// Satu-satunya tempat logika filtering — dipakai oleh Admin dan Client view.
+  List<ClientModel> _filterClients(
+    List<ClientModel> all, {
+    required String? email,
+    required String? role,
+  }) {
+    var result = List<ClientModel>.from(all);
+
+    // Role-based: klien hanya melihat datanya sendiri
+    if (role == Roles.client) {
+      result = result.where((c) => c.email == email).toList();
+    }
+
+    // Pencarian teks
+    if (_searchQuery.isNotEmpty) {
+      result = result
+          .where(
+            (c) =>
+                c.name.toLowerCase().contains(_searchQuery) ||
+                c.address.toLowerCase().contains(_searchQuery) ||
+                c.phone.toLowerCase().contains(_searchQuery),
+          )
+          .toList();
+    }
+
+    // Filter kategori
+    if (_selectedCategory != null) {
+      result = result
+          .where(
+            (c) => c.borrowedItems.any(
+              (b) => b.catalogCategory == _selectedCategory,
+            ),
+          )
+          .toList();
+    }
+
+    return result;
+  }
+
   void _showDetail(BuildContext context, ClientModel client, bool isDark) {
     showModalBottomSheet(
       context: context,
@@ -99,12 +139,11 @@ class _ConsignmentPageState extends State<ConsignmentPage> {
             )
             .toList();
 
-        var clients = List<ClientModel>.from(allClients);
-
-        // Apply role-based filtering
-        if (role == Roles.client) {
-          clients = clients.where((c) => c.email == email).toList();
-        }
+        var clients = _filterClients(
+          allClients,
+          email: email,
+          role: role,
+        );
 
         final allCats =
             clients
@@ -112,26 +151,6 @@ class _ConsignmentPageState extends State<ConsignmentPage> {
                 .toSet()
                 .toList()
               ..sort();
-
-        if (_searchQuery.isNotEmpty) {
-          clients = clients
-              .where(
-                (c) =>
-                    c.name.toLowerCase().contains(_searchQuery) ||
-                    c.address.toLowerCase().contains(_searchQuery) ||
-                    c.phone.toLowerCase().contains(_searchQuery),
-              )
-              .toList();
-        }
-        if (_selectedCategory != null) {
-          clients = clients
-              .where(
-                (c) => c.borrowedItems.any(
-                  (b) => b.catalogCategory == _selectedCategory,
-                ),
-              )
-              .toList();
-        }
 
         final filterOptions = <FilterChipOption<String>>[
           const FilterChipOption(label: 'Semua', value: null),
@@ -167,7 +186,9 @@ class _ConsignmentPageState extends State<ConsignmentPage> {
               SearchFilterBar<String>(
                 searchController: _searchController,
                 searchFocusNode: _searchFocusNode,
-                hintText: 'Cari nama klien atau alamat...',
+                hintText: role == Roles.client
+                    ? 'Cari nama barang...'
+                    : 'Cari nama klien atau alamat...',
                 onSearchChanged: (val) =>
                     setState(() => _searchQuery = val.trim().toLowerCase()),
                 filters: filterOptions,
@@ -218,6 +239,16 @@ class _ConsignmentPageState extends State<ConsignmentPage> {
                         ),
                       );
                     }
+
+                    if (role == Roles.client) {
+                      final client = clients.first;
+                      return _ClientConsignmentView(
+                        client: client,
+                        isDark: isDark,
+                        selectedCategory: _selectedCategory,
+                      );
+                    }
+
                     return ListView.builder(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
                       itemCount: clients.length,
@@ -254,6 +285,288 @@ class _ConsignmentPageState extends State<ConsignmentPage> {
           ),
         );
       },
+    );
+  }
+}
+
+class _ClientConsignmentView extends StatelessWidget {
+  final ClientModel client;
+  final bool isDark;
+  final String? selectedCategory;
+
+  const _ClientConsignmentView({
+    required this.client,
+    required this.isDark,
+    required this.selectedCategory,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final Color bg = isDark ? const Color(0xFF1C1B1F) : const Color(0xFFF5F5F5);
+    final Color cardBg = isDark ? const Color(0xFF2B2930) : Colors.white;
+    final Color cardBorder = isDark ? const Color(0xFF49454F) : const Color(0xFFE0E0E0);
+    final Color tealFg = isDark ? const Color(0xFF4DB6AC) : const Color(0xFF00796B);
+    final Color tealBg = isDark ? const Color(0xFF1A3A3A) : const Color(0xFFE0F2F1);
+    final Color nameColor = isDark ? Colors.white : const Color(0xFF1D1B20);
+    final Color subColor = isDark ? Colors.white54 : const Color(0xFF757575);
+
+    final displayItems = selectedCategory != null
+        ? client.borrowedItems.where((b) => b.catalogCategory == selectedCategory).toList()
+        : client.borrowedItems;
+
+    return Container(
+      color: bg,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // ── Stats row ────────────────────────────────────────────────
+            Row(
+              children: [
+                _StatCard(
+                  isDark: isDark,
+                  label: 'Total Item',
+                  value: '${displayItems.fold(0, (s, b) => s + b.quantity)} unit',
+                  icon: Icons.inventory_2_outlined,
+                  tealFg: tealFg,
+                  tealBg: tealBg,
+                  nameColor: nameColor,
+                  subColor: subColor,
+                ),
+                const SizedBox(width: 12),
+                _StatCard(
+                  isDark: isDark,
+                  label: 'Total Nilai',
+                  value: formatRupiah(displayItems.fold(0.0, (s, b) => s + b.catalogPrice * b.quantity)),
+                  icon: Icons.monetization_on_outlined,
+                  tealFg: tealFg,
+                  tealBg: tealBg,
+                  nameColor: nameColor,
+                  subColor: subColor,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // ── Barang list card ─────────────────────────────────────────
+            Container(
+              decoration: BoxDecoration(
+                color: cardBg,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: cardBorder, width: 1),
+                boxShadow: [
+                  BoxShadow(
+                    color: isDark ? Colors.black26 : Colors.black.withValues(alpha: 0.06),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  // Header card
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+                    child: Row(
+                      children: [
+                        Icon(Icons.list_alt_rounded, color: tealFg, size: 18),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Daftar Barang',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                            color: nameColor,
+                          ),
+                        ),
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: tealBg,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            '${displayItems.length} item',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: tealFg,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Divider(height: 1, color: cardBorder),
+
+                  if (displayItems.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 32),
+                      child: Column(
+                        children: [
+                          Icon(Icons.inventory_2_outlined, size: 48, color: subColor),
+                          const SizedBox(height: 10),
+                          Text(
+                            'Belum ada barang konsinyasi',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 13,
+                              color: subColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    ...displayItems.asMap().entries.map((entry) {
+                      final i = entry.key;
+                      final b = entry.value;
+                      final isLast = i == displayItems.length - 1;
+                      return Column(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                CatalogImage(imagePath: b.catalogImagePath, size: 52, borderRadius: 10),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        b.catalogName,
+                                        style: TextStyle(
+                                          fontFamily: 'Poppins',
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                          color: nameColor,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        b.catalogCategory,
+                                        style: TextStyle(fontFamily: 'Poppins', fontSize: 11, color: subColor),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        '${b.quantity}x ${formatRupiah(b.catalogPrice)}',
+                                        style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: subColor),
+                                      ),
+                                      if (b.lastReceivedAt != null)
+                                        Text(
+                                          'Diterima: ${formatDateShort(b.lastReceivedAt)}',
+                                          style: TextStyle(fontFamily: 'Poppins', fontSize: 10, color: subColor),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                                Text(
+                                  formatRupiah(b.catalogPrice * b.quantity),
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 13,
+                                    color: tealFg,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (!isLast) Divider(height: 1, color: cardBorder),
+                        ],
+                      );
+                    }),
+
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StatCard extends StatelessWidget {
+  final bool isDark;
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color tealFg;
+  final Color tealBg;
+  final Color nameColor;
+  final Color subColor;
+
+  const _StatCard({
+    required this.isDark,
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.tealFg,
+    required this.tealBg,
+    required this.nameColor,
+    required this.subColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final Color cardBg = isDark ? const Color(0xFF2B2930) : Colors.white;
+    final Color cardBorder = isDark ? const Color(0xFF49454F) : const Color(0xFFE0E0E0);
+
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        decoration: BoxDecoration(
+          color: cardBg,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: cardBorder, width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: isDark ? Colors.black26 : Colors.black.withValues(alpha: 0.05),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(color: tealBg, shape: BoxShape.circle),
+              child: Icon(icon, color: tealFg, size: 18),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(fontFamily: 'Poppins', fontSize: 10, color: subColor),
+                  ),
+                  Text(
+                    value,
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: nameColor,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
