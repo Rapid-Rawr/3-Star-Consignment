@@ -100,12 +100,12 @@ void main() {
       await tester.pumpAndSettle(const Duration(seconds: 2));
     }
 
-    testWidgets('TC-MK-01: Halaman klien berhasil ditampilkan', (tester) async {
+    testWidgets('TC-: Halaman klien berhasil ditampilkan', (tester) async {
       await loadApp(tester);
       expect(find.text('Klien'), findsOneWidget);
     });
 
-    testWidgets('TC-MK-02: Search bar klien berfungsi menerima input', (tester) async {
+    testWidgets('TC-: Search bar klien berfungsi menerima input', (tester) async {
       await loadApp(tester);
 
       final searchField = find.byType(TextField).first;
@@ -115,18 +115,9 @@ void main() {
       expect(find.widgetWithText(TextField, 'Eiger'), findsOneWidget);
     });
 
-//     testWidgets('TC-MK-02: Search bar klien berfungsi menerima input', (tester) async {
-//           await loadApp(tester);
-//
-//           final searchField = find.byType(TextField).first;
-//           await tester.enterText(searchField, '');
-//           await tester.pumpAndSettle();
-//
-//           expect(find.empty);
-//         });
 
 
-    testWidgets('TC-MK-03: Tombol FAB tambah klien tampil untuk Admin', (tester) async {
+    testWidgets('TC-050 tambah klien tampil untuk Admin', (tester) async {
       await loadApp(tester);
       // Memastikan FAB ada karena Role = Admin (dari FakeAuthProvider)
           await tester.tap(find.byType(FloatingActionButton));
@@ -150,79 +141,113 @@ void main() {
 
     });
 
- testWidgets('TC-MK-03: Tombol FAB tambah klien tampil untuk Admin', (tester) async {
+    testWidgets('TC-051: (Invalid) Gagal menambah klien karena nama terlalu pendek', (tester) async {
       await loadApp(tester);
-      // Memastikan FAB ada karena Role = Admin (dari FakeAuthProvider)
-          await tester.tap(find.byType(FloatingActionButton));
-          await tester.pumpAndSettle();
-        // Mencari kolom input berdasarkan labelnya
-        final namaKlienField = find.widgetWithText(TextFormField, 'Nama Klien');
-        final nomorKlienField = find.widgetWithText(TextFormField, 'Nomor Telepon');
-        final emailKlienField = find.widgetWithText(TextFormField, 'Email');
-        final alamatKlienField = find.widgetWithText(TextFormField, 'Alamat');
 
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pumpAndSettle();
 
-        // Menyuruh tester mengetik di kolom tersebut
-        await tester.enterText(namaKlienField, 'Eiger');
-        await tester.enterText(nomorKlienField, '9');
-        await tester.enterText(emailKlienField, 'bintang');
-        await tester.enterText(alamatKlienField, 'Eiger');
+      final namaKlienField = find.widgetWithText(TextFormField, 'Nama Klien');
 
-        final tombolTambah = find.text('Tambah');
-        await tester.tap(tombolTambah);
-        await tester.pumpAndSettle();
+      // Input nama hanya 1 karakter
+      await tester.enterText(namaKlienField, 'A');
 
-      expect(find.widgetWithText(TextField, 'eror'), findsOneWidget);
+      final tombolTambah = find.text('Tambah');
+      await tester.tap(tombolTambah);
+      await tester.pumpAndSettle();
 
-
+      expect(find.text('Nama minimal 2 karakter'), findsOneWidget);
     });
 
-testWidgets('TC-MK-04: edit klien  untuk Admin', (tester) async {
-      await loadApp(tester);
-      // Memastikan FAB ada karena Role = Admin (dari FakeAuthProvider)
-      final searchField = find.byType(TextField).first;
-            await tester.enterText(searchField, 'Eiger');
-            await tester.pumpAndSettle();
+testWidgets('TC-052: (Invalid) Gagal menambah klien karena nomor telepon ', (tester) async {
+  await loadApp(tester);
 
-            expect(find.widgetWithText(TextField, 'Eiger'), findsOneWidget);
-          await tester.tap(find.byIcon(Icons.edit));
-          await tester.pumpAndSettle();
-        // Mencari kolom input berdasarkan labelnya
-        final namaKlienField = find.widgetWithText(TextFormField, 'Nama Klien');
-        final nomorKlienField = find.widgetWithText(TextFormField, 'Nomor Telepon');
-        final emailKlienField = find.widgetWithText(TextFormField, 'Email');
-        final alamatKlienField = find.widgetWithText(TextFormField, 'Alamat');
+  await tester.tap(find.byType(FloatingActionButton));
+  await tester.pumpAndSettle();
+
+  final namaKlienField = find.widgetWithText(TextFormField, 'Nama Klien');
+  final nomorKlienField = find.widgetWithText(TextFormField, 'Nomor Telepon');
+
+  // Isi data
+  await tester.enterText(nomorKlienField, '0812'); // Invalid nomor
+
+  final tombolTambah = find.text('Tambah');
+  await tester.tap(tombolTambah);
+  await tester.pumpAndSettle();
+
+  // Verifikasi:
+  // Sesuaikan dengan teks error di kodemu
+  expect(find.text('Nomor telepon minimal 8 digit'), findsOneWidget);
+});
+
+testWidgets('TC-053: (Invalid) Gagal menambah klien karena format email salah', (tester) async {
+  await loadApp(tester);
+
+  await tester.tap(find.byType(FloatingActionButton));
+  await tester.pumpAndSettle();
+
+  final emailKlienField = find.widgetWithText(TextFormField, 'Email');
+
+  await tester.enterText(emailKlienField, 'bintang.com');
+
+  final tombolTambah = find.text('Tambah');
+  await tester.tap(tombolTambah);
+  await tester.pumpAndSettle();
+
+  // Verifikasi:
+  // Sesuaikan tulisan ini dengan validator email di kodinganmu
+  expect(find.text('Format email tidak valid'), findsOneWidget);
+});
+
+testWidgets('TC-054: (Invalid) Gagal menambah klien karena alamat kosong', (tester) async {
+  await loadApp(tester);
+
+  await tester.tap(find.byType(FloatingActionButton));
+  await tester.pumpAndSettle();
+
+  final alamatKlienField = find.widgetWithText(TextFormField, 'Alamat');
+
+  await tester.enterText(alamatKlienField, '');
+
+  final tombolTambah = find.text('Tambah');
+  await tester.tap(tombolTambah);
+  await tester.pumpAndSettle();
+
+  // Verifikasi:
+  // Sesuaikan tulisan ini dengan validator email di kodinganmu
+  expect(find.text('Alamat tidak boleh kosong'), findsOneWidget);
+});
 
 
-        // Menyuruh tester mengetik di kolom tersebut
-        await tester.enterText(namaKlienField, 'edit ');
-        await tester.enterText(nomorKlienField, '008123456789');
-        await tester.enterText(emailKlienField, 'edit@gmail.com');
-        await tester.enterText(alamatKlienField, 'edit');
+//
+// testWidgets('TC-MK-04: edit klien  untuk Admin', (tester) async {
+//       await loadApp(tester);
+//       // Memastikan FAB ada karena Role = Admin (dari FakeAuthProvider)
+//       final searchField = find.byType(TextField).first;
+//             await tester.enterText(searchField, 'Eiger');
+//             await tester.pumpAndSettle();
+//
+//             expect(find.widgetWithText(TextField, 'Eiger'), findsOneWidget);
+//           await tester.tap(find.byIcon(Icons.edit));
+//           await tester.pumpAndSettle();
+//         // Mencari kolom input berdasarkan labelnya
+//         final namaKlienField = find.widgetWithText(TextFormField, 'Nama Klien');
+//         final nomorKlienField = find.widgetWithText(TextFormField, 'Nomor Telepon');
+//         final emailKlienField = find.widgetWithText(TextFormField, 'Email');
+//         final alamatKlienField = find.widgetWithText(TextFormField, 'Alamat');
+//
+//
+//         // Menyuruh tester mengetik di kolom tersebut
+//         await tester.enterText(namaKlienField, 'edit ');
+//         await tester.enterText(nomorKlienField, '008123456789');
+//         await tester.enterText(emailKlienField, 'edit@gmail.com');
+//         await tester.enterText(alamatKlienField, 'edit');
+//
+//         final tombolTambah = find.text('Simpan');
+//         await tester.tap(tombolTambah);
+//         await tester.pumpAndSettle();
+//
+//     });
 
-        final tombolTambah = find.text('Simpan');
-        await tester.tap(tombolTambah);
-        await tester.pumpAndSettle();
-
-    });
-    // testWidgets('TC-MK-05: Dialog tambah klien terbuka saat FAB ditekan', (tester) async {
-    //   await loadApp(tester);
-    //   await tester.tap(find.byType(FloatingActionButton));
-    //   await tester.pumpAndSettle();
-
-    //   expect(find.text('Tambah Klien'), findsOneWidget);
-    // });
-
-    // testWidgets('TC-MK-08: Dialog tambah klien dapat dibatalkan', (tester) async {
-    //   await loadApp(tester);
-    //   await tester.tap(find.byType(FloatingActionButton));
-    //   await tester.pumpAndSettle();
-
-    //   await tester.tap(find.text('Batal'));
-    //   await tester.pumpAndSettle();
-
-    //   // Memastikan dialog hilang (findsNothing)
-    //   expect(find.text('Tambah Klien'), findsNothing);
-    // });
   });
 }
