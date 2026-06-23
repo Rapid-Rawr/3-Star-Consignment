@@ -109,11 +109,22 @@ void main() {
       await loadApp(tester);
 
       final searchField = find.byType(TextField).first;
-      await tester.enterText(searchField, 'Client');
+      await tester.enterText(searchField, 'Eiger');
       await tester.pumpAndSettle();
 
-      expect(find.widgetWithText(TextField, 'Client'), findsOneWidget);
+      expect(find.widgetWithText(TextField, 'Eiger'), findsOneWidget);
     });
+
+//     testWidgets('TC-MK-02: Search bar klien berfungsi menerima input', (tester) async {
+//           await loadApp(tester);
+//
+//           final searchField = find.byType(TextField).first;
+//           await tester.enterText(searchField, '');
+//           await tester.pumpAndSettle();
+//
+//           expect(find.empty);
+//         });
+
 
     testWidgets('TC-MK-03: Tombol FAB tambah klien tampil untuk Admin', (tester) async {
       await loadApp(tester);
@@ -139,15 +150,42 @@ void main() {
 
     });
 
+ testWidgets('TC-MK-03: Tombol FAB tambah klien tampil untuk Admin', (tester) async {
+      await loadApp(tester);
+      // Memastikan FAB ada karena Role = Admin (dari FakeAuthProvider)
+          await tester.tap(find.byType(FloatingActionButton));
+          await tester.pumpAndSettle();
+        // Mencari kolom input berdasarkan labelnya
+        final namaKlienField = find.widgetWithText(TextFormField, 'Nama Klien');
+        final nomorKlienField = find.widgetWithText(TextFormField, 'Nomor Telepon');
+        final emailKlienField = find.widgetWithText(TextFormField, 'Email');
+        final alamatKlienField = find.widgetWithText(TextFormField, 'Alamat');
+
+
+        // Menyuruh tester mengetik di kolom tersebut
+        await tester.enterText(namaKlienField, 'Eiger');
+        await tester.enterText(nomorKlienField, '9');
+        await tester.enterText(emailKlienField, 'bintang');
+        await tester.enterText(alamatKlienField, 'Eiger');
+
+        final tombolTambah = find.text('Tambah');
+        await tester.tap(tombolTambah);
+        await tester.pumpAndSettle();
+
+      expect(find.widgetWithText(TextField, 'eror'), findsOneWidget);
+
+
+    });
+
 testWidgets('TC-MK-04: edit klien  untuk Admin', (tester) async {
       await loadApp(tester);
       // Memastikan FAB ada karena Role = Admin (dari FakeAuthProvider)
       final searchField = find.byType(TextField).first;
-            await tester.enterText(searchField, 'Client');
+            await tester.enterText(searchField, 'Eiger');
             await tester.pumpAndSettle();
 
-            expect(find.widgetWithText(TextField, 'Client'), findsOneWidget);
-          await tester.tap(find.byIcon(Icons.edit).first);
+            expect(find.widgetWithText(TextField, 'Eiger'), findsOneWidget);
+          await tester.tap(find.byIcon(Icons.edit));
           await tester.pumpAndSettle();
         // Mencari kolom input berdasarkan labelnya
         final namaKlienField = find.widgetWithText(TextFormField, 'Nama Klien');
