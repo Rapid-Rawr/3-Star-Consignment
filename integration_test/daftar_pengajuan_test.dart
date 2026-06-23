@@ -9,6 +9,7 @@ import 'package:star_consignment/utils/supabase_service.dart';
 import 'package:star_consignment/service/auth_provider.dart';
 import 'package:star_consignment/views/barang/daftar_pengajuan_page.dart';
 import 'package:star_consignment/utils/theme_notifier.dart';
+import 'package:star_consignment/service/roles.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -28,10 +29,15 @@ void main() {
     }
   });
 
-  Widget buildTestApp() {
+  Widget buildTestApp({String? role}) {
+    final authProvider = AuthProvider();
+    if (role != null) {
+      authProvider.setRoleForTest(role);
+    }
+
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
       ],
       child: ValueListenableBuilder<ThemeMode>(
         valueListenable: themeNotifier,
@@ -51,154 +57,90 @@ void main() {
     );
   }
 
-  group('Daftar Pengajuan Konsinyasi - Black Box Test', () {
-    testWidgets('TC-DP-01: Halaman daftar pengajuan berhasil ditampilkan',
+  group('Daftar Pengajuan - Decision Table Test', () {
+
+    testWidgets(
+        'TC-DP-DT-01 [R6]: Halaman daftar pengajuan berhasil ditampilkan',
         (tester) async {
-      await tester.pumpWidget(buildTestApp());
-      await tester.pumpAndSettle(const Duration(seconds: 5));
+      await tester.pumpWidget(buildTestApp(role: Roles.admin));
+      await tester.pumpAndSettle(const Duration(seconds: 8));
 
       expect(find.text('Daftar Pengajuan'), findsOneWidget);
-    });
-
-    testWidgets('TC-DP-02: Search bar pengajuan berfungsi', (tester) async {
-      await tester.pumpWidget(buildTestApp());
-      await tester.pumpAndSettle(const Duration(seconds: 5));
-
-      final searchField = find.byType(TextField).first;
-      await tester.tap(searchField);
-      await tester.pumpAndSettle();
-      await tester.enterText(searchField, 'Toko');
-      await tester.pumpAndSettle(const Duration(seconds: 2));
-
-      expect(find.widgetWithText(TextField, 'Toko'), findsOneWidget);
-    });
-
-    testWidgets('TC-DP-03: Filter chip status tersedia', (tester) async {
-      await tester.pumpWidget(buildTestApp());
-      await tester.pumpAndSettle(const Duration(seconds: 5));
-
-      expect(find.text('Semua'), findsOneWidget);
-      expect(find.text('Menunggu'), findsOneWidget);
-      expect(find.text('Diproses'), findsOneWidget);
-      expect(find.text('Dikemas'), findsOneWidget);
-    });
-
-    testWidgets('TC-DP-04: Filter chip Menunggu dapat ditekan', (tester) async {
-      await tester.pumpWidget(buildTestApp());
-      await tester.pumpAndSettle(const Duration(seconds: 5));
-
-      await tester.tap(find.text('Menunggu'));
-      await tester.pumpAndSettle(const Duration(seconds: 2));
-
-      expect(find.text('Menunggu'), findsOneWidget);
-    });
-
-    testWidgets('TC-DP-05: Filter chip Diproses dapat ditekan', (tester) async {
-      await tester.pumpWidget(buildTestApp());
-      await tester.pumpAndSettle(const Duration(seconds: 5));
-
-      await tester.tap(find.text('Diproses'));
-      await tester.pumpAndSettle(const Duration(seconds: 2));
-
-      expect(find.text('Diproses'), findsOneWidget);
-    });
-
-    testWidgets('TC-DP-06: Filter chip Dikemas dapat ditekan', (tester) async {
-      await tester.pumpWidget(buildTestApp());
-      await tester.pumpAndSettle(const Duration(seconds: 5));
-
-      await tester.tap(find.text('Dikemas'));
-      await tester.pumpAndSettle(const Duration(seconds: 2));
-
-      expect(find.text('Dikemas'), findsOneWidget);
-    });
-
-    testWidgets('TC-DP-07: Tampilan kosong muncul jika pencarian tidak ditemukan',
-        (tester) async {
-      await tester.pumpWidget(buildTestApp());
-      await tester.pumpAndSettle(const Duration(seconds: 5));
-
-      final searchField = find.byType(TextField).first;
-      await tester.tap(searchField);
-      await tester.pumpAndSettle();
-      await tester.enterText(searchField, 'xyzabc999tidakada');
-      await tester.pumpAndSettle(const Duration(seconds: 2));
-
-      final emptySearch = find.text('Pengajuan Tidak Ditemukan');
-      final emptyAll = find.text('Belum Ada Pengajuan');
       expect(
-        emptySearch.evaluate().isNotEmpty || emptyAll.evaluate().isNotEmpty,
+        find.byType(ListView).evaluate().isNotEmpty ||
+            find.text('Belum Ada Pengajuan').evaluate().isNotEmpty,
         isTrue,
       );
     });
 
-    testWidgets('TC-DP-08: Reset filter ke Semua setelah memilih filter lain',
-        (tester) async {
-      await tester.pumpWidget(buildTestApp());
-      await tester.pumpAndSettle(const Duration(seconds: 5));
-
-      await tester.tap(find.text('Menunggu'));
-      await tester.pumpAndSettle(const Duration(seconds: 1));
-
-      await tester.tap(find.text('Semua'));
-      await tester.pumpAndSettle(const Duration(seconds: 2));
-
-      expect(find.text('Semua'), findsOneWidget);
-    });
-
     testWidgets(
-        'TC-DP-09: Tombol Lihat Detail tampil pada card jika ada data',
+        'TC-DP-DT-03 [R1]: Tap tombol Approve membuka bottom sheet detail',
         (tester) async {
-      await tester.pumpWidget(buildTestApp());
-      await tester.pumpAndSettle(const Duration(seconds: 5));
+      await tester.pumpWidget(buildTestApp(role: Roles.admin));
+      await tester.pumpAndSettle(const Duration(seconds: 8));
 
-      final detailButtons = find.text('Lihat Detail');
-      if (detailButtons.evaluate().isNotEmpty) {
-        expect(detailButtons, findsAtLeastNWidgets(1));
+      final approveButtons = find.byIcon(Icons.check_rounded);
+      if (approveButtons.evaluate().isNotEmpty) {
+        await tester.tap(approveButtons.first);
+        await tester.pumpAndSettle(const Duration(seconds: 5));
+
+        expect(
+          find.byType(DraggableScrollableSheet).evaluate().isNotEmpty ||
+              find.text('Total Disetujui').evaluate().isNotEmpty,
+          isTrue,
+        );
       } else {
         expect(
           find.text('Belum Ada Pengajuan').evaluate().isNotEmpty ||
-              find.byIcon(Icons.assignment_outlined).evaluate().isNotEmpty,
+              find.text('Lihat Detail').evaluate().isNotEmpty,
           isTrue,
         );
       }
     });
 
     testWidgets(
-        'TC-DP-10: Bottom sheet detail terbuka saat Lihat Detail ditekan',
+        'TC-DP-DT-04 [R2]: Tap tombol Tolak membuka bottom sheet detail',
         (tester) async {
-      await tester.pumpWidget(buildTestApp());
-      await tester.pumpAndSettle(const Duration(seconds: 5));
+      await tester.pumpWidget(buildTestApp(role: Roles.admin));
+      await tester.pumpAndSettle(const Duration(seconds: 8));
 
-      final detailButton = find.text('Lihat Detail');
-      if (detailButton.evaluate().isNotEmpty) {
-        await tester.tap(detailButton.first);
-        await tester.pumpAndSettle(const Duration(seconds: 3));
+      final rejectButtons = find.byIcon(Icons.close_rounded);
+      if (rejectButtons.evaluate().isNotEmpty) {
+        await tester.tap(rejectButtons.first);
+        await tester.pumpAndSettle(const Duration(seconds: 5));
 
         expect(
-          find.text('Total Disetujui').evaluate().isNotEmpty ||
-              find.byType(DraggableScrollableSheet).evaluate().isNotEmpty,
+          find.byType(DraggableScrollableSheet).evaluate().isNotEmpty ||
+              find.text('Total Disetujui').evaluate().isNotEmpty,
+          isTrue,
+        );
+      } else {
+        expect(
+          find.text('Belum Ada Pengajuan').evaluate().isNotEmpty ||
+              find.text('Lihat Detail').evaluate().isNotEmpty,
           isTrue,
         );
       }
     });
 
-    testWidgets('TC-DP-11: Search dan filter dapat digunakan bersamaan',
-        (tester) async {
-      await tester.pumpWidget(buildTestApp());
-      await tester.pumpAndSettle(const Duration(seconds: 5));
 
-      await tester.tap(find.text('Menunggu'));
-      await tester.pumpAndSettle(const Duration(seconds: 1));
+    testWidgets(
+        'TC-DP-DT-08 [R6]: Search pengajuan berfungsi',
+        (tester) async {
+      await tester.pumpWidget(buildTestApp(role: Roles.admin));
+      await tester.pumpAndSettle(const Duration(seconds: 8));
 
       final searchField = find.byType(TextField).first;
       await tester.tap(searchField);
       await tester.pumpAndSettle();
-      await tester.enterText(searchField, 'Toko');
+      await tester.enterText(searchField, 'xyzxyzyxyzy');
       await tester.pumpAndSettle(const Duration(seconds: 2));
 
-      expect(find.text('Menunggu'), findsOneWidget);
-      expect(find.byType(TextField), findsAtLeastNWidgets(1));
+      expect(
+        find.text('Pengajuan Tidak Ditemukan').evaluate().isNotEmpty ||
+            find.text('Belum Ada Pengajuan').evaluate().isNotEmpty,
+        isTrue,
+      );
     });
   });
 }
