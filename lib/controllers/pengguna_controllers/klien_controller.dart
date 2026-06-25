@@ -155,7 +155,6 @@ class ClientController {
     }
   }
 
-  /// Hapus permanen doc yang sudah di-mark pendingDelete.
   Future<void> cleanupPendingDeletes(List<QueryDocumentSnapshot> docs) async {
     final pendingDocs = docs.where((doc) {
       final data = doc.data() as Map<String, dynamic>;
@@ -170,9 +169,7 @@ class ClientController {
         batch.delete(doc.reference);
       }
       await batch.commit();
-    } catch (_) {
-      // Offline — doc tetap tampil di UI
-    }
+    } catch (_) {}
   }
 
   Future<Map<String, dynamic>> deductBorrowedItems({

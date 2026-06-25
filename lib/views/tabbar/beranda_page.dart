@@ -9,7 +9,6 @@ import '../../models/pengguna_models/klien_model.dart';
 import '../../views/barang/daftar_pengajuan_page.dart';
 import '../barang/barang_konsinyasi_page.dart';
 import '../../utils/currency_format.dart';
-// import '../../utils/app_colors.dart';
 import '../../widgets/gradient_button.dart';
 import '../../widgets/catalog_image.dart';
 

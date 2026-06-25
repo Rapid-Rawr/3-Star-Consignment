@@ -29,12 +29,9 @@ class ConsignmentRequestController {
     required String role,
     required String email,
   }) {
-    // Admin & karyawan lihat semua data
     if (role == Roles.admin || role == Roles.karyawan) {
       return getRequestsStream();
     }
-
-    // Client hanya lihat data miliknya
     return getRequestsStreamForUser(email);
   }
 
@@ -324,7 +321,6 @@ class ConsignmentRequestController {
           .toList();
 
       if (approvedItems.isNotEmpty) {
-        // Cari dokumen klien: utamakan clientId, fallback ke userEmail (data lama)
         DocumentReference? clientRef;
 
         if (batch.clientId.isNotEmpty) {
@@ -337,7 +333,6 @@ class ConsignmentRequestController {
           }
         }
 
-        // Fallback untuk data lama yang menggunakan userEmail
         if (clientRef == null && (batch.userEmail?.isNotEmpty == true)) {
           final clientQuery = await firestore
               .collection('clients')

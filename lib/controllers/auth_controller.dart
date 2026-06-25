@@ -72,7 +72,6 @@ class AuthController {
         final authService = AuthService();
         final role = await authService.getUserRole();
 
-        // 🔥 SIMPAN KE PROVIDER
         if (context.mounted) {
           await Provider.of<local.AuthProvider>(
             context,

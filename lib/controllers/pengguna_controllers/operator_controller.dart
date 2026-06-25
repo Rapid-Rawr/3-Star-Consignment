@@ -172,8 +172,6 @@ class OperatorController {
     }
   }
 
-  /// Hapus permanen doc yang sudah di-mark pendingDelete.
-  /// Coba batch.delete — jika offline akan throw, doc tetap di UI.
   Future<void> cleanupPendingDeletes(List<QueryDocumentSnapshot> docs) async {
     final pendingDocs = docs.where((doc) {
       final data = doc.data() as Map<String, dynamic>;
@@ -188,8 +186,6 @@ class OperatorController {
         batch.delete(doc.reference);
       }
       await batch.commit();
-    } catch (_) {
-      // Offline — doc tetap tampil di UI, cleanup dicoba lagi nanti
-    }
+    } catch (_) {}
   }
 }

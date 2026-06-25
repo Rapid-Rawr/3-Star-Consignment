@@ -146,6 +146,10 @@ class CatalogController {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
+      if (finalImagePath != oldImagePath) {
+        await _propagateImageUpdate(catalogId: id, newImagePath: finalImagePath);
+      }
+
       return {'success': true};
     } catch (e) {
       return {'success': false, 'error': e.toString()};
@@ -159,6 +163,63 @@ class CatalogController {
       return {'success': true};
     } catch (e) {
       return {'success': false, 'error': e.toString()};
+    }
+  }
+
+  Future<void> _propagateImageUpdate({
+    required String catalogId,
+    required String? newImagePath,
+  }) async {
+    try {
+      final batch = firestore.batch();
+      int operations = 0;
+      const maxBatchSize = 500;
+
+      final consignments = await firestore.collection('consignment_requests').get();
+      for (final doc in consignments.docs) {
+        if (operations >= maxBatchSize) break;
+        
+        final items = List<Map<String, dynamic>>.from(doc.data()['items'] ?? []);
+        bool modified = false;
+
+        for (int i = 0; i < items.length; i++) {
+          if (items[i]['catalogId'] == catalogId) {
+            items[i]['catalogImagePath'] = newImagePath;
+            modified = true;
+          }
+        }
+
+        if (modified) {
+          batch.update(doc.reference, {'items': items});
+          operations++;
+        }
+      }
+
+      final clients = await firestore.collection('clients').get();
+      for (final doc in clients.docs) {
+        if (operations >= maxBatchSize) break;
+        
+        final borrowed = List<Map<String, dynamic>>.from(doc.data()['borrowedItems'] ?? []);
+        bool modified = false;
+
+        for (int i = 0; i < borrowed.length; i++) {
+          if (borrowed[i]['catalogId'] == catalogId) {
+            borrowed[i]['catalogImagePath'] = newImagePath;
+            modified = true;
+          }
+        }
+
+        if (modified) {
+          batch.update(doc.reference, {'borrowedItems': borrowed});
+          operations++;
+        }
+      }
+
+      if (operations > 0) {
+        await batch.commit();
+      }
+    } catch (e) {
+      print('Error propagating image update: $e');
     }
   }
 }

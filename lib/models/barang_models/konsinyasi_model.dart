@@ -75,17 +75,11 @@ const Object _unset = Object();
 
 class ConsignmentRequestModel {
   final String id;
-
-  // Client fields (denormalized — same pattern as payment_history)
   final String clientId;
   final String clientName;
   final String clientAddress;
   final String clientEmail;
-
-  // Legacy field — kept for backward compatibility with old Firestore documents
-  // Used as fallback in receiveBatch when clientId is not yet stored
   final String? userEmail;
-
   final ConsignmentBatchStatus status;
   final List<ConsignmentItemEntry> items;
   final String? packedBy;
@@ -135,7 +129,6 @@ class ConsignmentRequestModel {
         .map(ConsignmentItemEntry.fromMap)
         .toList();
 
-    // Backward compatibility: read new fields with fallback to old field names
     final clientId =
         (map['clientId'] as String?)?.isNotEmpty == true
             ? map['clientId'] as String
@@ -156,9 +149,7 @@ class ConsignmentRequestModel {
             ? map['clientEmail'] as String
             : (map['userEmail'] as String? ?? '');
 
-    // Keep userEmail for legacy receiveBatch fallback
     final userEmail = map['userEmail'] as String?;
-    // clientPhotoUrl is now stored in clients collection, not in request documents
 
     return ConsignmentRequestModel(
       id: id,
