@@ -9,8 +9,9 @@ import '../../models/pengguna_models/klien_model.dart';
 import '../../views/barang/daftar_pengajuan_page.dart';
 import '../barang/barang_konsinyasi_page.dart';
 import '../../utils/currency_format.dart';
-import '../../utils/app_colors.dart';
+// import '../../utils/app_colors.dart';
 import '../../widgets/gradient_button.dart';
+import '../../widgets/catalog_image.dart';
 
 
 class BerandaPage extends StatelessWidget {
@@ -20,8 +21,6 @@ class BerandaPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final role = context.watch<AuthProvider>().role;
     final user = FirebaseAuth.instance.currentUser;
-
-    debugPrint('[BerandaPage] role=$role user=${user?.email}');
 
     if (user == null) {
       return const _NotLoggedInView();
@@ -167,8 +166,51 @@ class _HomeAdminPageState extends State<HomeAdminPage> {
     _clientsStream = _firestore.collection('clients').snapshots();
   }
 
+  @override
+  Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Column(
+      children: [
+        Expanded(
+          flex: 1,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
+            child: _AdminRequestCard(
+              requestsStream: _requestsStream,
+              firestore: _firestore,
+              isDark: isDark,
+            ),
+          ),
+        ),
+        Expanded(
+          flex: 1,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 6, 16, 96),
+            child: _AdminClientsCard(
+              clientsStream: _clientsStream,
+              isDark: isDark,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _AdminRequestCard extends StatelessWidget {
+  final Stream<QuerySnapshot> requestsStream;
+  final FirebaseFirestore firestore;
+  final bool isDark;
+
+  const _AdminRequestCard({
+    required this.requestsStream,
+    required this.firestore,
+    required this.isDark,
+  });
+
   Future<void> _approveAllItems(String batchId) async {
-    final docRef = _firestore.collection('consignment_requests').doc(batchId);
+    final docRef = firestore.collection('consignment_requests').doc(batchId);
     final snapshot = await docRef.get();
     final data = snapshot.data();
     if (data == null) return;
@@ -182,7 +224,7 @@ class _HomeAdminPageState extends State<HomeAdminPage> {
   }
 
   Future<void> _rejectAllItems(String batchId) async {
-    final docRef = _firestore.collection('consignment_requests').doc(batchId);
+    final docRef = firestore.collection('consignment_requests').doc(batchId);
     final snapshot = await docRef.get();
     final data = snapshot.data();
     if (data == null) return;
@@ -195,235 +237,677 @@ class _HomeAdminPageState extends State<HomeAdminPage> {
     await docRef.update({'items': updatedItems, 'status': 'rejected'});
   }
 
+  Color _statusColor(ConsignmentBatchStatus s) {
+    switch (s) {
+      case ConsignmentBatchStatus.received:
+        return const Color(0xFF1565C0);
+      case ConsignmentBatchStatus.packed:
+        return const Color(0xFF6A1B9A);
+      case ConsignmentBatchStatus.processing:
+        return const Color(0xFF0277BD);
+      case ConsignmentBatchStatus.rejected:
+        return const Color(0xFFC62828);
+      case ConsignmentBatchStatus.pending:
+        return const Color(0xFFF57F17);
+    }
+  }
+
+  IconData _statusIcon(ConsignmentBatchStatus s) {
+    switch (s) {
+      case ConsignmentBatchStatus.received:
+        return Icons.verified_outlined;
+      case ConsignmentBatchStatus.packed:
+        return Icons.inventory_2_rounded;
+      case ConsignmentBatchStatus.processing:
+        return Icons.pending_actions_rounded;
+      case ConsignmentBatchStatus.rejected:
+        return Icons.cancel_outlined;
+      case ConsignmentBatchStatus.pending:
+        return Icons.hourglass_empty_rounded;
+    }
+  }
+
+  String _statusLabel(ConsignmentBatchStatus s) {
+    switch (s) {
+      case ConsignmentBatchStatus.received:
+        return 'Diserahkan';
+      case ConsignmentBatchStatus.packed:
+        return 'Dikemas';
+      case ConsignmentBatchStatus.processing:
+        return 'Diproses';
+      case ConsignmentBatchStatus.rejected:
+        return 'Ditolak';
+      case ConsignmentBatchStatus.pending:
+        return 'Menunggu';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-          child: Row(
-            children: [
-              const Text(
-                'Daftar Pengajuan',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'Poppins',
-                ),
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          flex: 1,
-          child: StreamBuilder<QuerySnapshot>(
-            stream: _requestsStream,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (snapshot.hasError) {
-                return _errorState(snapshot.error);
-              }
-              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                return const Center(child: Text("Belum ada data"));
-              }
+    final Color cardBg = isDark ? const Color(0xFF2B2930) : Colors.white;
+    final Color headerBg = isDark
+        ? const Color(0xFF3A3540)
+        : Colors.grey.shade100;
+    final Color borderColor = isDark
+        ? const Color(0xFF49454F)
+        : Colors.grey.shade200;
 
-              final docs = snapshot.data!.docs;
-              return ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: docs.length,
-                itemBuilder: (context, index) {
-                  final doc = docs[index];
-                  final batch = ConsignmentRequestModel.fromMap(
-                    doc.id,
-                    doc.data() as Map<String, dynamic>,
-                  );
+    return StreamBuilder<QuerySnapshot>(
+      stream: requestsStream,
+      builder: (context, snapshot) {
+        Widget content;
+        bool showFooter = false;
 
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 10),
-                    child: ListTile(
-                      leading: _ClientAvatar(
-                        clientId: batch.clientId,
-                        name: batch.clientName,
-                      ),
-                      title: Text(batch.clientName),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.assignment_outlined),
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      RequestListPage(initialBatch: batch),
-                                ),
-                              );
-                            },
-                          ),
-                          IconButton(
-                            icon: const Icon(
-                              Icons.check_rounded,
-                              color: Colors.green,
-                            ),
-                            onPressed: () async {
-                              await _approveAllItems(batch.id);
-                              if (!mounted) return;
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Request berhasil disetujui'),
-                                ),
-                              );
-                            },
-                          ),
-                          IconButton(
-                            icon: const Icon(
-                              Icons.cancel_outlined,
-                              color: Colors.red,
-                            ),
-                            onPressed: () async {
-                              await _rejectAllItems(batch.id);
-                              if (!mounted) return;
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Request ditolak'),
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          content = const Padding(
+            padding: EdgeInsets.symmetric(vertical: 36),
+            child: Center(child: CircularProgressIndicator()),
+          );
+        } else if (snapshot.hasError) {
+          content = _emptyState(
+            icon: Icons.error_outline,
+            message: 'Gagal memuat data:\n${snapshot.error}',
+          );
+        } else if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          content = _emptyState(
+            icon: Icons.inbox_outlined,
+            message: 'Belum ada pengajuan masuk',
+          );
+        } else {
+          showFooter = true;
+          final docs = snapshot.data!.docs;
+          final batches = docs.map((doc) {
+            return ConsignmentRequestModel.fromMap(
+              doc.id,
+              doc.data() as Map<String, dynamic>,
+            );
+          }).toList();
+
+          batches.sort((a, b) {
+            const statusOrder = {
+              ConsignmentBatchStatus.pending: 0,
+              ConsignmentBatchStatus.processing: 1,
+              ConsignmentBatchStatus.packed: 2,
+              ConsignmentBatchStatus.received: 3,
+              ConsignmentBatchStatus.rejected: 4,
+            };
+            final statusCompare = (statusOrder[a.status] ?? 999).compareTo(statusOrder[b.status] ?? 999);
+            if (statusCompare != 0) return statusCompare;
+            final aDate = a.createdAt ?? DateTime(1970);
+            final bDate = b.createdAt ?? DateTime(1970);
+            return bDate.compareTo(aDate);
+          });
+
+          content = ListView.separated(
+            padding: const EdgeInsets.only(top: 8),
+            itemCount: batches.length,
+            separatorBuilder: (_, __) => Divider(height: 1, color: borderColor),
+            itemBuilder: (context, i) {
+              final batch = batches[i];
+              final showActions = batch.status == ConsignmentBatchStatus.pending ||
+                  batch.status == ConsignmentBatchStatus.processing;
+              return _AdminRequestItem(
+                batch: batch,
+                isDark: isDark,
+                statusColor: _statusColor(batch.status),
+                statusIcon: _statusIcon(batch.status),
+                statusLabel: _statusLabel(batch.status),
+                showActions: showActions,
+                onDetail: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => RequestListPage(initialBatch: batch),
                     ),
                   );
                 },
+                onApprove: () async {
+                  await _approveAllItems(batch.id);
+                  if (context.mounted) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => RequestListPage(initialBatch: batch),
+                      ),
+                    );
+                  }
+                },
+                onReject: () async {
+                  await _rejectAllItems(batch.id);
+                  if (context.mounted) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => RequestListPage(initialBatch: batch),
+                      ),
+                    );
+                  }
+                },
               );
             },
-          ),
-        ),
+          );
+        }
 
-        Expanded(
-          flex: 1,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        return Container(
+          decoration: BoxDecoration(
+            color: cardBg,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: borderColor),
+            boxShadow: [
+              BoxShadow(
+                color: isDark
+                    ? Colors.black26
+                    : Colors.black.withValues(alpha: 0.05),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: headerBg,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    topRight: Radius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  'Daftar Pengajuan',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: isDark ? Colors.white54 : Colors.black54,
+                  ),
+                ),
+              ),
+              Expanded(child: content),
+              if (showFooter)
+                InkWell(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => RequestListPage()),
+                    );
+                  },
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(12),
+                    bottomRight: Radius.circular(12),
+                  ),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    alignment: Alignment.center,
+                    child: Text(
+                      'Lebih Banyak ...',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 13,
+                        color: isDark ? Colors.white38 : Colors.black54,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _emptyState({required IconData icon, required String message}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 16),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 48,
+              color: isDark ? Colors.white24 : Colors.black26,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 13,
+                color: isDark ? Colors.white38 : Colors.grey,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AdminRequestItem extends StatelessWidget {
+  final ConsignmentRequestModel batch;
+  final bool isDark;
+  final Color statusColor;
+  final IconData statusIcon;
+  final String statusLabel;
+  final bool showActions;
+  final VoidCallback onDetail;
+  final VoidCallback onApprove;
+  final VoidCallback onReject;
+
+  const _AdminRequestItem({
+    required this.batch,
+    required this.isDark,
+    required this.statusColor,
+    required this.statusIcon,
+    required this.statusLabel,
+    required this.showActions,
+    required this.onDetail,
+    required this.onApprove,
+    required this.onReject,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final Color nameColor = isDark ? Colors.white : const Color(0xFF1D1B20);
+    final Color subColor = isDark ? Colors.white54 : const Color(0xFF757575);
+
+    int totalQty = 0;
+    double totalPrice = 0;
+    for (final item in batch.items) {
+      totalQty += item.quantity;
+      totalPrice += item.quantity * item.catalogPrice;
+    }
+
+    String dateLabel = '';
+    if (batch.createdAt != null) {
+      final dt = batch.createdAt!;
+      dateLabel =
+          '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          _ClientAvatar(
+            clientId: batch.clientId,
+            name: batch.clientName,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    const Text(
-                      "Barang Konsinyasi",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const Spacer(),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => ConsignmentPage()),
-                        );
-                      },
-                      child: const Text("Lihat Semua"),
-                    ),
-                  ],
+                Text(
+                  batch.clientName,
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                    color: nameColor,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 10),
-                Expanded(
-                  child: StreamBuilder<QuerySnapshot>(
-                    stream: _clientsStream,
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-                      if (snapshot.hasError) {
-                        return _errorState(snapshot.error);
-                      }
-                      if (!snapshot.hasData) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-
-                      final clients = snapshot.data!.docs
-                          .map(
-                            (doc) => ClientModel.fromMap(
-                              doc.id,
-                              doc.data() as Map<String, dynamic>,
-                            ),
-                          )
-                          .where((client) => client.borrowedItems.isNotEmpty)
-                          .take(5)
-                          .toList();
-
-                      if (clients.isEmpty) {
-                        return const Center(
-                          child: Text("Belum ada barang konsinyasi"),
-                        );
-                      }
-
-                      return ListView.builder(
-                        itemCount: clients.length,
-                        itemBuilder: (context, index) {
-                          final client = clients[index];
-                          final item = client.borrowedItems.first;
-
-                          return ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            leading:
-                                item.catalogImagePath != null &&
-                                    item.catalogImagePath!.isNotEmpty
-                                ? ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: Image.network(
-                                      item.catalogImagePath!,
-                                      width: 50,
-                                      height: 50,
-                                      fit: BoxFit.cover,
-                                    ),
-                                  )
-                                : const CircleAvatar(
-                                    child: Icon(Icons.inventory_2_outlined),
-                                  ),
-                            title: Text(
-                              item.catalogName,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Peminjam: ${client.name}'),
-                                Text('Qty: ${item.quantity}'),
-                              ],
-                            ),
-                          );
-                        },
-                      );
-                    },
+                const SizedBox(height: 2),
+                Text(
+                  '$totalQty item  •  ${formatRupiah(totalPrice)}',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 11,
+                    color: subColor,
+                  ),
+                ),
+                if (dateLabel.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    dateLabel,
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 11,
+                      color: subColor,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 4),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        statusIcon,
+                        size: 12,
+                        color: statusColor,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        statusLabel,
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: statusColor,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
           ),
+          if (showActions)
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _ActionButton(
+                  icon: Icons.list_alt_rounded,
+                  color: isDark ? const Color(0xFF4DB6AC) : const Color(0xFF00796B),
+                  onTap: onDetail,
+                ),
+                const SizedBox(width: 6),
+                _ActionButton(
+                  icon: Icons.check_rounded,
+                  color: Colors.green,
+                  onTap: onApprove,
+                ),
+                const SizedBox(width: 6),
+                _ActionButton(
+                  icon: Icons.close_rounded,
+                  color: Colors.red,
+                  onTap: onReject,
+                ),
+              ],
+            ),
+          if (!showActions)
+            _ActionButton(
+              icon: Icons.list_alt_rounded,
+              color: isDark ? const Color(0xFF4DB6AC) : const Color(0xFF00796B),
+              onTap: onDetail,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _ActionButton({
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: color.withValues(alpha: 0.12),
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          child: Icon(icon, size: 18, color: color),
         ),
-      ],
+      ),
+    );
+  }
+}
+
+class _AdminClientsCard extends StatelessWidget {
+  final Stream<QuerySnapshot> clientsStream;
+  final bool isDark;
+
+  const _AdminClientsCard({
+    required this.clientsStream,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final Color cardBg = isDark ? const Color(0xFF2B2930) : Colors.white;
+    final Color headerBg = isDark
+        ? const Color(0xFF3A3540)
+        : Colors.grey.shade100;
+    final Color borderColor = isDark
+        ? const Color(0xFF49454F)
+        : Colors.grey.shade200;
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: clientsStream,
+      builder: (context, snapshot) {
+        Widget content;
+        bool showFooter = false;
+
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          content = const Padding(
+            padding: EdgeInsets.symmetric(vertical: 36),
+            child: Center(child: CircularProgressIndicator()),
+          );
+        } else if (snapshot.hasError) {
+          content = _emptyState(
+            icon: Icons.error_outline,
+            message: 'Gagal memuat data:\n${snapshot.error}',
+          );
+        } else if (!snapshot.hasData) {
+          content = _emptyState(
+            icon: Icons.inventory_2_outlined,
+            message: 'Belum ada barang konsinyasi',
+          );
+        } else {
+          final clients = snapshot.data!.docs
+              .map(
+                (doc) => ClientModel.fromMap(
+                  doc.id,
+                  doc.data() as Map<String, dynamic>,
+                ),
+              )
+              .where((client) => client.borrowedItems.isNotEmpty)
+              .toList();
+
+          showFooter = clients.isNotEmpty;
+
+          if (clients.isEmpty) {
+            content = _emptyState(
+              icon: Icons.inventory_2_outlined,
+              message: 'Belum ada barang konsinyasi',
+            );
+          } else {
+            content = ListView.separated(
+              padding: const EdgeInsets.only(top: 8),
+              itemCount: clients.length,
+              separatorBuilder: (_, __) => Divider(height: 1, color: borderColor),
+              itemBuilder: (context, i) {
+                final client = clients[i];
+                final item = client.borrowedItems.first;
+                return _AdminClientItem(
+                  client: client,
+                  item: item,
+                  isDark: isDark,
+                );
+              },
+            );
+          }
+        }
+
+        return Container(
+          decoration: BoxDecoration(
+            color: cardBg,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: borderColor),
+            boxShadow: [
+              BoxShadow(
+                color: isDark
+                    ? Colors.black26
+                    : Colors.black.withValues(alpha: 0.05),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: headerBg,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    topRight: Radius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  'Barang Konsinyasi',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: isDark ? Colors.white54 : Colors.black54,
+                  ),
+                ),
+              ),
+              Expanded(child: content),
+              if (showFooter)
+                InkWell(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => ConsignmentPage()),
+                    );
+                  },
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(12),
+                    bottomRight: Radius.circular(12),
+                  ),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    alignment: Alignment.center,
+                    child: Text(
+                      'Lebih Banyak ...',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 13,
+                        color: isDark ? Colors.white38 : Colors.black54,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 
-  Widget _errorState(Object? error) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+  Widget _emptyState({required IconData icon, required String message}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 16),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 48,
+              color: isDark ? Colors.white24 : Colors.black26,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 13,
+                color: isDark ? Colors.white38 : Colors.grey,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AdminClientItem extends StatelessWidget {
+  final ClientModel client;
+  final BorrowedItem item;
+  final bool isDark;
+
+  const _AdminClientItem({
+    required this.client,
+    required this.item,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final Color nameColor = isDark ? Colors.white : const Color(0xFF1D1B20);
+    final Color subColor = isDark ? Colors.white54 : const Color(0xFF757575);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
         children: [
-          const Icon(Icons.error_outline, size: 48, color: Colors.red),
-          const SizedBox(height: 8),
-          Text(
-            'Gagal memuat data:\n$error',
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.red, fontSize: 13),
+          CatalogImage(
+            imagePath: item.catalogImagePath,
+            size: 44,
+            borderRadius: 8,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.catalogName,
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                    color: nameColor,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Peminjam: ${client.name}',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 11,
+                    color: subColor,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Qty: ${item.quantity}',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 11,
+                    color: subColor,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -452,85 +936,200 @@ class _KaryawanContentState extends State<_KaryawanContent> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-          child: Text(
-            'Daftar Pengajuan',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              fontFamily: 'Poppins',
-            ),
-          ),
-        ),
-        Expanded(
-          child: StreamBuilder<QuerySnapshot>(
-            stream: _requestsStream,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (snapshot.hasError) {
-                return Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Gagal memuat data:\n${snapshot.error}',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.red, fontSize: 13),
-                ),
-              ],
-            ),
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
+      child: _KaryawanRequestCard(
+        requestsStream: _requestsStream,
+        isDark: isDark,
+      ),
+    );
+  }
+}
+
+class _KaryawanRequestCard extends StatelessWidget {
+  final Stream<QuerySnapshot> requestsStream;
+  final bool isDark;
+
+  const _KaryawanRequestCard({
+    required this.requestsStream,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final Color cardBg = isDark ? const Color(0xFF2B2930) : Colors.white;
+    final Color headerBg = isDark
+        ? const Color(0xFF3A3540)
+        : Colors.grey.shade100;
+    final Color borderColor = isDark
+        ? const Color(0xFF49454F)
+        : Colors.grey.shade200;
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: requestsStream,
+      builder: (context, snapshot) {
+        Widget content;
+        bool showFooter = false;
+
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          content = const Padding(
+            padding: EdgeInsets.symmetric(vertical: 36),
+            child: Center(child: CircularProgressIndicator()),
           );
-        }
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.inbox_outlined,
-                  size: 64,
-                  color: context.emptyIcon,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Belum ada pengajuan masuk',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: context.emptyText,
-                    fontFamily: 'Poppins',
+        } else if (snapshot.hasError) {
+          content = _emptyState(
+            icon: Icons.error_outline,
+            message: 'Gagal memuat data:\n${snapshot.error}',
+          );
+        } else if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          content = _emptyState(
+            icon: Icons.inbox_outlined,
+            message: 'Belum ada pengajuan masuk',
+          );
+        } else {
+          showFooter = true;
+          final docs = snapshot.data!.docs;
+          final batches = docs.map((doc) {
+            return ConsignmentRequestModel.fromMap(
+              doc.id,
+              doc.data() as Map<String, dynamic>,
+            );
+          }).toList();
+
+          batches.sort((a, b) {
+            const statusOrder = {
+              ConsignmentBatchStatus.pending: 0,
+              ConsignmentBatchStatus.processing: 1,
+              ConsignmentBatchStatus.packed: 2,
+              ConsignmentBatchStatus.received: 3,
+              ConsignmentBatchStatus.rejected: 4,
+            };
+            final statusCompare = (statusOrder[a.status] ?? 999).compareTo(statusOrder[b.status] ?? 999);
+            if (statusCompare != 0) return statusCompare;
+            final aDate = a.createdAt ?? DateTime(1970);
+            final bDate = b.createdAt ?? DateTime(1970);
+            return bDate.compareTo(aDate);
+          });
+
+          content = ListView.separated(
+            padding: const EdgeInsets.only(top: 8),
+            itemCount: batches.length,
+            separatorBuilder: (_, __) => Divider(height: 1, color: borderColor),
+            itemBuilder: (context, i) {
+              final batch = batches[i];
+              return _RequestItem(
+                batch: batch,
+                isDark: isDark,
+                onDetail: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => RequestListPage(initialBatch: batch),
                   ),
                 ),
-              ],
-            ),
+              );
+            },
           );
         }
 
-        final docs = snapshot.data!.docs;
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        return ListView.separated(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-          itemCount: docs.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 10),
-          itemBuilder: (context, index) {
-            final batch = ConsignmentRequestModel.fromMap(
-              docs[index].id,
-              docs[index].data() as Map<String, dynamic>,
-            );
-            return _RequestItem(batch: batch, isDark: isDark);
-          },
-            );
-          },
+        return Container(
+          decoration: BoxDecoration(
+            color: cardBg,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: borderColor),
+            boxShadow: [
+              BoxShadow(
+                color: isDark
+                    ? Colors.black26
+                    : Colors.black.withValues(alpha: 0.05),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: headerBg,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    topRight: Radius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  'Daftar Pengajuan',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: isDark ? Colors.white54 : Colors.black54,
+                  ),
+                ),
+              ),
+              Expanded(child: content),
+              if (showFooter)
+                InkWell(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => RequestListPage()),
+                    );
+                  },
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(12),
+                    bottomRight: Radius.circular(12),
+                  ),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    alignment: Alignment.center,
+                    child: Text(
+                      'Lebih Banyak ...',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 13,
+                        color: isDark ? Colors.white38 : Colors.black54,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _emptyState({required IconData icon, required String message}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 16),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 48,
+              color: isDark ? Colors.white24 : Colors.black26,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 13,
+                color: isDark ? Colors.white38 : Colors.grey,
+              ),
+            ),
+          ],
         ),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -641,7 +1240,6 @@ class HomeClientPageState extends State<HomeClientPage> {
         _loadingClient = false;
       });
     } catch (e) {
-      debugPrint('[BerandaClient] _resolveClientId error: $e');
       if (!mounted) return;
       setState(() => _loadingClient = false);
     }
@@ -655,13 +1253,31 @@ class HomeClientPageState extends State<HomeClientPage> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: _ClientRequestCard(
-        clientId: _clientId,
-        requestsStream: _requestsStream,
-        isDark: isDark,
-      ),
+    return Column(
+      children: [
+        Expanded(
+          flex: 1,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
+            child: _ClientRequestCard(
+              clientId: _clientId,
+              requestsStream: _requestsStream,
+              isDark: isDark,
+            ),
+          ),
+        ),
+        Expanded(
+          flex: 1,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 6, 16, 96),
+            child: _ClientBorrowedItemsCard(
+              clientId: _clientId,
+              firestore: _firestore,
+              isDark: isDark,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -725,17 +1341,44 @@ class _ClientRequestCard extends StatelessWidget {
         } else {
           showFooter = true;
           final docs = snapshot.data!.docs;
+          final batches = docs.map((doc) {
+            return ConsignmentRequestModel.fromMap(
+              doc.id,
+              doc.data() as Map<String, dynamic>,
+            );
+          }).toList();
+
+          batches.sort((a, b) {
+            const statusOrder = {
+              ConsignmentBatchStatus.pending: 0,
+              ConsignmentBatchStatus.processing: 1,
+              ConsignmentBatchStatus.packed: 2,
+              ConsignmentBatchStatus.received: 3,
+              ConsignmentBatchStatus.rejected: 4,
+            };
+            final statusCompare = (statusOrder[a.status] ?? 999).compareTo(statusOrder[b.status] ?? 999);
+            if (statusCompare != 0) return statusCompare;
+            final aDate = a.createdAt ?? DateTime(1970);
+            final bDate = b.createdAt ?? DateTime(1970);
+            return bDate.compareTo(aDate);
+          });
+
           content = ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: docs.length,
+            padding: const EdgeInsets.only(top: 8),
+            itemCount: batches.length,
             separatorBuilder: (_, __) => Divider(height: 1, color: borderColor),
             itemBuilder: (context, i) {
-              final batch = ConsignmentRequestModel.fromMap(
-                docs[i].id,
-                docs[i].data() as Map<String, dynamic>,
+              final batch = batches[i];
+              return _RequestItem(
+                batch: batch,
+                isDark: isDark,
+                onDetail: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => RequestListPage(initialBatch: batch),
+                  ),
+                ),
               );
-              return _RequestItem(batch: batch, isDark: isDark);
             },
           );
         }
@@ -794,7 +1437,7 @@ class _ClientRequestCard extends StatelessWidget {
               ),
             ),
             child: Text(
-              'Request List',
+              'Daftar Pengajuan',
               style: TextStyle(
                 fontFamily: 'Poppins',
                 fontSize: 13,
@@ -803,7 +1446,7 @@ class _ClientRequestCard extends StatelessWidget {
               ),
             ),
           ),
-          child,
+          Expanded(child: child),
           if (showFooter)
           InkWell(
             onTap: onMoreTap,
@@ -859,11 +1502,263 @@ class _ClientRequestCard extends StatelessWidget {
   }
 }
 
+class _ClientBorrowedItemsCard extends StatelessWidget {
+  final String? clientId;
+  final FirebaseFirestore firestore;
+  final bool isDark;
+
+  const _ClientBorrowedItemsCard({
+    required this.clientId,
+    required this.firestore,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final Color cardBg = isDark ? const Color(0xFF2B2930) : Colors.white;
+    final Color headerBg = isDark
+        ? const Color(0xFF3A3540)
+        : Colors.grey.shade100;
+    final Color borderColor = isDark
+        ? const Color(0xFF49454F)
+        : Colors.grey.shade200;
+
+    if (clientId == null) {
+      return const SizedBox.shrink();
+    }
+
+    return StreamBuilder<DocumentSnapshot>(
+      stream: firestore.collection('clients').doc(clientId).snapshots(),
+      builder: (context, snapshot) {
+        Widget content;
+        bool showFooter = false;
+        List<BorrowedItem> borrowedItems = [];
+
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          content = const Padding(
+            padding: EdgeInsets.symmetric(vertical: 36),
+            child: Center(child: CircularProgressIndicator()),
+          );
+        } else if (snapshot.hasError) {
+          content = _emptyState(
+            icon: Icons.error_outline,
+            message: 'Gagal memuat data:\n${snapshot.error}',
+          );
+        } else if (!snapshot.hasData || !snapshot.data!.exists) {
+          content = _emptyState(
+            icon: Icons.inventory_2_outlined,
+            message: 'Data klien tidak ditemukan',
+          );
+        } else {
+          final client = ClientModel.fromMap(
+            snapshot.data!.id,
+            snapshot.data!.data() as Map<String, dynamic>,
+          );
+          borrowedItems = client.borrowedItems;
+          showFooter = borrowedItems.isNotEmpty;
+
+          if (borrowedItems.isEmpty) {
+            content = _emptyState(
+              icon: Icons.inventory_2_outlined,
+              message: 'Belum ada barang konsinyasi',
+            );
+          } else {
+            content = ListView.separated(
+              padding: const EdgeInsets.only(top: 8),
+              itemCount: borrowedItems.length,
+              separatorBuilder: (_, __) => Divider(height: 1, color: borderColor),
+              itemBuilder: (context, i) {
+                final item = borrowedItems[i];
+                return _BorrowedItemTile(item: item, isDark: isDark);
+              },
+            );
+          }
+        }
+
+        return Container(
+          decoration: BoxDecoration(
+            color: cardBg,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: borderColor),
+            boxShadow: [
+              BoxShadow(
+                color: isDark
+                    ? Colors.black26
+                    : Colors.black.withValues(alpha: 0.05),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: headerBg,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    topRight: Radius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  'Barang Konsinyasi',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: isDark ? Colors.white54 : Colors.black54,
+                  ),
+                ),
+              ),
+              Expanded(child: content),
+              if (showFooter)
+                InkWell(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => ConsignmentPage()),
+                    );
+                  },
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(12),
+                    bottomRight: Radius.circular(12),
+                  ),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    alignment: Alignment.center,
+                    child: Text(
+                      'Lebih Banyak ...',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 13,
+                        color: isDark ? Colors.white38 : Colors.black54,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _emptyState({required IconData icon, required String message}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 16),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 48,
+              color: isDark ? Colors.white24 : Colors.black26,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 13,
+                color: isDark ? Colors.white38 : Colors.grey,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BorrowedItemTile extends StatelessWidget {
+  final BorrowedItem item;
+  final bool isDark;
+
+  const _BorrowedItemTile({required this.item, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    final Color nameColor = isDark ? Colors.white : const Color(0xFF1D1B20);
+    final Color subColor = isDark ? Colors.white54 : const Color(0xFF757575);
+    final Color tealFg = isDark ? const Color(0xFF4DB6AC) : const Color(0xFF00796B);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          CatalogImage(
+            imagePath: item.catalogImagePath,
+            size: 44,
+            borderRadius: 8,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.catalogName,
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                    color: nameColor,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  item.catalogCategory,
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 11,
+                    color: subColor,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '${item.quantity}x ${formatRupiah(item.catalogPrice)}',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 11,
+                    color: subColor,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            formatRupiah(item.catalogPrice * item.quantity),
+            style: TextStyle(
+              fontFamily: 'Poppins',
+              fontWeight: FontWeight.w600,
+              fontSize: 13,
+              color: tealFg,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _RequestItem extends StatelessWidget {
   final ConsignmentRequestModel batch;
   final bool isDark;
+  final VoidCallback? onDetail;
 
-  const _RequestItem({required this.batch, required this.isDark});
+  const _RequestItem({
+    required this.batch,
+    required this.isDark,
+    this.onDetail,
+  });
 
   Color _statusColor(ConsignmentBatchStatus s) {
     switch (s) {
@@ -1009,6 +1904,14 @@ class _RequestItem extends StatelessWidget {
               ],
             ),
           ),
+          if (onDetail != null) ...[
+            const SizedBox(width: 8),
+            _ActionButton(
+              icon: Icons.list_alt_rounded,
+              color: isDark ? const Color(0xFF4DB6AC) : const Color(0xFF00796B),
+              onTap: onDetail!,
+            ),
+          ],
         ],
       ),
     );

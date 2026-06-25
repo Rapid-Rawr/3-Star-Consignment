@@ -538,6 +538,21 @@ class _RequestListPageState extends State<RequestListPage> {
                   }).toList();
                 }
 
+                batches.sort((a, b) {
+                  const statusOrder = {
+                    ConsignmentBatchStatus.pending: 0,
+                    ConsignmentBatchStatus.processing: 1,
+                    ConsignmentBatchStatus.packed: 2,
+                    ConsignmentBatchStatus.received: 3,
+                    ConsignmentBatchStatus.rejected: 4,
+                  };
+                  final statusCompare = (statusOrder[a.status] ?? 999).compareTo(statusOrder[b.status] ?? 999);
+                  if (statusCompare != 0) return statusCompare;
+                  final aDate = a.createdAt ?? DateTime(1970);
+                  final bDate = b.createdAt ?? DateTime(1970);
+                  return bDate.compareTo(aDate);
+                });
+
                 if (batches.isEmpty) {
                   return Center(
                     child: Column(
