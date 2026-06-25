@@ -129,6 +129,9 @@ class _CatalogPageState extends State<CatalogPage> {
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.category_outlined),
                 ),
+                dropdownColor: Theme.of(dialogContext).brightness == Brightness.dark
+                    ? const Color(0xFF2B2930)
+                    : Colors.white,
                 items: _categories
                     .map(
                       (cat) => DropdownMenuItem(value: cat, child: Text(cat)),
@@ -286,6 +289,9 @@ class _CatalogPageState extends State<CatalogPage> {
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.category_outlined),
                 ),
+                dropdownColor: Theme.of(dialogContext).brightness == Brightness.dark
+                    ? const Color(0xFF2B2930)
+                    : Colors.white,
                 items: _categories
                     .map(
                       (cat) => DropdownMenuItem(value: cat, child: Text(cat)),
@@ -819,7 +825,7 @@ class _ImagePickerPreviewState extends State<_ImagePickerPreview> {
   @override
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final Color bg = isDark ? const Color(0xFF3A3540) : const Color(0xFFF3EFF4);
+    final Color bg = isDark ? const Color(0xFF3A3540) : const Color(0xFFF5F5F5);
     final Color iconColor = isDark ? Colors.white38 : const Color(0xFFB0B0B0);
     final Color borderColor = isDark
         ? const Color(0xFF49454F)

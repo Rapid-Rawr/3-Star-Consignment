@@ -15,6 +15,7 @@ import '../../widgets/catalog_image.dart';
 import '../../widgets/gradient_button.dart';
 import '../../utils/currency_format.dart';
 import '../../widgets/date_range_filter.dart';
+import '../../widgets/app_dialog.dart';
 
 class ConsignmentPage extends StatefulWidget {
   const ConsignmentPage({super.key});
@@ -46,21 +47,16 @@ class _ConsignmentPageState extends State<ConsignmentPage> {
     super.dispose();
   }
 
-  /// Mengfilter list klien berdasarkan role, search query, dan kategori.
-  /// Satu-satunya tempat logika filtering — dipakai oleh Admin dan Client view.
   List<ClientModel> _filterClients(
     List<ClientModel> all, {
     required String? email,
     required String? role,
   }) {
     var result = List<ClientModel>.from(all);
-
-    // Role-based: klien hanya melihat datanya sendiri
     if (role == Roles.client) {
       result = result.where((c) => c.email == email).toList();
     }
 
-    // Pencarian teks
     if (_searchQuery.isNotEmpty) {
       result = result
           .where(
@@ -72,7 +68,6 @@ class _ConsignmentPageState extends State<ConsignmentPage> {
           .toList();
     }
 
-    // Filter kategori
     if (_selectedCategory != null) {
       result = result
           .where(
@@ -321,7 +316,6 @@ class _ClientConsignmentView extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ── Stats row ────────────────────────────────────────────────
             Row(
               children: [
                 _StatCard(
@@ -349,7 +343,6 @@ class _ClientConsignmentView extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // ── Barang list card ─────────────────────────────────────────
             Container(
               decoration: BoxDecoration(
                 color: cardBg,
@@ -365,7 +358,6 @@ class _ClientConsignmentView extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  // Header card
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
                     child: Row(
@@ -482,7 +474,6 @@ class _ClientConsignmentView extends StatelessWidget {
                         ],
                       );
                     }),
-
                 ],
               ),
             ),
@@ -1409,6 +1400,22 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
     });
   }
 
+  void _showValidationError(String message) {
+    showAppDialog(
+      context: context,
+      title: 'Peringatan',
+      titleIcon: const Icon(Icons.warning_amber_rounded, color: Colors.black),
+      content: message,
+      actions: [
+        AppDialogAction(
+          label: 'OK',
+          type: AppDialogActionType.gradient,
+          onPressed: () => Navigator.pop(context),
+        ),
+      ],
+    );
+  }
+
   Future<void> _serahkan() async {
     if (_selectedClient == null || _selected.isEmpty || _isSubmitting) return;
     setState(() => _isSubmitting = true);
@@ -1986,10 +1993,17 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
                           )
                         : GradientButton(
                             label: 'Serahkan',
-                            onPressed:
-                                (_selectedClient == null || _selected.isEmpty)
-                                ? () {}
-                                : _serahkan,
+                            onPressed: () {
+                              if (_selectedClient == null) {
+                                _showValidationError('Silakan pilih klien terlebih dahulu.');
+                                return;
+                              }
+                              if (_selected.isEmpty) {
+                                _showValidationError('Silakan pilih minimal satu barang.');
+                                return;
+                              }
+                              _serahkan();
+                            },
                             borderRadius: 12,
                             padding: const EdgeInsets.symmetric(
                               horizontal: 28,

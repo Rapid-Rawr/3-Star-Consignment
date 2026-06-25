@@ -113,6 +113,9 @@ class _OperatorPageState extends State<OperatorPage> {
                   labelText: 'Role',
                   border: OutlineInputBorder(),
                 ),
+                dropdownColor: Theme.of(dialogContext).brightness == Brightness.dark
+                    ? const Color(0xFF2B2930)
+                    : Colors.white,
                 items: ['Administrator', 'Karyawan']
                     .map(
                       (role) =>
@@ -229,6 +232,9 @@ class _OperatorPageState extends State<OperatorPage> {
                   labelText: 'Role',
                   border: OutlineInputBorder(),
                 ),
+                dropdownColor: Theme.of(dialogContext).brightness == Brightness.dark
+                    ? const Color(0xFF2B2930)
+                    : Colors.white,
                 items: ['Administrator', 'Karyawan']
                     .map(
                       (role) =>

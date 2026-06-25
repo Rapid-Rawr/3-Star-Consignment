@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../service/auth_provider.dart';
 import '../../service/roles.dart';
-import '../pembayaran/pembayaran_otomatis_page.dart';
+// import '../pembayaran/pembayaran_otomatis_page.dart';
 import '../pembayaran/pembayaran_manual_page.dart';
 import '../pembayaran/riwayat_pembayaran_page.dart';
 import '../../widgets/menu_button.dart';
@@ -37,20 +37,6 @@ class PaymentPage extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      if (hasAccess(role, [Roles.admin, Roles.client]))
-                        MenuButton(
-                          svgPath: 'assets/icons/Payment.svg',
-                          label: 'Pembayaran',
-                          borderColor: context.borderColor,
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const AutoPaymentPage(),
-                            ),
-                          ),
-                        ),
-                      if (hasAccess(role, [Roles.admin, Roles.client]))
-                        const SizedBox(height: 16),
                       if (hasAccess(role, [Roles.admin, Roles.karyawan]))
                         MenuButton(
                           svgPath: 'assets/icons/Payment.svg',

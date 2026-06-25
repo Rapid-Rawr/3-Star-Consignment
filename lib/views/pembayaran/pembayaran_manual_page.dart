@@ -969,31 +969,50 @@ class _PaymentBottomSheetState extends State<_PaymentBottomSheet> {
                           )
                         : GradientButton(
                             label: 'Bayar',
-                            onPressed: _selected.isEmpty
-                                ? () {}
-                                : () => showAppDialog(
-                                    context: context,
-                                    titleIcon: const Icon(
-                                      Icons.warning_amber_rounded,
-                                    ),
-                                    title: 'Pembayaran',
-                                    content:
-                                        'Bayar ${_selected.length} item senilai ${formatRupiah(totalPrice)} untuk ${widget.client.name}?',
-                                    actions: [
-                                      AppDialogAction(
-                                        label: 'Batal',
-                                        onPressed: () => Navigator.pop(context),
-                                      ),
-                                      AppDialogAction(
-                                        label: 'Bayar',
-                                        type: AppDialogActionType.gradient,
-                                        onPressed: () {
-                                          Navigator.pop(context);
-                                          _pay();
-                                        },
-                                      ),
-                                    ],
+                            onPressed: () {
+                              if (_selected.isEmpty) {
+                                showAppDialog(
+                                  context: context,
+                                  title: 'Peringatan',
+                                  titleIcon: const Icon(
+                                    Icons.warning_amber_rounded,
+                                    color: Colors.black,
                                   ),
+                                  content: 'Silakan pilih minimal satu barang.',
+                                  actions: [
+                                    AppDialogAction(
+                                      label: 'OK',
+                                      type: AppDialogActionType.gradient,
+                                      onPressed: () => Navigator.pop(context),
+                                    ),
+                                  ],
+                                );
+                                return;
+                              }
+                              showAppDialog(
+                                context: context,
+                                titleIcon: const Icon(
+                                  Icons.warning_amber_rounded,
+                                ),
+                                title: 'Pembayaran',
+                                content:
+                                    'Bayar ${_selected.length} item senilai ${formatRupiah(totalPrice)} untuk ${widget.client.name}?',
+                                actions: [
+                                  AppDialogAction(
+                                    label: 'Batal',
+                                    onPressed: () => Navigator.pop(context),
+                                  ),
+                                  AppDialogAction(
+                                    label: 'Bayar',
+                                    type: AppDialogActionType.gradient,
+                                    onPressed: () {
+                                      Navigator.pop(context);
+                                      _pay();
+                                    },
+                                  ),
+                                ],
+                              );
+                            },
                             borderRadius: 12,
                             padding: const EdgeInsets.symmetric(
                               horizontal: 28,

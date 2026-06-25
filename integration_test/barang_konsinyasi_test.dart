@@ -215,18 +215,13 @@ void main() {
         }
       }
 
-      // Tekan tombol Serahkan
       final submitButton = find.text('Serahkan');
       if (submitButton.evaluate().isNotEmpty) {
-        // Scroll jika tertutup
         await tester.ensureVisible(submitButton);
         await tester.tap(submitButton);
         
-        // Tunggu request API ke firebase selesai
         await tester.pumpAndSettle(const Duration(seconds: 4));
       }
-
-      // Verifikasi data (SDN 3 Penganjuran) sekarang ada di halaman utama
       expect(find.textContaining('SDN 3 Penganjuran'), findsWidgets);
     });
   });

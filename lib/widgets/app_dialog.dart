@@ -95,34 +95,67 @@ class _AppDialogWidget extends StatelessWidget {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final Color textColor = isDark ? Colors.white : const Color(0xFF1D1B20);
     final Color bgColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final Color primaryColor = isDark ? const Color(0xFF4DB6AC) : const Color(0xFF00796B);
+    final Color dropdownMenuBg = isDark ? const Color(0xFF2B2930) : Colors.white;
+    final Color surfaceColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final Color surfaceContainer = isDark ? const Color(0xFF2B2930) : Colors.white;
 
-    return AlertDialog(
-      backgroundColor: bgColor,
-      surfaceTintColor: Colors.transparent, // Disable material 3 tint
-      title: Row(
-        children: [
-          if (titleIcon != null) ...[titleIcon!, const SizedBox(width: 8)],
-          Text(title, style: TextStyle(color: textColor)),
-        ],
-      ),
-      content:
-          contentWidget ?? Text(content, style: TextStyle(color: textColor)),
-      actions: actions.map((action) {
-        if (action.type == AppDialogActionType.gradient) {
-          return GradientButton(
-            label: action.label,
-            onPressed: action.onPressed,
-          );
-        }
-        return TextButton(
-          onPressed: action.onPressed,
-          style: TextButton.styleFrom(
-            splashFactory: NoSplash.splashFactory,
-            overlayColor: Colors.transparent,
+    return Theme(
+      data: Theme.of(context).copyWith(
+        colorScheme: Theme.of(context).colorScheme.copyWith(
+          primary: primaryColor,
+          surface: surfaceColor,
+          surfaceContainer: surfaceContainer,
+          surfaceContainerHigh: surfaceContainer,
+          surfaceContainerHighest: surfaceContainer,
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          focusedBorder: OutlineInputBorder(
+            borderSide: BorderSide(color: primaryColor),
           ),
-          child: Text(action.label, style: TextStyle(color: textColor)),
-        );
-      }).toList(),
+          focusColor: primaryColor,
+        ),
+        menuTheme: MenuThemeData(
+          style: MenuStyle(
+            backgroundColor: WidgetStateProperty.all(dropdownMenuBg),
+            surfaceTintColor: WidgetStateProperty.all(Colors.transparent),
+          ),
+        ),
+        dropdownMenuTheme: DropdownMenuThemeData(
+          menuStyle: MenuStyle(
+            backgroundColor: WidgetStateProperty.all(dropdownMenuBg),
+            surfaceTintColor: WidgetStateProperty.all(Colors.transparent),
+          ),
+        ),
+      ),
+      child: AlertDialog(
+        backgroundColor: bgColor,
+        surfaceTintColor: Colors.transparent,
+        title: Row(
+          children: [
+            if (titleIcon != null) ...[titleIcon!, const SizedBox(width: 8)],
+            Text(title, style: TextStyle(color: textColor)),
+          ],
+        ),
+        content:
+            contentWidget ?? Text(content, style: TextStyle(color: textColor)),
+        actions: actions.map((action) {
+          if (action.type == AppDialogActionType.gradient) {
+            return GradientButton(
+              label: action.label,
+              onPressed: action.onPressed,
+            );
+          }
+          return TextButton(
+            onPressed: action.onPressed,
+            style: TextButton.styleFrom(
+              splashFactory: NoSplash.splashFactory,
+              overlayColor: Colors.transparent,
+            ),
+            child: Text(action.label, style: TextStyle(color: textColor)),
+          );
+        }).toList(),
+      ),
     );
   }
 }
