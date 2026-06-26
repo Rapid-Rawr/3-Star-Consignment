@@ -14,6 +14,7 @@ import '../../widgets/search_filter_bar.dart';
 import '../../widgets/catalog_image.dart';
 import '../../widgets/gradient_button.dart';
 import '../../utils/currency_format.dart';
+import '../../utils/app_colors.dart';
 import '../../widgets/date_range_filter.dart';
 import '../../widgets/app_dialog.dart';
 
@@ -81,14 +82,13 @@ class _ConsignmentPageState extends State<ConsignmentPage> {
     return result;
   }
 
-  void _showDetail(BuildContext context, ClientModel client, bool isDark) {
+  void _showDetail(BuildContext context, ClientModel client) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => ClientDetailSheet(
         client: client,
-        isDark: isDark,
         formatDate: formatDateShort,
         initialCategory: _selectedCategory,
       ),
@@ -97,8 +97,7 @@ class _ConsignmentPageState extends State<ConsignmentPage> {
 
   void _showSerahkanSheet(
     BuildContext context,
-    List<ClientModel> clients,
-    bool isDark, {
+    List<ClientModel> clients, {
     ClientModel? initialClient,
   }) {
     showModalBottomSheet(
@@ -108,7 +107,6 @@ class _ConsignmentPageState extends State<ConsignmentPage> {
       builder: (_) => _SerahkanBottomSheet(
         clients: clients,
         clientController: _controller,
-        isDark: isDark,
         initialClient: initialClient,
       ),
     );
@@ -116,13 +114,9 @@ class _ConsignmentPageState extends State<ConsignmentPage> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final authProvider = context.watch<app_auth.AuthProvider>();
     final role = authProvider.role;
     final email = FirebaseAuth.instance.currentUser?.email;
-
-    final Color emptyIcon = isDark ? Colors.white24 : Colors.black26;
-    final Color emptyText = isDark ? Colors.white38 : const Color(0xFF9E9E9E);
 
     return StreamBuilder<QuerySnapshot>(
       stream: _stream,
@@ -161,7 +155,7 @@ class _ConsignmentPageState extends State<ConsignmentPage> {
           ),
           floatingActionButton: role == Roles.admin
               ? FloatingActionButton.extended(
-                  onPressed: () => _showSerahkanSheet(context, allClients, isDark),
+                  onPressed: () => _showSerahkanSheet(context, allClients),
                   icon: const Icon(Icons.add_rounded),
                   label: const Text(
                     'Konsinyasi',
@@ -170,9 +164,7 @@ class _ConsignmentPageState extends State<ConsignmentPage> {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  backgroundColor: isDark
-                      ? const Color(0xFF4DB6AC)
-                      : const Color(0xFF00796B),
+                  backgroundColor: context.primaryFg,
                   foregroundColor: Colors.white,
                 )
               : null,
@@ -216,7 +208,7 @@ class _ConsignmentPageState extends State<ConsignmentPage> {
                             Icon(
                               Icons.people_outline_rounded,
                               size: 64,
-                              color: emptyIcon,
+                              color: context.emptyIcon,
                             ),
                             const SizedBox(height: 16),
                             Text(
@@ -226,7 +218,7 @@ class _ConsignmentPageState extends State<ConsignmentPage> {
                                   : 'Belum Ada Klien',
                               style: TextStyle(
                                 fontSize: 16,
-                                color: emptyText,
+                                color: context.emptyText,
                                 fontFamily: 'Poppins',
                               ),
                             ),
@@ -239,7 +231,6 @@ class _ConsignmentPageState extends State<ConsignmentPage> {
                       final client = clients.first;
                       return _ClientConsignmentView(
                         client: client,
-                        isDark: isDark,
                         selectedCategory: _selectedCategory,
                       );
                     }
@@ -260,13 +251,11 @@ class _ConsignmentPageState extends State<ConsignmentPage> {
                         return ClientCard(
                           client: client,
                           displayItems: displayItems,
-                          isDark: isDark,
                           formatDate: formatDateShort,
-                          onDetail: () => _showDetail(context, client, isDark),
+                          onDetail: () => _showDetail(context, client),
                           onSerahkan: () => _showSerahkanSheet(
                             context,
                             allClients,
-                            isDark,
                             initialClient: client,
                           ),
                           role: role,
@@ -286,31 +275,21 @@ class _ConsignmentPageState extends State<ConsignmentPage> {
 
 class _ClientConsignmentView extends StatelessWidget {
   final ClientModel client;
-  final bool isDark;
   final String? selectedCategory;
 
   const _ClientConsignmentView({
     required this.client,
-    required this.isDark,
     required this.selectedCategory,
   });
 
   @override
   Widget build(BuildContext context) {
-    final Color bg = isDark ? const Color(0xFF1C1B1F) : const Color(0xFFF5F5F5);
-    final Color cardBg = isDark ? const Color(0xFF2B2930) : Colors.white;
-    final Color cardBorder = isDark ? const Color(0xFF49454F) : const Color(0xFFE0E0E0);
-    final Color tealFg = isDark ? const Color(0xFF4DB6AC) : const Color(0xFF00796B);
-    final Color tealBg = isDark ? const Color(0xFF1A3A3A) : const Color(0xFFE0F2F1);
-    final Color nameColor = isDark ? Colors.white : const Color(0xFF1D1B20);
-    final Color subColor = isDark ? Colors.white54 : const Color(0xFF757575);
-
     final displayItems = selectedCategory != null
         ? client.borrowedItems.where((b) => b.catalogCategory == selectedCategory).toList()
         : client.borrowedItems;
 
     return Container(
-      color: bg,
+      color: context.scaffoldBg,
       child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
         child: Column(
@@ -319,25 +298,15 @@ class _ClientConsignmentView extends StatelessWidget {
             Row(
               children: [
                 _StatCard(
-                  isDark: isDark,
                   label: 'Total Item',
                   value: '${displayItems.fold(0, (s, b) => s + b.quantity)} unit',
                   icon: Icons.inventory_2_outlined,
-                  tealFg: tealFg,
-                  tealBg: tealBg,
-                  nameColor: nameColor,
-                  subColor: subColor,
                 ),
                 const SizedBox(width: 12),
                 _StatCard(
-                  isDark: isDark,
                   label: 'Total Nilai',
                   value: formatRupiah(displayItems.fold(0.0, (s, b) => s + b.catalogPrice * b.quantity)),
                   icon: Icons.monetization_on_outlined,
-                  tealFg: tealFg,
-                  tealBg: tealBg,
-                  nameColor: nameColor,
-                  subColor: subColor,
                 ),
               ],
             ),
@@ -345,12 +314,12 @@ class _ClientConsignmentView extends StatelessWidget {
 
             Container(
               decoration: BoxDecoration(
-                color: cardBg,
+                color: context.cardBg,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: cardBorder, width: 1),
+                border: Border.all(color: context.cardBorder, width: 1),
                 boxShadow: [
                   BoxShadow(
-                    color: isDark ? Colors.black26 : Colors.black.withValues(alpha: 0.06),
+                    color: context.cardShadow,
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -362,7 +331,7 @@ class _ClientConsignmentView extends StatelessWidget {
                     padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
                     child: Row(
                       children: [
-                        Icon(Icons.list_alt_rounded, color: tealFg, size: 18),
+                        Icon(Icons.list_alt_rounded, color: context.primaryFg, size: 18),
                         const SizedBox(width: 8),
                         Text(
                           'Daftar Barang',
@@ -370,14 +339,14 @@ class _ClientConsignmentView extends StatelessWidget {
                             fontFamily: 'Poppins',
                             fontWeight: FontWeight.w700,
                             fontSize: 14,
-                            color: nameColor,
+                            color: context.nameColor,
                           ),
                         ),
                         const Spacer(),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                           decoration: BoxDecoration(
-                            color: tealBg,
+                            color: context.primaryBg,
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
@@ -386,28 +355,28 @@ class _ClientConsignmentView extends StatelessWidget {
                               fontFamily: 'Poppins',
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
-                              color: tealFg,
+                              color: context.primaryFg,
                             ),
                           ),
                         ),
                       ],
                     ),
                   ),
-                  Divider(height: 1, color: cardBorder),
+                  Divider(height: 1, color: context.cardBorder),
 
                   if (displayItems.isEmpty)
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 32),
                       child: Column(
                         children: [
-                          Icon(Icons.inventory_2_outlined, size: 48, color: subColor),
+                          Icon(Icons.inventory_2_outlined, size: 48, color: context.subColor),
                           const SizedBox(height: 10),
                           Text(
                             'Belum ada barang konsinyasi',
                             style: TextStyle(
                               fontFamily: 'Poppins',
                               fontSize: 13,
-                              color: subColor,
+                              color: context.subColor,
                             ),
                           ),
                         ],
@@ -437,23 +406,23 @@ class _ClientConsignmentView extends StatelessWidget {
                                           fontFamily: 'Poppins',
                                           fontSize: 13,
                                           fontWeight: FontWeight.w600,
-                                          color: nameColor,
+                                          color: context.nameColor,
                                         ),
                                       ),
                                       const SizedBox(height: 2),
                                       Text(
                                         b.catalogCategory,
-                                        style: TextStyle(fontFamily: 'Poppins', fontSize: 11, color: subColor),
+                                        style: TextStyle(fontFamily: 'Poppins', fontSize: 11, color: context.subColor),
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
                                         '${b.quantity}x ${formatRupiah(b.catalogPrice)}',
-                                        style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: subColor),
+                                        style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: context.subColor),
                                       ),
                                       if (b.lastReceivedAt != null)
                                         Text(
                                           'Diterima: ${formatDateShort(b.lastReceivedAt)}',
-                                          style: TextStyle(fontFamily: 'Poppins', fontSize: 10, color: subColor),
+                                          style: TextStyle(fontFamily: 'Poppins', fontSize: 10, color: context.subColor),
                                         ),
                                     ],
                                   ),
@@ -464,13 +433,13 @@ class _ClientConsignmentView extends StatelessWidget {
                                     fontFamily: 'Poppins',
                                     fontWeight: FontWeight.w700,
                                     fontSize: 13,
-                                    color: tealFg,
+                                    color: context.primaryFg,
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                          if (!isLast) Divider(height: 1, color: cardBorder),
+                          if (!isLast) Divider(height: 1, color: context.cardBorder),
                         ],
                       );
                     }),
@@ -485,41 +454,28 @@ class _ClientConsignmentView extends StatelessWidget {
 }
 
 class _StatCard extends StatelessWidget {
-  final bool isDark;
   final String label;
   final String value;
   final IconData icon;
-  final Color tealFg;
-  final Color tealBg;
-  final Color nameColor;
-  final Color subColor;
 
   const _StatCard({
-    required this.isDark,
     required this.label,
     required this.value,
     required this.icon,
-    required this.tealFg,
-    required this.tealBg,
-    required this.nameColor,
-    required this.subColor,
   });
 
   @override
   Widget build(BuildContext context) {
-    final Color cardBg = isDark ? const Color(0xFF2B2930) : Colors.white;
-    final Color cardBorder = isDark ? const Color(0xFF49454F) : const Color(0xFFE0E0E0);
-
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         decoration: BoxDecoration(
-          color: cardBg,
+          color: context.cardBg,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: cardBorder, width: 1),
+          border: Border.all(color: context.cardBorder, width: 1),
           boxShadow: [
             BoxShadow(
-              color: isDark ? Colors.black26 : Colors.black.withValues(alpha: 0.05),
+              color: context.cardShadow,
               blurRadius: 6,
               offset: const Offset(0, 2),
             ),
@@ -529,8 +485,8 @@ class _StatCard extends StatelessWidget {
           children: [
             Container(
               padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(color: tealBg, shape: BoxShape.circle),
-              child: Icon(icon, color: tealFg, size: 18),
+              decoration: BoxDecoration(color: context.primaryBg, shape: BoxShape.circle),
+              child: Icon(icon, color: context.primaryFg, size: 18),
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -539,7 +495,7 @@ class _StatCard extends StatelessWidget {
                 children: [
                   Text(
                     label,
-                    style: TextStyle(fontFamily: 'Poppins', fontSize: 10, color: subColor),
+                    style: TextStyle(fontFamily: 'Poppins', fontSize: 10, color: context.subColor),
                   ),
                   Text(
                     value,
@@ -547,7 +503,7 @@ class _StatCard extends StatelessWidget {
                       fontFamily: 'Poppins',
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
-                      color: nameColor,
+                      color: context.nameColor,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -565,7 +521,6 @@ class _StatCard extends StatelessWidget {
 class ClientCard extends StatelessWidget {
   final ClientModel client;
   final List<BorrowedItem> displayItems;
-  final bool isDark;
   final String Function(DateTime?) formatDate;
   final VoidCallback onDetail;
   final VoidCallback onSerahkan;
@@ -575,7 +530,6 @@ class ClientCard extends StatelessWidget {
     super.key,
     required this.client,
     required this.displayItems,
-    required this.isDark,
     required this.formatDate,
     required this.onDetail,
     required this.onSerahkan,
@@ -585,19 +539,6 @@ class ClientCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool isAdmin = role == Roles.admin;
-
-    final Color cardBg = isDark ? const Color(0xFF2B2930) : Colors.white;
-    final Color cardBorder = isDark
-        ? const Color(0xFF49454F)
-        : const Color(0xFFE0E0E0);
-    final Color nameColor = isDark ? Colors.white : const Color(0xFF1D1B20);
-    final Color subColor = isDark ? Colors.white54 : const Color(0xFF757575);
-    final Color tealFg = isDark
-        ? const Color(0xFF4DB6AC)
-        : const Color(0xFF00796B);
-    final Color tealBg = isDark
-        ? const Color(0xFF1A3A3A)
-        : const Color(0xFFE0F2F1);
 
     final bool hasBorrowed = displayItems.isNotEmpty;
     final int totalQty = displayItems.fold(0, (s, b) => s + b.quantity);
@@ -611,14 +552,12 @@ class ClientCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
-        color: cardBg,
+        color: context.cardBg,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: cardBorder, width: 1),
+        border: Border.all(color: context.cardBorder, width: 1),
         boxShadow: [
           BoxShadow(
-            color: isDark
-                ? Colors.black26
-                : Colors.black.withValues(alpha: 0.06),
+            color: context.cardShadow,
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -636,16 +575,12 @@ class ClientCard extends StatelessWidget {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: hasBorrowed
-                        ? tealBg
-                        : (isDark
-                              ? const Color(0xFF3A3740)
-                              : Colors.grey[100]!),
+                    color: hasBorrowed ? context.primaryBg : context.headerBg,
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     hasBorrowed ? Icons.store_outlined : Icons.person_outline,
-                    color: hasBorrowed ? tealFg : subColor,
+                    color: hasBorrowed ? context.primaryFg : context.subColor,
                     size: 22,
                   ),
                 ),
@@ -662,7 +597,7 @@ class ClientCard extends StatelessWidget {
                           fontFamily: 'Poppins',
                           fontWeight: FontWeight.w700,
                           fontSize: 15,
-                          color: nameColor,
+                          color: context.nameColor,
                         ),
                       ),
                       if (client.address.isNotEmpty)
@@ -671,7 +606,7 @@ class ClientCard extends StatelessWidget {
                             Icon(
                               Icons.location_on_outlined,
                               size: 12,
-                              color: subColor,
+                              color: context.subColor,
                             ),
                             const SizedBox(width: 4),
                             Expanded(
@@ -680,7 +615,7 @@ class ClientCard extends StatelessWidget {
                                 style: TextStyle(
                                   fontFamily: 'Poppins',
                                   fontSize: 12,
-                                  color: subColor,
+                                  color: context.subColor,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -698,7 +633,7 @@ class ClientCard extends StatelessWidget {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: tealBg,
+                      color: context.primaryBg,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
@@ -707,7 +642,7 @@ class ClientCard extends StatelessWidget {
                         fontFamily: 'Poppins',
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
-                        color: tealFg,
+                        color: context.primaryFg,
                       ),
                     ),
                   ),
@@ -728,9 +663,7 @@ class ClientCard extends StatelessWidget {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: isDark
-                                ? const Color(0xFF3A3740)
-                                : Colors.grey[100],
+                            color: context.headerBg,
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
@@ -738,7 +671,7 @@ class ClientCard extends StatelessWidget {
                             style: TextStyle(
                               fontFamily: 'Poppins',
                               fontSize: 10,
-                              color: isDark ? Colors.white70 : Colors.black87,
+                              color: context.chipText,
                             ),
                           ),
                         ),
@@ -771,7 +704,7 @@ class ClientCard extends StatelessWidget {
                                     fontFamily: 'Poppins',
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
-                                    color: nameColor,
+                                    color: context.nameColor,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -781,7 +714,7 @@ class ClientCard extends StatelessWidget {
                                   style: TextStyle(
                                     fontFamily: 'Poppins',
                                     fontSize: 11,
-                                    color: subColor,
+                                    color: context.subColor,
                                   ),
                                 ),
                               ],
@@ -801,12 +734,12 @@ class ClientCard extends StatelessWidget {
                       fontFamily: 'Poppins',
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
-                      color: tealFg,
+                      color: context.primaryFg,
                     ),
                   ),
                 ),
 
-              Divider(height: 20, color: cardBorder),
+              Divider(height: 20, color: context.cardBorder),
 
               Row(
                 children: [
@@ -818,7 +751,7 @@ class ClientCard extends StatelessWidget {
                         style: TextStyle(
                           fontFamily: 'Poppins',
                           fontSize: 10,
-                          color: subColor,
+                          color: context.subColor,
                         ),
                       ),
                       Text(
@@ -827,7 +760,7 @@ class ClientCard extends StatelessWidget {
                           fontFamily: 'Poppins',
                           fontWeight: FontWeight.w700,
                           fontSize: 14,
-                          color: tealFg,
+                          color: context.primaryFg,
                         ),
                       ),
                     ],
@@ -835,7 +768,7 @@ class ClientCard extends StatelessWidget {
                   const Spacer(),
                   if (isAdmin) ...[
                     Material(
-                      color: tealBg,
+                      color: context.primaryBg,
                       shape: const CircleBorder(),
                       clipBehavior: Clip.hardEdge,
                       child: Tooltip(
@@ -846,7 +779,7 @@ class ClientCard extends StatelessWidget {
                             padding: const EdgeInsets.all(10),
                             child: Icon(
                               Icons.add_rounded,
-                              color: tealFg,
+                              color: context.primaryFg,
                               size: 22,
                             ),
                           ),
@@ -863,8 +796,8 @@ class ClientCard extends StatelessWidget {
                       style: TextStyle(fontFamily: 'Poppins', fontSize: 12),
                     ),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: nameColor,
-                      side: BorderSide(color: cardBorder),
+                      foregroundColor: context.nameColor,
+                      side: BorderSide(color: context.cardBorder),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 14,
                         vertical: 8,
@@ -881,7 +814,7 @@ class ClientCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF3A3740) : Colors.grey[50],
+                  color: context.headerBg,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Column(
@@ -892,13 +825,13 @@ class ClientCard extends StatelessWidget {
                       style: TextStyle(
                         fontFamily: 'Poppins',
                         fontSize: 12,
-                        color: subColor,
+                        color: context.subColor,
                       ),
                     ),
                     if (isAdmin) ...[
                       const SizedBox(height: 12),
                       Material(
-                        color: tealBg,
+                        color: context.primaryBg,
                         shape: const CircleBorder(),
                         clipBehavior: Clip.hardEdge,
                         child: Tooltip(
@@ -909,7 +842,7 @@ class ClientCard extends StatelessWidget {
                               padding: const EdgeInsets.all(8),
                               child: Icon(
                                 Icons.add_rounded,
-                                color: tealFg,
+                                color: context.primaryFg,
                                 size: 20,
                               ),
                             ),
@@ -930,14 +863,12 @@ class ClientCard extends StatelessWidget {
 
 class ClientDetailSheet extends StatefulWidget {
   final ClientModel client;
-  final bool isDark;
   final String Function(DateTime?) formatDate;
   final String? initialCategory;
 
   const ClientDetailSheet({
     super.key,
     required this.client,
-    required this.isDark,
     required this.formatDate,
     required this.initialCategory,
   });
@@ -957,25 +888,6 @@ class _ClientDetailSheetState extends State<ClientDetailSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final Color sheetBg = widget.isDark
-        ? const Color(0xFF2B2930)
-        : Colors.white;
-    final Color nameColor = widget.isDark
-        ? Colors.white
-        : const Color(0xFF1D1B20);
-    final Color subColor = widget.isDark
-        ? Colors.white54
-        : const Color(0xFF757575);
-    final Color divider = widget.isDark
-        ? const Color(0xFF49454F)
-        : const Color(0xFFE0E0E0);
-    final Color tealFg = widget.isDark
-        ? const Color(0xFF4DB6AC)
-        : const Color(0xFF00796B);
-    final Color tealBg = widget.isDark
-        ? const Color(0xFF1A3A3A)
-        : const Color(0xFFE0F2F1);
-
     final allCats =
         widget.client.borrowedItems
             .map((b) => b.catalogCategory)
@@ -1003,7 +915,7 @@ class _ClientDetailSheetState extends State<ClientDetailSheet> {
         top: false,
         child: Container(
           decoration: BoxDecoration(
-            color: sheetBg,
+            color: context.cardBg,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
           ),
           child: Column(
@@ -1019,12 +931,12 @@ class _ClientDetailSheetState extends State<ClientDetailSheet> {
                       width: 38,
                       height: 38,
                       decoration: BoxDecoration(
-                        color: tealBg,
+                        color: context.primaryBg,
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
                         Icons.store_outlined,
-                        color: tealFg,
+                        color: context.primaryFg,
                         size: 20,
                       ),
                     ),
@@ -1039,7 +951,7 @@ class _ClientDetailSheetState extends State<ClientDetailSheet> {
                               fontFamily: 'Poppins',
                               fontWeight: FontWeight.w700,
                               fontSize: 15,
-                              color: nameColor,
+                              color: context.nameColor,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -1050,7 +962,7 @@ class _ClientDetailSheetState extends State<ClientDetailSheet> {
                               style: TextStyle(
                                 fontFamily: 'Poppins',
                                 fontSize: 11,
-                                color: subColor,
+                                color: context.subColor,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -1064,7 +976,7 @@ class _ClientDetailSheetState extends State<ClientDetailSheet> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: tealBg,
+                        color: context.primaryBg,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
@@ -1073,7 +985,7 @@ class _ClientDetailSheetState extends State<ClientDetailSheet> {
                           fontFamily: 'Poppins',
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
-                          color: tealFg,
+                          color: context.primaryFg,
                         ),
                       ),
                     ),
@@ -1085,7 +997,7 @@ class _ClientDetailSheetState extends State<ClientDetailSheet> {
                   ],
                 ),
               ),
-              Divider(height: 1, color: divider),
+              Divider(height: 1, color: context.cardBorder),
 
               if (allCats.length > 1)
                 SizedBox(
@@ -1097,8 +1009,8 @@ class _ClientDetailSheetState extends State<ClientDetailSheet> {
                       vertical: 4,
                     ),
                     children: [
-                      _chip('Semua', null),
-                      ...allCats.map((c) => _chip(c, c)),
+                      _chip(context, 'Semua', null),
+                      ...allCats.map((c) => _chip(context, c, c)),
                     ],
                   ),
                 ),
@@ -1113,7 +1025,7 @@ class _ClientDetailSheetState extends State<ClientDetailSheet> {
                         fontFamily: 'Poppins',
                         fontWeight: FontWeight.w600,
                         fontSize: 13,
-                        color: nameColor,
+                        color: context.nameColor,
                       ),
                     ),
                     const Spacer(),
@@ -1123,7 +1035,7 @@ class _ClientDetailSheetState extends State<ClientDetailSheet> {
                         vertical: 3,
                       ),
                       decoration: BoxDecoration(
-                        color: tealBg,
+                        color: context.primaryBg,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
@@ -1132,14 +1044,14 @@ class _ClientDetailSheetState extends State<ClientDetailSheet> {
                           fontFamily: 'Poppins',
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
-                          color: tealFg,
+                          color: context.primaryFg,
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-              Divider(height: 1, color: divider),
+              Divider(height: 1, color: context.cardBorder),
 
               Expanded(
                 child: items.isEmpty
@@ -1149,7 +1061,7 @@ class _ClientDetailSheetState extends State<ClientDetailSheet> {
                           style: TextStyle(
                             fontFamily: 'Poppins',
                             fontSize: 13,
-                            color: subColor,
+                            color: context.subColor,
                           ),
                         ),
                       )
@@ -1161,7 +1073,7 @@ class _ClientDetailSheetState extends State<ClientDetailSheet> {
                         ),
                         itemCount: items.length,
                         separatorBuilder: (_, __) =>
-                            Divider(height: 1, color: divider),
+                            Divider(height: 1, color: context.cardBorder),
                         itemBuilder: (_, i) {
                           final b = items[i];
 
@@ -1190,7 +1102,7 @@ class _ClientDetailSheetState extends State<ClientDetailSheet> {
                                                 fontFamily: 'Poppins',
                                                 fontSize: 13,
                                                 fontWeight: FontWeight.w600,
-                                                color: nameColor,
+                                                color: context.nameColor,
                                               ),
                                             ),
                                           ),
@@ -1202,7 +1114,7 @@ class _ClientDetailSheetState extends State<ClientDetailSheet> {
                                         style: TextStyle(
                                           fontFamily: 'Poppins',
                                           fontSize: 11,
-                                          color: subColor,
+                                          color: context.subColor,
                                         ),
                                       ),
                                       const SizedBox(height: 4),
@@ -1211,7 +1123,7 @@ class _ClientDetailSheetState extends State<ClientDetailSheet> {
                                           style: TextStyle(
                                           fontFamily: 'Poppins',
                                           fontSize: 12,
-                                          color: subColor,
+                                          color: context.subColor,
                                         ),
                                       ),
                                       if (b.lastReceivedAt != null)
@@ -1220,7 +1132,7 @@ class _ClientDetailSheetState extends State<ClientDetailSheet> {
                                           style: TextStyle(
                                             fontFamily: 'Poppins',
                                             fontSize: 10,
-                                            color: subColor,
+                                            color: context.subColor,
                                           ),
                                         ),
                                     ],
@@ -1233,7 +1145,7 @@ class _ClientDetailSheetState extends State<ClientDetailSheet> {
                                     fontFamily: 'Poppins',
                                     fontWeight: FontWeight.w700,
                                     fontSize: 13,
-                                    color: tealFg,
+                                    color: context.primaryFg,
                                   ),
                                 ),
                               ],
@@ -1246,8 +1158,8 @@ class _ClientDetailSheetState extends State<ClientDetailSheet> {
               Container(
                 padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
                 decoration: BoxDecoration(
-                  color: sheetBg,
-                  border: Border(top: BorderSide(color: divider)),
+                  color: context.cardBg,
+                  border: Border(top: BorderSide(color: context.cardBorder)),
                 ),
                 child: Row(
                   children: [
@@ -1256,7 +1168,7 @@ class _ClientDetailSheetState extends State<ClientDetailSheet> {
                       style: TextStyle(
                         fontFamily: 'Poppins',
                         fontSize: 12,
-                        color: subColor,
+                        color: context.subColor,
                       ),
                     ),
                     const Spacer(),
@@ -1266,7 +1178,7 @@ class _ClientDetailSheetState extends State<ClientDetailSheet> {
                         fontFamily: 'Poppins',
                         fontWeight: FontWeight.w700,
                         fontSize: 16,
-                        color: tealFg,
+                        color: context.primaryFg,
                       ),
                     ),
                   ],
@@ -1279,17 +1191,8 @@ class _ClientDetailSheetState extends State<ClientDetailSheet> {
     );
   }
 
-  Widget _chip(String label, String? value) {
+  Widget _chip(BuildContext context, String label, String? value) {
     final bool isSelected = _catFilter == value;
-    final Color tealFg = widget.isDark
-        ? const Color(0xFF4DB6AC)
-        : const Color(0xFF00796B);
-    final Color chipBg = widget.isDark
-        ? const Color(0xFF3A3740)
-        : const Color(0xFFECECEC);
-    final Color chipBorder = widget.isDark
-        ? const Color(0xFF49454F)
-        : const Color(0xFFE0E0E0);
 
     return GestureDetector(
       onTap: () => setState(() => _catFilter = isSelected ? null : value),
@@ -1298,9 +1201,9 @@ class _ClientDetailSheetState extends State<ClientDetailSheet> {
         margin: const EdgeInsets.only(right: 8),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         decoration: BoxDecoration(
-          color: isSelected ? tealFg : chipBg,
+          color: isSelected ? context.primaryFg : context.chipBg,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: isSelected ? tealFg : chipBorder),
+          border: Border.all(color: isSelected ? context.primaryFg : context.cardBorder),
         ),
         child: Text(
           label,
@@ -1308,9 +1211,7 @@ class _ClientDetailSheetState extends State<ClientDetailSheet> {
             fontFamily: 'Poppins',
             fontSize: 11,
             fontWeight: FontWeight.w600,
-            color: isSelected
-                ? Colors.white
-                : (widget.isDark ? Colors.white70 : Colors.black87),
+            color: isSelected ? Colors.white : context.chipText,
           ),
         ),
       ),
@@ -1327,13 +1228,11 @@ class SelectedItem {
 class _SerahkanBottomSheet extends StatefulWidget {
   final List<ClientModel> clients;
   final ClientController clientController;
-  final bool isDark;
   final ClientModel? initialClient;
 
   const _SerahkanBottomSheet({
     required this.clients,
     required this.clientController,
-    required this.isDark,
     this.initialClient,
   });
 
@@ -1489,28 +1388,6 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final Color sheetBg = widget.isDark
-        ? const Color(0xFF2B2930)
-        : Colors.white;
-    final Color divider = widget.isDark
-        ? const Color(0xFF49454F)
-        : const Color(0xFFE0E0E0);
-    final Color nameColor = widget.isDark
-        ? Colors.white
-        : const Color(0xFF1D1B20);
-    final Color subColor = widget.isDark
-        ? Colors.white54
-        : const Color(0xFF757575);
-    final Color tealFg = widget.isDark
-        ? const Color(0xFF4DB6AC)
-        : const Color(0xFF00796B);
-    final Color tealBg = widget.isDark
-        ? const Color(0xFF1A3A3A)
-        : const Color(0xFFE0F2F1);
-    final Color priceColor = widget.isDark
-        ? const Color(0xFF80CBC4)
-        : const Color(0xFF2E7D32);
-
     final selectedList = _selected.values.toList();
     final double totalEst = selectedList.fold(
       0.0,
@@ -1521,12 +1398,12 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
     return Container(
       clipBehavior: Clip.hardEdge,
       decoration: BoxDecoration(
-        color: sheetBg,
+        color: context.cardBg,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        border: Border(top: BorderSide(color: divider, width: 1)),
+        border: Border(top: BorderSide(color: context.cardBorder, width: 1)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: widget.isDark ? 0.35 : 0.10),
+            color: context.cardShadow,
             blurRadius: 16,
             offset: const Offset(0, -3),
           ),
@@ -1547,7 +1424,7 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: divider,
+                    color: context.cardBorder,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -1558,7 +1435,7 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
                   children: [
                     Icon(
                       Icons.local_shipping_outlined,
-                      color: tealFg,
+                      color: context.primaryFg,
                       size: 22,
                     ),
                     const SizedBox(width: 10),
@@ -1569,7 +1446,7 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
                           fontFamily: 'Poppins',
                           fontWeight: FontWeight.w700,
                           fontSize: 15,
-                          color: nameColor,
+                          color: context.nameColor,
                         ),
                       ),
                     ),
@@ -1580,7 +1457,7 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: tealBg,
+                          color: context.primaryBg,
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
@@ -1589,7 +1466,7 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
                             fontFamily: 'Poppins',
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
-                            color: tealFg,
+                            color: context.primaryFg,
                           ),
                         ),
                       ),
@@ -1632,9 +1509,7 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
                                   hintStyle: TextStyle(
                                     fontFamily: 'Poppins',
                                     fontSize: 13,
-                                    color: widget.isDark
-                                        ? Colors.white38
-                                        : Colors.black38,
+                                    color: context.isDark ? Colors.white38 : Colors.black38,
                                   ),
                                   prefixIcon: const Icon(
                                     Icons.person_search_outlined,
@@ -1642,15 +1517,15 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
                                   ),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(color: divider),
+                                    borderSide: BorderSide(color: context.cardBorder),
                                   ),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(color: divider),
+                                    borderSide: BorderSide(color: context.cardBorder),
                                   ),
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(color: tealFg),
+                                    borderSide: BorderSide(color: context.primaryFg),
                                   ),
                                   contentPadding: const EdgeInsets.symmetric(
                                     horizontal: 12,
@@ -1661,7 +1536,7 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
                                 style: TextStyle(
                                   fontFamily: 'Poppins',
                                   fontSize: 13,
-                                  color: nameColor,
+                                  color: context.nameColor,
                                 ),
                               );
                             },
@@ -1671,7 +1546,7 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
                             child: Material(
                               elevation: 4,
                               borderRadius: BorderRadius.circular(12),
-                              color: sheetBg,
+                              color: context.cardBg,
                               child: ConstrainedBox(
                                 constraints: const BoxConstraints(
                                   maxHeight: 200,
@@ -1695,7 +1570,7 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
                                             Icon(
                                               Icons.store_outlined,
                                               size: 16,
-                                              color: tealFg,
+                                              color: context.primaryFg,
                                             ),
                                             const SizedBox(width: 10),
                                             Expanded(
@@ -1712,7 +1587,7 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
                                                       fontSize: 13,
                                                       fontWeight:
                                                           FontWeight.w600,
-                                                      color: nameColor,
+                                                      color: context.nameColor,
                                                     ),
                                                   ),
                                                   if (client.address.isNotEmpty)
@@ -1721,7 +1596,7 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
                                                       style: TextStyle(
                                                         fontFamily: 'Poppins',
                                                         fontSize: 11,
-                                                        color: subColor,
+                                                        color: context.subColor,
                                                       ),
                                                       maxLines: 1,
                                                       overflow:
@@ -1749,13 +1624,13 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
                           vertical: 10,
                         ),
                         decoration: BoxDecoration(
-                          border: Border.all(color: tealFg),
+                          border: Border.all(color: context.primaryFg),
                           borderRadius: BorderRadius.circular(12),
-                          color: tealBg,
+                          color: context.primaryBg,
                         ),
                         child: Row(
                           children: [
-                            Icon(Icons.store_outlined, color: tealFg, size: 18),
+                            Icon(Icons.store_outlined, color: context.primaryFg, size: 18),
                             const SizedBox(width: 10),
                             Expanded(
                               child: Text(
@@ -1766,14 +1641,14 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
                                   fontFamily: 'Poppins',
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
-                                  color: tealFg,
+                                  color: context.primaryFg,
                                 ),
                               ),
                             ),
                             GestureDetector(
                               onTap: () =>
                                   setState(() => _selectedClient = null),
-                              child: Icon(Icons.close, size: 18, color: tealFg),
+                              child: Icon(Icons.close, size: 18, color: context.primaryFg),
                             ),
                           ],
                         ),
@@ -1789,20 +1664,20 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
                     hintStyle: TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 13,
-                      color: widget.isDark ? Colors.white38 : Colors.black38,
+                      color: context.isDark ? Colors.white38 : Colors.black38,
                     ),
                     prefixIcon: const Icon(Icons.search, size: 20),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: divider),
+                      borderSide: BorderSide(color: context.cardBorder),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: divider),
+                      borderSide: BorderSide(color: context.cardBorder),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: tealFg),
+                      borderSide: BorderSide(color: context.primaryFg),
                     ),
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 12,
@@ -1812,7 +1687,7 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
                   ),
                 ),
               ),
-              Divider(height: 1, color: divider),
+              Divider(height: 1, color: context.cardBorder),
               Expanded(
                 child: StreamBuilder<QuerySnapshot>(
                   stream: _catalogStream,
@@ -1843,7 +1718,7 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
                           style: TextStyle(
                             fontFamily: 'Poppins',
                             fontSize: 13,
-                            color: subColor,
+                            color: context.subColor,
                           ),
                         ),
                       );
@@ -1857,7 +1732,7 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
                       ),
                       itemCount: allItems.length,
                       separatorBuilder: (_, __) =>
-                          Divider(height: 1, color: divider),
+                          Divider(height: 1, color: context.cardBorder),
                       itemBuilder: (_, i) {
                         final catalog = allItems[i];
                         final isSelected = _selected.containsKey(catalog.id);
@@ -1875,11 +1750,11 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
                                   height: 24,
                                   decoration: BoxDecoration(
                                     color: isSelected
-                                        ? tealFg
+                                        ? context.primaryFg
                                         : Colors.transparent,
                                     borderRadius: BorderRadius.circular(6),
                                     border: Border.all(
-                                      color: isSelected ? tealFg : divider,
+                                      color: isSelected ? context.primaryFg : context.cardBorder,
                                       width: 1.5,
                                     ),
                                   ),
@@ -1909,7 +1784,7 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
                                         fontFamily: 'Poppins',
                                         fontSize: 13,
                                         fontWeight: FontWeight.w600,
-                                        color: nameColor,
+                                        color: context.nameColor,
                                       ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
@@ -1919,7 +1794,7 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
                                       style: TextStyle(
                                         fontFamily: 'Poppins',
                                         fontSize: 11,
-                                        color: subColor,
+                                        color: context.subColor,
                                       ),
                                     ),
                                     Text(
@@ -1928,7 +1803,7 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
                                         fontFamily: 'Poppins',
                                         fontSize: 12,
                                         fontWeight: FontWeight.w500,
-                                        color: priceColor,
+                                        color: context.successFg,
                                       ),
                                     ),
                                   ],
@@ -1938,7 +1813,6 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
                               if (isSelected && selItem != null)
                                 InlineQtyStepper(
                                   quantity: selItem.quantity,
-                                  isDark: widget.isDark,
                                   onDecrement: () => _changeQty(catalog.id, -1),
                                   onIncrement: () => _changeQty(catalog.id, 1),
                                 ),
@@ -1953,8 +1827,8 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
               Container(
                 padding: const EdgeInsets.fromLTRB(16, 10, 16, 20),
                 decoration: BoxDecoration(
-                  color: sheetBg,
-                  border: Border(top: BorderSide(color: divider, width: 1)),
+                  color: context.cardBg,
+                  border: Border(top: BorderSide(color: context.cardBorder, width: 1)),
                 ),
                 child: Row(
                   children: [
@@ -1967,7 +1841,7 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
                             style: TextStyle(
                               fontFamily: 'Poppins',
                               fontSize: 11,
-                              color: subColor,
+                              color: context.subColor,
                             ),
                           ),
                           Text(
@@ -1976,7 +1850,7 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
                               fontFamily: 'Poppins',
                               fontWeight: FontWeight.w700,
                               fontSize: 15,
-                              color: nameColor,
+                              color: context.nameColor,
                             ),
                           ),
                         ],
@@ -2023,35 +1897,24 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
 
 class InlineQtyStepper extends StatelessWidget {
   final int quantity;
-  final bool isDark;
   final VoidCallback onDecrement;
   final VoidCallback onIncrement;
 
   const InlineQtyStepper({
     super.key,
     required this.quantity,
-    required this.isDark,
     required this.onDecrement,
     required this.onIncrement,
   });
 
   @override
   Widget build(BuildContext context) {
-    final Color iconColor = isDark
-        ? const Color(0xFF80CBC4)
-        : const Color(0xFF2E7D32);
-    final Color textColor = isDark ? Colors.white : const Color(0xFF1D1B20);
-    final Color bg = isDark ? const Color(0xFF3A3740) : Colors.grey[100]!;
-    final Color border = isDark
-        ? const Color(0xFF49454F)
-        : const Color(0xFFE0E0E0);
-
     return Container(
       height: 32,
       decoration: BoxDecoration(
-        color: bg,
+        color: context.headerBg,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: border),
+        border: Border.all(color: context.cardBorder),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -2066,7 +1929,7 @@ class InlineQtyStepper extends StatelessWidget {
               child: Icon(
                 quantity <= 1 ? Icons.delete_outline : Icons.remove,
                 size: 16,
-                color: iconColor,
+                color: context.successFg,
               ),
             ),
           ),
@@ -2078,7 +1941,7 @@ class InlineQtyStepper extends StatelessWidget {
                 fontFamily: 'Poppins',
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: textColor,
+                color: context.nameColor,
               ),
             ),
           ),
@@ -2089,7 +1952,7 @@ class InlineQtyStepper extends StatelessWidget {
             ),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              child: Icon(Icons.add, size: 16, color: iconColor),
+              child: Icon(Icons.add, size: 16, color: context.successFg),
             ),
           ),
         ],

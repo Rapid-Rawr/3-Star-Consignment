@@ -74,4 +74,69 @@ extension AppColorsExtension on BuildContext {
 
   Color get chipBg => isDark ? const Color(0xFF333138) : const Color(0xFFE0E0E0);
   Color get chipText => isDark ? Colors.white70 : Colors.black87;
+
+  Color get scaffoldBg =>
+      isDark ? const Color(0xFF1C1B1F) : const Color(0xFFF5F5F5);
+
+  Color get headerBg =>
+      isDark ? const Color(0xFF3A3540) : Colors.grey.shade100;
+
+  Color get pendingFg =>
+      isDark ? const Color(0xFFFFD54F) : const Color(0xFFF57F17);
+  Color get pendingBg =>
+      isDark ? const Color(0xFF2A2A1A) : const Color(0xFFFFF8E1);
+
+  Color get processingFg =>
+      isDark ? const Color(0xFF4DB6AC) : const Color(0xFF00796B);
+  Color get processingBg =>
+      isDark ? const Color(0xFF1A3A3A) : const Color(0xFFE0F2F1);
+
+  Color get packedFg =>
+      isDark ? const Color(0xFF9C7AB6) : const Color(0xFF6A1B9A);
+  Color get packedBg =>
+      isDark ? const Color(0xFF3A2A4A) : const Color(0xFFF3E5F5);
+
+  Color get receivedFg =>
+      isDark ? const Color(0xFF90CAF9) : const Color(0xFF1565C0);
+  Color get receivedBg =>
+      isDark ? const Color(0xFF1A2A3A) : const Color(0xFFE3F2FD);
+
+  Color get rejectedFg =>
+      isDark ? const Color(0xFFFF8A8A) : Colors.red;
+  Color get rejectedBg =>
+      isDark ? const Color(0xFF3A1A1A) : const Color(0xFFFCE8E8);
+
+  Color statusFg(String status) {
+    switch (status) {
+      case 'pending':
+        return pendingFg;
+      case 'processing':
+        return processingFg;
+      case 'packed':
+        return packedFg;
+      case 'received':
+        return receivedFg;
+      case 'rejected':
+        return rejectedFg;
+      default:
+        return subColor;
+    }
+  }
+
+  Color statusBg(String status) {
+    switch (status) {
+      case 'pending':
+        return pendingBg;
+      case 'processing':
+        return processingBg;
+      case 'packed':
+        return packedBg;
+      case 'received':
+        return receivedBg;
+      case 'rejected':
+        return rejectedBg;
+      default:
+        return cardBg;
+    }
+  }
 }

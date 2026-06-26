@@ -92,7 +92,6 @@ void main() {
             builder: (_, setState) => Scaffold(
               body: InlineQtyStepper(
                 quantity: qty,
-                isDark: false,
                 onDecrement: () => setState(() => qty--),
                 onIncrement: () => setState(() => qty++),
               ),
@@ -111,7 +110,6 @@ void main() {
             builder: (_, setState) => Scaffold(
               body: InlineQtyStepper(
                 quantity: qty,
-                isDark: false,
                 onDecrement: () => setState(() => qty--),
                 onIncrement: () => setState(() => qty++),
               ),
@@ -132,7 +130,6 @@ void main() {
             builder: (_, setState) => Scaffold(
               body: InlineQtyStepper(
                 quantity: qty,
-                isDark: false,
                 onDecrement: () => setState(() => qty--),
                 onIncrement: () => setState(() => qty++),
               ),
@@ -151,7 +148,6 @@ void main() {
           Scaffold(
             body: InlineQtyStepper(
               quantity: 1,
-              isDark: false,
               onDecrement: () {},
               onIncrement: () {},
             ),
@@ -168,7 +164,6 @@ void main() {
           Scaffold(
             body: InlineQtyStepper(
               quantity: 2,
-              isDark: false,
               onDecrement: () {},
               onIncrement: () {},
             ),
@@ -185,7 +180,6 @@ void main() {
           Scaffold(
             body: InlineQtyStepper(
               quantity: 2,
-              isDark: true,
               onDecrement: () {},
               onIncrement: () {},
             ),
@@ -195,7 +189,7 @@ void main() {
       );
       final container = tester.widget<Container>(find.byType(Container).first);
       final decoration = container.decoration as BoxDecoration;
-      expect(decoration.color, const Color(0xFF3A3740));
+      expect(decoration.color, const Color(0xFF3A3540));
     });
   });
 
@@ -214,7 +208,6 @@ void main() {
             body: ClientCard(
               client: client,
               displayItems: client.borrowedItems,
-              isDark: false,
               formatDate: (_) => '-',
               onDetail: () {},
               onSerahkan: () {},
@@ -233,7 +226,6 @@ void main() {
             body: ClientCard(
               client: client,
               displayItems: client.borrowedItems,
-              isDark: false,
               formatDate: (_) => '-',
               onDetail: () {},
               onSerahkan: () {},
@@ -252,7 +244,6 @@ void main() {
             body: ClientCard(
               client: client,
               displayItems: client.borrowedItems,
-              isDark: false,
               formatDate: (_) => '-',
               onDetail: () {},
               onSerahkan: () {},
@@ -272,7 +263,6 @@ void main() {
             body: ClientCard(
               client: client,
               displayItems: client.borrowedItems,
-              isDark: false,
               formatDate: (_) => '-',
               onDetail: () {},
               onSerahkan: () {},
@@ -293,7 +283,6 @@ void main() {
             body: ClientCard(
               client: emptyClient,
               displayItems: [],
-              isDark: false,
               formatDate: (_) => '-',
               onDetail: () {},
               onSerahkan: () {},
@@ -313,7 +302,6 @@ void main() {
             body: ClientCard(
               client: client,
               displayItems: client.borrowedItems,
-              isDark: false,
               formatDate: (_) => '-',
               onDetail: () => called = true,
               onSerahkan: () {},
@@ -336,7 +324,6 @@ void main() {
             body: ClientCard(
               client: client,
               displayItems: client.borrowedItems,
-              isDark: false,
               formatDate: (_) => '-',
               onDetail: () {},
               onSerahkan: () => called = true,
@@ -369,7 +356,6 @@ void main() {
               child: ClientCard(
                 client: client.copyWith(borrowedItems: manyItems),
                 displayItems: manyItems,
-                isDark: false,
                 formatDate: (_) => '-',
                 onDetail: () {},
                 onSerahkan: () {},
@@ -405,7 +391,6 @@ void main() {
                   backgroundColor: Colors.transparent,
                   builder: (_) => ClientDetailSheet(
                     client: client,
-                    isDark: false,
                     formatDate: (dt) => dt?.toString() ?? '-',
                     initialCategory: initialCategory,
                   ),
@@ -468,7 +453,6 @@ void main() {
                   backgroundColor: Colors.transparent,
                   builder: (_) => ClientDetailSheet(
                     client: multiCatClient,
-                    isDark: false,
                     formatDate: (_) => '-',
                     initialCategory: null,
                   ),
@@ -534,7 +518,6 @@ void main() {
                   backgroundColor: Colors.transparent,
                   builder: (_) => ClientDetailSheet(
                     client: client,
-                    isDark: false,
                     formatDate: (dt) {
                       if (dt == null) return '-';
                       const m = [
@@ -598,7 +581,6 @@ void main() {
                   backgroundColor: Colors.transparent,
                   builder: (_) => ClientDetailSheet(
                     client: client,
-                    isDark: false,
                     formatDate: (dt) {
                       if (dt == null) return '-';
                       const m = [

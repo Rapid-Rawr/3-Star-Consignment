@@ -11,6 +11,7 @@ import '../../widgets/catalog_image.dart';
 import '../../widgets/gradient_button.dart';
 import '../../utils/currency_format.dart';
 import '../../widgets/app_dialog.dart';
+import '../../utils/app_colors.dart';
 
 class RequestListPage extends StatefulWidget {
   final ConsignmentRequestModel? initialBatch;
@@ -41,9 +42,7 @@ class _RequestListPageState extends State<RequestListPage> {
 
     if (widget.initialBatch != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-
-        _showDetail(context, widget.initialBatch!, isDark);
+        _showDetail(context, widget.initialBatch!);
       });
     }
   }
@@ -69,33 +68,33 @@ class _RequestListPageState extends State<RequestListPage> {
     super.dispose();
   }
 
-  Color _batchStatusBg(ConsignmentBatchStatus s, bool isDark) {
+  Color _batchStatusBg(BuildContext context, ConsignmentBatchStatus s) {
     switch (s) {
       case ConsignmentBatchStatus.pending:
-        return isDark ? const Color(0xFF2A2A1A) : const Color(0xFFFFF8E1);
+        return context.pendingBg;
       case ConsignmentBatchStatus.processing:
-        return isDark ? const Color(0xFF1A2A3A) : const Color(0xFFE3F2FD);
+        return context.infoBg;
       case ConsignmentBatchStatus.packed:
-        return isDark ? const Color(0xFF1A3A2A) : const Color(0xFFE6F4EA);
+        return context.packedBg;
       case ConsignmentBatchStatus.received:
-        return isDark ? const Color(0xFF1A3A3A) : const Color(0xFFE0F2F1);
+        return context.primaryBg;
       case ConsignmentBatchStatus.rejected:
-        return isDark ? const Color(0xFF3A1A1A) : const Color(0xFFFCE8E8);
+        return context.rejectedBg;
     }
   }
 
-  Color _batchStatusFg(ConsignmentBatchStatus s, bool isDark) {
+  Color _batchStatusFg(BuildContext context, ConsignmentBatchStatus s) {
     switch (s) {
       case ConsignmentBatchStatus.pending:
-        return isDark ? const Color(0xFFFFD54F) : const Color(0xFFF57F17);
+        return context.pendingFg;
       case ConsignmentBatchStatus.processing:
-        return isDark ? const Color(0xFF90CAF9) : const Color(0xFF1565C0);
+        return context.infoFg;
       case ConsignmentBatchStatus.packed:
-        return isDark ? const Color(0xFF80CBC4) : const Color(0xFF2E7D32);
+        return context.packedFg;
       case ConsignmentBatchStatus.received:
-        return isDark ? const Color(0xFF4DB6AC) : const Color(0xFF00796B);
+        return context.primaryFg;
       case ConsignmentBatchStatus.rejected:
-        return isDark ? const Color(0xFFFF8A8A) : Colors.red;
+        return context.rejectedFg;
     }
   }
 
@@ -129,29 +128,29 @@ class _RequestListPageState extends State<RequestListPage> {
     }
   }
 
-  Color _itemStatusBg(ConsignmentItemStatus s, bool isDark) {
+  Color _itemStatusBg(BuildContext context, ConsignmentItemStatus s) {
     switch (s) {
       case ConsignmentItemStatus.pending:
-        return isDark ? const Color(0xFF2A2A1A) : const Color(0xFFFFF8E1);
+        return context.pendingBg;
       case ConsignmentItemStatus.approved:
-        return isDark ? const Color(0xFF1A3A2A) : const Color(0xFFE6F4EA);
+        return context.successBg;
       case ConsignmentItemStatus.partial:
-        return isDark ? const Color(0xFF1A2A3A) : const Color(0xFFE3F2FD);
+        return context.infoBg;
       case ConsignmentItemStatus.rejected:
-        return isDark ? const Color(0xFF3A1A1A) : const Color(0xFFFCE8E8);
+        return context.rejectedBg;
     }
   }
 
-  Color _itemStatusFg(ConsignmentItemStatus s, bool isDark) {
+  Color _itemStatusFg(BuildContext context, ConsignmentItemStatus s) {
     switch (s) {
       case ConsignmentItemStatus.pending:
-        return isDark ? const Color(0xFFFFD54F) : const Color(0xFFF57F17);
+        return context.pendingFg;
       case ConsignmentItemStatus.approved:
-        return isDark ? const Color(0xFF80CBC4) : const Color(0xFF2E7D32);
+        return context.successFg;
       case ConsignmentItemStatus.partial:
-        return isDark ? const Color(0xFF90CAF9) : const Color(0xFF1565C0);
+        return context.infoFg;
       case ConsignmentItemStatus.rejected:
-        return isDark ? const Color(0xFFFF8A8A) : Colors.red;
+        return context.rejectedFg;
     }
   }
 
@@ -206,7 +205,6 @@ class _RequestListPageState extends State<RequestListPage> {
     ConsignmentRequestModel batch,
     int itemIndex,
     ConsignmentItemEntry item,
-    bool isDark,
   ) async {
     final qtyCtrl = TextEditingController();
     int? result;
@@ -227,7 +225,7 @@ class _RequestListPageState extends State<RequestListPage> {
             controller: qtyCtrl,
             keyboardType: TextInputType.number,
             autofocus: true,
-            cursorColor: isDark ? Colors.white : const Color(0xFF1D1B20),
+            cursorColor: context.nameColor,
             decoration: InputDecoration(
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
@@ -235,7 +233,7 @@ class _RequestListPageState extends State<RequestListPage> {
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
                 borderSide: BorderSide(
-                  color: isDark ? Colors.white : const Color(0xFF1D1B20),
+                  color: context.nameColor,
                   width: 2,
                 ),
               ),
@@ -324,7 +322,6 @@ class _RequestListPageState extends State<RequestListPage> {
   void _showDetail(
     BuildContext context,
     ConsignmentRequestModel batch,
-    bool isDark,
   ) {
     final role = context.read<AuthProvider>().role;
     final isAdmin = role == Roles.admin;
@@ -335,7 +332,6 @@ class _RequestListPageState extends State<RequestListPage> {
       backgroundColor: Colors.transparent,
       builder: (ctx) => _DetailSheet(
         batch: batch,
-        isDark: isDark,
         isAdmin: isAdmin,
         itemStatusBg: _itemStatusBg,
         itemStatusFg: _itemStatusFg,
@@ -362,7 +358,7 @@ class _RequestListPageState extends State<RequestListPage> {
           ConsignmentItemStatus.pending,
         ),
         onPartialItem: (index) =>
-            _partialDialog(context, batch, index, batch.items[index], isDark),
+            _partialDialog(context, batch, index, batch.items[index]),
         onPack: () => _controller.packBatch(batch.id),
         onReceive: () => _controller.receiveBatch(batch.id),
         onRejectBatch: () => _controller.rejectBatch(batch.id),
@@ -374,12 +370,11 @@ class _RequestListPageState extends State<RequestListPage> {
   Future<void> _approveAllThenDetail(
     BuildContext context,
     ConsignmentRequestModel batch,
-    bool isDark,
   ) async {
     final result = await _controller.approveAllPending(batch.id);
     if (!context.mounted) return;
     if (result['success'] == true) {
-      _showDetail(context, batch, isDark);
+      _showDetail(context, batch);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -393,12 +388,11 @@ class _RequestListPageState extends State<RequestListPage> {
   Future<void> _rejectAllThenDetail(
     BuildContext context,
     ConsignmentRequestModel batch,
-    bool isDark,
   ) async {
     final result = await _controller.rejectAllPending(batch.id);
     if (!context.mounted) return;
     if (result['success'] == true) {
-      _showDetail(context, batch, isDark);
+      _showDetail(context, batch);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -411,10 +405,6 @@ class _RequestListPageState extends State<RequestListPage> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final Color emptyIcon = isDark ? Colors.white24 : Colors.black26;
-    final Color emptyText = isDark ? Colors.white38 : const Color(0xFF9E9E9E);
-
     final role = context.watch<AuthProvider>().role;
     final user = FirebaseAuth.instance.currentUser;
     final isAdmin = role == Roles.admin;
@@ -490,14 +480,14 @@ class _RequestListPageState extends State<RequestListPage> {
                         Icon(
                           Icons.assignment_outlined,
                           size: 64,
-                          color: emptyIcon,
+                          color: context.emptyIcon,
                         ),
                         const SizedBox(height: 16),
                         Text(
                           'Belum Ada Pengajuan',
                           style: TextStyle(
                             fontSize: 16,
-                            color: emptyText,
+                            color: context.emptyText,
                             fontFamily: 'Poppins',
                           ),
                         ),
@@ -561,14 +551,14 @@ class _RequestListPageState extends State<RequestListPage> {
                         Icon(
                           Icons.search_off_rounded,
                           size: 64,
-                          color: emptyIcon,
+                          color: context.emptyIcon,
                         ),
                         const SizedBox(height: 16),
                         Text(
                           'Pengajuan Tidak Ditemukan',
                           style: TextStyle(
                             fontSize: 16,
-                            color: emptyText,
+                            color: context.emptyText,
                             fontFamily: 'Poppins',
                           ),
                         ),
@@ -597,7 +587,6 @@ class _RequestListPageState extends State<RequestListPage> {
                       batch: batch,
                       pendingCount: pendingCount,
                       categories: categories,
-                      isDark: isDark,
                       isAdmin: isAdmin,
                       clientPhotoMap: _clientPhotoMap,
                       batchStatusBg: _batchStatusBg,
@@ -605,18 +594,18 @@ class _RequestListPageState extends State<RequestListPage> {
                       batchStatusIcon: _batchStatusIcon,
                       batchStatusLabel: _batchStatusLabel,
                       formatDate: _formatDate,
-                      onDetail: () => _showDetail(context, batch, isDark),
+                      onDetail: () => _showDetail(context, batch),
                       onApproveAll:
                           isAdmin &&
                               batch.status != ConsignmentBatchStatus.packed &&
                               pendingCount > 0
-                          ? () => _approveAllThenDetail(context, batch, isDark)
+                          ? () => _approveAllThenDetail(context, batch)
                           : null,
                       onRejectAll:
                           isAdmin &&
                               batch.status != ConsignmentBatchStatus.packed &&
                               pendingCount > 0
-                          ? () => _rejectAllThenDetail(context, batch, isDark)
+                          ? () => _rejectAllThenDetail(context, batch)
                           : null,
                       onDelete:
                           role == Roles.client &&
@@ -641,11 +630,10 @@ class _BatchCard extends StatelessWidget {
   final ConsignmentRequestModel batch;
   final int pendingCount;
   final List<String> categories;
-  final bool isDark;
   final bool isAdmin;
   final Map<String, String> clientPhotoMap;
-  final Color Function(ConsignmentBatchStatus, bool) batchStatusBg;
-  final Color Function(ConsignmentBatchStatus, bool) batchStatusFg;
+  final Color Function(BuildContext, ConsignmentBatchStatus) batchStatusBg;
+  final Color Function(BuildContext, ConsignmentBatchStatus) batchStatusFg;
   final IconData Function(ConsignmentBatchStatus) batchStatusIcon;
   final String Function(ConsignmentBatchStatus) batchStatusLabel;
   final String Function(DateTime?) formatDate;
@@ -658,7 +646,6 @@ class _BatchCard extends StatelessWidget {
     required this.batch,
     required this.pendingCount,
     required this.categories,
-    required this.isDark,
     required this.isAdmin,
     required this.clientPhotoMap,
     required this.batchStatusBg,
@@ -674,33 +661,18 @@ class _BatchCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color cardBg = isDark ? const Color(0xFF2B2930) : Colors.white;
-    final Color cardBorder = isDark
-        ? const Color(0xFF49454F)
-        : const Color(0xFFE0E0E0);
-    final Color nameColor = isDark ? Colors.white : const Color(0xFF1D1B20);
-    final Color subColor = isDark ? Colors.white54 : const Color(0xFF757575);
-    final Color accentGreen = isDark
-        ? const Color(0xFF80CBC4)
-        : const Color(0xFF2E7D32);
-    final Color accentGreenBg = isDark
-        ? const Color(0xFF1A3A2A)
-        : const Color(0xFFE6F4EA);
-
-    final statusBg = batchStatusBg(batch.status, isDark);
-    final statusFg = batchStatusFg(batch.status, isDark);
+    final statusBg = batchStatusBg(context, batch.status);
+    final statusFg = batchStatusFg(context, batch.status);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
-        color: cardBg,
+        color: context.cardBg,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: cardBorder, width: 1),
+        border: Border.all(color: context.cardBorder, width: 1),
         boxShadow: [
           BoxShadow(
-            color: isDark
-                ? Colors.black26
-                : Colors.black.withValues(alpha: 0.06),
+            color: context.cardShadow,
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -719,17 +691,17 @@ class _BatchCard extends StatelessWidget {
                     return photoUrl != null && photoUrl.isNotEmpty
                         ? CircleAvatar(
                             radius: 22,
-                            backgroundColor: accentGreenBg,
+                            backgroundColor: context.successBg,
                             backgroundImage: NetworkImage(photoUrl),
                             onBackgroundImageError: (_, __) {},
                           )
                         : CircleAvatar(
                             radius: 22,
-                            backgroundColor: accentGreenBg,
+                            backgroundColor: context.successBg,
                             child: Icon(
                               Icons.store_outlined,
                               size: 22,
-                              color: accentGreen,
+                              color: context.successFg,
                             ),
                           );
                   },
@@ -747,7 +719,7 @@ class _BatchCard extends StatelessWidget {
                           fontFamily: 'Poppins',
                           fontWeight: FontWeight.w700,
                           fontSize: 15,
-                          color: nameColor,
+                          color: context.nameColor,
                         ),
                       ),
                       if (batch.clientAddress.isNotEmpty) ...[
@@ -757,7 +729,7 @@ class _BatchCard extends StatelessWidget {
                           style: TextStyle(
                             fontFamily: 'Poppins',
                             fontSize: 12,
-                            color: subColor,
+                            color: context.subColor,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -772,7 +744,7 @@ class _BatchCard extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: accentGreenBg,
+                    color: context.successBg,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -781,7 +753,7 @@ class _BatchCard extends StatelessWidget {
                       fontFamily: 'Poppins',
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
-                      color: accentGreen,
+                      color: context.successFg,
                     ),
                   ),
                 ),
@@ -792,14 +764,14 @@ class _BatchCard extends StatelessWidget {
 
             Row(
               children: [
-                Icon(Icons.calendar_today_outlined, size: 12, color: subColor),
+                Icon(Icons.calendar_today_outlined, size: 12, color: context.subColor),
                 const SizedBox(width: 4),
                 Text(
                   formatDate(batch.createdAt),
                   style: TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 11,
-                    color: subColor,
+                    color: context.subColor,
                   ),
                 ),
                 const Spacer(),
@@ -848,15 +820,13 @@ class _BatchCard extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: isDark
-                        ? const Color(0xFF3A3540)
-                        : const Color(0xFFF3EFF4),
+                    color: context.headerBg,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.category_outlined, size: 11, color: subColor),
+                      Icon(Icons.category_outlined, size: 11, color: context.subColor),
                       const SizedBox(width: 4),
                       Text(
                         cat,
@@ -864,7 +834,7 @@ class _BatchCard extends StatelessWidget {
                           fontFamily: 'Poppins',
                           fontSize: 11,
                           fontWeight: FontWeight.w500,
-                          color: subColor,
+                          color: context.subColor,
                         ),
                       ),
                     ],
@@ -886,8 +856,8 @@ class _BatchCard extends StatelessWidget {
                       style: TextStyle(fontFamily: 'Poppins', fontSize: 12),
                     ),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: nameColor,
-                      side: BorderSide(color: cardBorder),
+                      foregroundColor: context.nameColor,
+                      side: BorderSide(color: context.cardBorder),
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
@@ -899,10 +869,8 @@ class _BatchCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   _IconActionButton(
                     icon: Icons.check_rounded,
-                    color: const Color(0xFF2E7D32),
-                    bgColor: isDark
-                        ? const Color(0xFF1A3A2A)
-                        : const Color(0xFFE6F4EA),
+                    color: context.successFg,
+                    bgColor: context.successBg,
                     onTap: onApproveAll!,
                   ),
                 ],
@@ -910,10 +878,8 @@ class _BatchCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   _IconActionButton(
                     icon: Icons.close_rounded,
-                    color: isDark ? const Color(0xFFFF8A8A) : Colors.red,
-                    bgColor: isDark
-                        ? const Color(0xFF3A1A1A)
-                        : const Color(0xFFFCE8E8),
+                    color: context.rejectedFg,
+                    bgColor: context.rejectedBg,
                     onTap: onRejectAll!,
                   ),
                 ],
@@ -921,10 +887,8 @@ class _BatchCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   _IconActionButton(
                     icon: Icons.delete_outline_rounded,
-                    color: isDark ? const Color(0xFFFF8A8A) : Colors.red,
-                    bgColor: isDark
-                        ? const Color(0xFF3A1A1A)
-                        : const Color(0xFFFCE8E8),
+                    color: context.rejectedFg,
+                    bgColor: context.rejectedBg,
                     onTap: onDelete!,
                   ),
                 ],
@@ -970,14 +934,13 @@ class _IconActionButton extends StatelessWidget {
 
 class _DetailSheet extends StatefulWidget {
   final ConsignmentRequestModel batch;
-  final bool isDark;
   final bool isAdmin;
-  final Color Function(ConsignmentItemStatus, bool) itemStatusBg;
-  final Color Function(ConsignmentItemStatus, bool) itemStatusFg;
+  final Color Function(BuildContext, ConsignmentItemStatus) itemStatusBg;
+  final Color Function(BuildContext, ConsignmentItemStatus) itemStatusFg;
   final IconData Function(ConsignmentItemStatus) itemStatusIcon;
   final String Function(ConsignmentItemStatus) itemStatusLabel;
-  final Color Function(ConsignmentBatchStatus, bool) batchStatusBg;
-  final Color Function(ConsignmentBatchStatus, bool) batchStatusFg;
+  final Color Function(BuildContext, ConsignmentBatchStatus) batchStatusBg;
+  final Color Function(BuildContext, ConsignmentBatchStatus) batchStatusFg;
   final IconData Function(ConsignmentBatchStatus) batchStatusIcon;
   final String Function(ConsignmentBatchStatus) batchStatusLabel;
   final String Function(DateTime?) formatDate;
@@ -992,7 +955,6 @@ class _DetailSheet extends StatefulWidget {
 
   const _DetailSheet({
     required this.batch,
-    required this.isDark,
     required this.isAdmin,
     required this.itemStatusBg,
     required this.itemStatusFg,
@@ -1046,7 +1008,6 @@ class _DetailSheetState extends State<_DetailSheet> {
 
         return _DetailSheetBody(
           batch: batch,
-          isDark: widget.isDark,
           isAdmin: widget.isAdmin,
           itemStatusBg: widget.itemStatusBg,
           itemStatusFg: widget.itemStatusFg,
@@ -1073,14 +1034,13 @@ class _DetailSheetState extends State<_DetailSheet> {
 
 class _DetailSheetBody extends StatelessWidget {
   final ConsignmentRequestModel batch;
-  final bool isDark;
   final bool isAdmin;
-  final Color Function(ConsignmentItemStatus, bool) itemStatusBg;
-  final Color Function(ConsignmentItemStatus, bool) itemStatusFg;
+  final Color Function(BuildContext, ConsignmentItemStatus) itemStatusBg;
+  final Color Function(BuildContext, ConsignmentItemStatus) itemStatusFg;
   final IconData Function(ConsignmentItemStatus) itemStatusIcon;
   final String Function(ConsignmentItemStatus) itemStatusLabel;
-  final Color Function(ConsignmentBatchStatus, bool) batchStatusBg;
-  final Color Function(ConsignmentBatchStatus, bool) batchStatusFg;
+  final Color Function(BuildContext, ConsignmentBatchStatus) batchStatusBg;
+  final Color Function(BuildContext, ConsignmentBatchStatus) batchStatusFg;
   final IconData Function(ConsignmentBatchStatus) batchStatusIcon;
   final String Function(ConsignmentBatchStatus) batchStatusLabel;
   final String Function(DateTime?) formatDate;
@@ -1095,7 +1055,6 @@ class _DetailSheetBody extends StatelessWidget {
 
   const _DetailSheetBody({
     required this.batch,
-    required this.isDark,
     required this.isAdmin,
     required this.itemStatusBg,
     required this.itemStatusFg,
@@ -1118,13 +1077,6 @@ class _DetailSheetBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color sheetBg = isDark ? const Color(0xFF2B2930) : Colors.white;
-    final Color nameColor = isDark ? Colors.white : const Color(0xFF1D1B20);
-    final Color subColor = isDark ? Colors.white54 : const Color(0xFF757575);
-    final Color divider = isDark
-        ? const Color(0xFF49454F)
-        : const Color(0xFFE0E0E0);
-
     final bool isLocked = batch.status == ConsignmentBatchStatus.packed;
     final bool hasPendingItems = batch.items.any(
       (it) => it.itemStatus == ConsignmentItemStatus.pending,
@@ -1176,7 +1128,7 @@ class _DetailSheetBody extends StatelessWidget {
         top: false,
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: sheetBg,
+            color: context.cardBg,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
           ),
           child: Column(
@@ -1187,7 +1139,7 @@ class _DetailSheetBody extends StatelessWidget {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: divider,
+                    color: context.cardBorder,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -1197,7 +1149,7 @@ class _DetailSheetBody extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
                 child: Row(
                   children: [
-                    Icon(Icons.person_outline, size: 16, color: subColor),
+                    Icon(Icons.person_outline, size: 16, color: context.subColor),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
@@ -1208,7 +1160,7 @@ class _DetailSheetBody extends StatelessWidget {
                           fontFamily: 'Poppins',
                           fontWeight: FontWeight.w700,
                           fontSize: 15,
-                          color: nameColor,
+                          color: context.nameColor,
                         ),
                       ),
                     ),
@@ -1218,7 +1170,7 @@ class _DetailSheetBody extends StatelessWidget {
                         vertical: 3,
                       ),
                       decoration: BoxDecoration(
-                        color: batchStatusBg(batch.status, isDark),
+                        color: batchStatusBg(context, batch.status),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Row(
@@ -1227,7 +1179,7 @@ class _DetailSheetBody extends StatelessWidget {
                           Icon(
                             batchStatusIcon(batch.status),
                             size: 11,
-                            color: batchStatusFg(batch.status, isDark),
+                            color: batchStatusFg(context, batch.status),
                           ),
                           const SizedBox(width: 4),
                           Text(
@@ -1236,7 +1188,7 @@ class _DetailSheetBody extends StatelessWidget {
                               fontFamily: 'Poppins',
                               fontSize: 10,
                               fontWeight: FontWeight.w600,
-                              color: batchStatusFg(batch.status, isDark),
+                              color: batchStatusFg(context, batch.status),
                             ),
                           ),
                         ],
@@ -1258,7 +1210,7 @@ class _DetailSheetBody extends StatelessWidget {
                       Icon(
                         Icons.location_on_outlined,
                         size: 13,
-                        color: subColor,
+                        color: context.subColor,
                       ),
                       const SizedBox(width: 6),
                       Expanded(
@@ -1267,7 +1219,7 @@ class _DetailSheetBody extends StatelessWidget {
                           style: TextStyle(
                             fontFamily: 'Poppins',
                             fontSize: 12,
-                            color: subColor,
+                            color: context.subColor,
                           ),
                         ),
                       ),
@@ -1281,7 +1233,7 @@ class _DetailSheetBody extends StatelessWidget {
                     Icon(
                       Icons.calendar_today_outlined,
                       size: 13,
-                      color: subColor,
+                      color: context.subColor,
                     ),
                     const SizedBox(width: 6),
                     Text(
@@ -1289,7 +1241,7 @@ class _DetailSheetBody extends StatelessWidget {
                       style: TextStyle(
                         fontFamily: 'Poppins',
                         fontSize: 12,
-                        color: subColor,
+                        color: context.subColor,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -1298,7 +1250,7 @@ class _DetailSheetBody extends StatelessWidget {
                       style: TextStyle(
                         fontFamily: 'Poppins',
                         fontSize: 12,
-                        color: subColor,
+                        color: context.subColor,
                       ),
                     ),
                     const Spacer(),
@@ -1310,9 +1262,7 @@ class _DetailSheetBody extends StatelessWidget {
                           vertical: 3,
                         ),
                         decoration: BoxDecoration(
-                          color: isDark
-                              ? const Color(0xFF1D2F3C)
-                              : const Color(0xFFE3F2FD),
+                          color: context.infoBg,
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Row(
@@ -1321,9 +1271,7 @@ class _DetailSheetBody extends StatelessWidget {
                             Icon(
                               Icons.person_outline,
                               size: 11,
-                              color: isDark
-                                  ? const Color(0xFF64B5F6)
-                                  : const Color(0xFF1976D2),
+                              color: context.infoFg,
                             ),
                             const SizedBox(width: 4),
                             Text(
@@ -1332,9 +1280,7 @@ class _DetailSheetBody extends StatelessWidget {
                                 fontFamily: 'Poppins',
                                 fontSize: 10,
                                 fontWeight: FontWeight.w600,
-                                color: isDark
-                                    ? const Color(0xFF64B5F6)
-                                    : const Color(0xFF1976D2),
+                                color: context.infoFg,
                               ),
                             ),
                           ],
@@ -1380,9 +1326,7 @@ class _DetailSheetBody extends StatelessWidget {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: isDark
-                                ? const Color(0xFF3A2A2A)
-                                : const Color(0xFFFCE8E8),
+                            color: context.rejectedBg,
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Row(
@@ -1391,9 +1335,7 @@ class _DetailSheetBody extends StatelessWidget {
                               Icon(
                                 Icons.restart_alt_rounded,
                                 size: 12,
-                                color: isDark
-                                    ? const Color(0xFFFF8A8A)
-                                    : Colors.red,
+                                color: context.rejectedFg,
                               ),
                               const SizedBox(width: 4),
                               Text(
@@ -1402,9 +1344,7 @@ class _DetailSheetBody extends StatelessWidget {
                                   fontFamily: 'Poppins',
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
-                                  color: isDark
-                                      ? const Color(0xFFFF8A8A)
-                                      : Colors.red,
+                                  color: context.rejectedFg,
                                 ),
                               ),
                             ],
@@ -1416,7 +1356,7 @@ class _DetailSheetBody extends StatelessWidget {
                 ),
               ),
 
-              Divider(height: 1, color: divider),
+              Divider(height: 1, color: context.cardBorder),
 
               Expanded(
                 child: ListView.separated(
@@ -1427,16 +1367,13 @@ class _DetailSheetBody extends StatelessWidget {
                   ),
                   itemCount: batch.items.length,
                   separatorBuilder: (_, __) =>
-                      Divider(height: 1, color: divider),
+                      Divider(height: 1, color: context.cardBorder),
                   itemBuilder: (ctx, i) {
                     final item = batch.items[i];
                     final isPending =
                         item.itemStatus == ConsignmentItemStatus.pending;
-                    final fg = itemStatusFg(item.itemStatus, isDark);
-                    final bg = itemStatusBg(item.itemStatus, isDark);
-                    final accentGreen = isDark
-                        ? const Color(0xFF80CBC4)
-                        : const Color(0xFF2E7D32);
+                    final fg = itemStatusFg(context, item.itemStatus);
+                    final bg = itemStatusBg(context, item.itemStatus);
 
                     return Padding(
                       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -1461,7 +1398,7 @@ class _DetailSheetBody extends StatelessWidget {
                                         fontFamily: 'Poppins',
                                         fontWeight: FontWeight.w600,
                                         fontSize: 14,
-                                        color: nameColor,
+                                        color: context.nameColor,
                                       ),
                                     ),
                                     Text(
@@ -1469,7 +1406,7 @@ class _DetailSheetBody extends StatelessWidget {
                                       style: TextStyle(
                                         fontFamily: 'Poppins',
                                         fontSize: 11,
-                                        color: subColor,
+                                        color: context.subColor,
                                       ),
                                     ),
                                     Text(
@@ -1478,7 +1415,7 @@ class _DetailSheetBody extends StatelessWidget {
                                         fontFamily: 'Poppins',
                                         fontSize: 12,
                                         fontWeight: FontWeight.w600,
-                                        color: accentGreen,
+                                        color: context.successFg,
                                       ),
                                     ),
                                   ],
@@ -1492,7 +1429,7 @@ class _DetailSheetBody extends StatelessWidget {
                               Icon(
                                 Icons.layers_outlined,
                                 size: 12,
-                                color: subColor,
+                                color: context.subColor,
                               ),
                               const SizedBox(width: 4),
                               Text(
@@ -1500,7 +1437,7 @@ class _DetailSheetBody extends StatelessWidget {
                                 style: TextStyle(
                                   fontFamily: 'Poppins',
                                   fontSize: 11,
-                                  color: subColor,
+                                  color: context.subColor,
                                 ),
                               ),
                               if (item.approvedQty != null) ...[
@@ -1555,7 +1492,7 @@ class _DetailSheetBody extends StatelessWidget {
                             style: TextStyle(
                               fontFamily: 'Poppins',
                               fontSize: 10,
-                              color: subColor,
+                              color: context.subColor,
                             ),
                           ),
                           if (isAdmin && !isLocked && isPending) ...[
@@ -1564,19 +1501,15 @@ class _DetailSheetBody extends StatelessWidget {
                               children: [
                                 _IconActionButton(
                                   icon: Icons.check_rounded,
-                                  color: const Color(0xFF2E7D32),
-                                  bgColor: isDark
-                                      ? const Color(0xFF1A3A2A)
-                                      : const Color(0xFFE6F4EA),
+                                  color: context.successFg,
+                                  bgColor: context.successBg,
                                   onTap: () => onApproveItem(i),
                                 ),
                                 const SizedBox(width: 8),
                                 _IconActionButton(
                                   icon: Icons.rule_outlined,
-                                  color: const Color(0xFF1565C0),
-                                  bgColor: isDark
-                                      ? const Color(0xFF1A2A3A)
-                                      : const Color(0xFFE3F2FD),
+                                  color: context.infoFg,
+                                  bgColor: context.infoBg,
                                   onTap: () async {
                                     await onPartialItem(i);
                                   },
@@ -1584,12 +1517,8 @@ class _DetailSheetBody extends StatelessWidget {
                                 const SizedBox(width: 8),
                                 _IconActionButton(
                                   icon: Icons.close_rounded,
-                                  color: isDark
-                                      ? const Color(0xFFFF8A8A)
-                                      : Colors.red,
-                                  bgColor: isDark
-                                      ? const Color(0xFF3A1A1A)
-                                      : const Color(0xFFFCE8E8),
+                                  color: context.rejectedFg,
+                                  bgColor: context.rejectedBg,
                                   onTap: () => onRejectItem(i),
                                 ),
                                 const SizedBox(width: 8),
@@ -1598,7 +1527,7 @@ class _DetailSheetBody extends StatelessWidget {
                                   style: TextStyle(
                                     fontFamily: 'Poppins',
                                     fontSize: 10,
-                                    color: subColor,
+                                    color: context.subColor,
                                   ),
                                 ),
                               ],
@@ -1610,12 +1539,8 @@ class _DetailSheetBody extends StatelessWidget {
                               children: [
                                 _IconActionButton(
                                   icon: Icons.undo_rounded,
-                                  color: isDark
-                                      ? Colors.white70
-                                      : Colors.black54,
-                                  bgColor: isDark
-                                      ? const Color(0xFF333333)
-                                      : const Color(0xFFE0E0E0),
+                                  color: context.unselectedColor,
+                                  bgColor: context.chipBg,
                                   onTap: () => onCancelItem(i),
                                 ),
                                 const SizedBox(width: 8),
@@ -1624,7 +1549,7 @@ class _DetailSheetBody extends StatelessWidget {
                                   style: TextStyle(
                                     fontFamily: 'Poppins',
                                     fontSize: 10,
-                                    color: subColor,
+                                    color: context.subColor,
                                   ),
                                 ),
                               ],
@@ -1640,8 +1565,8 @@ class _DetailSheetBody extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
                 decoration: BoxDecoration(
-                  color: sheetBg,
-                  border: Border(top: BorderSide(color: divider, width: 1)),
+                  color: context.cardBg,
+                  border: Border(top: BorderSide(color: context.cardBorder, width: 1)),
                 ),
                 child: Row(
                   children: [
@@ -1654,7 +1579,7 @@ class _DetailSheetBody extends StatelessWidget {
                             style: TextStyle(
                               fontFamily: 'Poppins',
                               fontSize: 11,
-                              color: subColor,
+                              color: context.subColor,
                             ),
                           ),
                           Text(
@@ -1663,7 +1588,7 @@ class _DetailSheetBody extends StatelessWidget {
                               fontFamily: 'Poppins',
                               fontWeight: FontWeight.w700,
                               fontSize: 15,
-                              color: nameColor,
+                              color: context.nameColor,
                             ),
                           ),
                         ],
@@ -1718,7 +1643,7 @@ class _DetailSheetBody extends StatelessWidget {
                         icon: Icon(
                           Icons.cancel_outlined,
                           size: 18,
-                          color: isDark ? const Color(0xFFFF8A8A) : Colors.red,
+                          color: context.rejectedFg,
                         ),
                         label: Text(
                           'Tolak Pengajuan',
@@ -1726,16 +1651,12 @@ class _DetailSheetBody extends StatelessWidget {
                             fontFamily: 'Poppins',
                             fontWeight: FontWeight.w600,
                             fontSize: 13,
-                            color: isDark
-                                ? const Color(0xFFFF8A8A)
-                                : Colors.red,
+                            color: context.rejectedFg,
                           ),
                         ),
                         style: OutlinedButton.styleFrom(
                           side: BorderSide(
-                            color: isDark
-                                ? const Color(0xFFFF8A8A)
-                                : Colors.red,
+                            color: context.rejectedFg,
                           ),
                           padding: const EdgeInsets.symmetric(
                             horizontal: 16,
@@ -1796,7 +1717,7 @@ class _DetailSheetBody extends StatelessWidget {
                         icon: Icon(
                           Icons.inventory_2_rounded,
                           size: 18,
-                          color: isDark
+                          color: context.isDark
                               ? const Color(0xFF1D1B20)
                               : Colors.white,
                         ),
@@ -1804,7 +1725,7 @@ class _DetailSheetBody extends StatelessWidget {
                         textStyle: TextStyle(
                           fontFamily: 'Poppins',
                           fontWeight: FontWeight.w600,
-                          color: isDark
+                          color: context.isDark
                               ? const Color(0xFF1D1B20)
                               : Colors.white,
                         ),
@@ -1856,7 +1777,7 @@ class _DetailSheetBody extends StatelessWidget {
                         icon: Icon(
                           Icons.local_shipping_outlined,
                           size: 18,
-                          color: isDark
+                          color: context.isDark
                               ? const Color(0xFF1D1B20)
                               : Colors.white,
                         ),
@@ -1864,7 +1785,7 @@ class _DetailSheetBody extends StatelessWidget {
                         textStyle: TextStyle(
                           fontFamily: 'Poppins',
                           fontWeight: FontWeight.w600,
-                          color: isDark
+                          color: context.isDark
                               ? const Color(0xFF1D1B20)
                               : Colors.white,
                         ),

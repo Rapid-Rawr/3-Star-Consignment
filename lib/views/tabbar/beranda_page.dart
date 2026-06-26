@@ -9,6 +9,7 @@ import '../../models/pengguna_models/klien_model.dart';
 import '../../views/barang/daftar_pengajuan_page.dart';
 import '../barang/barang_konsinyasi_page.dart';
 import '../../utils/currency_format.dart';
+import '../../utils/app_colors.dart';
 import '../../widgets/gradient_button.dart';
 import '../../widgets/catalog_image.dart';
 
@@ -45,8 +46,6 @@ class _NotLoggedInView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -56,7 +55,7 @@ class _NotLoggedInView extends StatelessWidget {
             Icon(
               Icons.lock_outline_rounded,
               size: 64,
-              color: isDark ? Colors.white24 : Colors.black26,
+              color: context.emptyIcon,
             ),
             const SizedBox(height: 16),
             Text(
@@ -65,7 +64,7 @@ class _NotLoggedInView extends StatelessWidget {
                 fontFamily: 'Poppins',
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: isDark ? Colors.white70 : const Color(0xFF1D1B20),
+                color: context.nameColor,
               ),
             ),
             const SizedBox(height: 8),
@@ -75,7 +74,7 @@ class _NotLoggedInView extends StatelessWidget {
               style: TextStyle(
                 fontFamily: 'Poppins',
                 fontSize: 13,
-                color: isDark ? Colors.white38 : Colors.grey,
+                color: context.emptyText,
               ),
             ),
             const SizedBox(height: 24),
@@ -99,8 +98,6 @@ class _UnregisteredView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -110,7 +107,7 @@ class _UnregisteredView extends StatelessWidget {
             Icon(
               Icons.person_off_outlined,
               size: 64,
-              color: isDark ? Colors.white24 : Colors.black26,
+              color: context.emptyIcon,
             ),
             const SizedBox(height: 16),
             Text(
@@ -119,7 +116,7 @@ class _UnregisteredView extends StatelessWidget {
                 fontFamily: 'Poppins',
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: isDark ? Colors.white70 : const Color(0xFF1D1B20),
+                color: context.nameColor,
               ),
             ),
             const SizedBox(height: 8),
@@ -129,7 +126,7 @@ class _UnregisteredView extends StatelessWidget {
               style: TextStyle(
                 fontFamily: 'Poppins',
                 fontSize: 13,
-                color: isDark ? Colors.white38 : Colors.grey,
+                color: context.emptyText,
               ),
             ),
           ],
@@ -167,8 +164,6 @@ class _HomeAdminPageState extends State<HomeAdminPage> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Column(
       children: [
         Expanded(
@@ -178,7 +173,6 @@ class _HomeAdminPageState extends State<HomeAdminPage> {
             child: _AdminRequestCard(
               requestsStream: _requestsStream,
               firestore: _firestore,
-              isDark: isDark,
             ),
           ),
         ),
@@ -188,7 +182,6 @@ class _HomeAdminPageState extends State<HomeAdminPage> {
             padding: const EdgeInsets.fromLTRB(16, 6, 16, 96),
             child: _AdminClientsCard(
               clientsStream: _clientsStream,
-              isDark: isDark,
             ),
           ),
         ),
@@ -200,12 +193,10 @@ class _HomeAdminPageState extends State<HomeAdminPage> {
 class _AdminRequestCard extends StatelessWidget {
   final Stream<QuerySnapshot> requestsStream;
   final FirebaseFirestore firestore;
-  final bool isDark;
 
   const _AdminRequestCard({
     required this.requestsStream,
     required this.firestore,
-    required this.isDark,
   });
 
   Future<void> _approveAllItems(String batchId) async {
@@ -236,18 +227,18 @@ class _AdminRequestCard extends StatelessWidget {
     await docRef.update({'items': updatedItems, 'status': 'rejected'});
   }
 
-  Color _statusColor(ConsignmentBatchStatus s) {
+  Color _statusColor(BuildContext context, ConsignmentBatchStatus s) {
     switch (s) {
       case ConsignmentBatchStatus.received:
-        return const Color(0xFF1565C0);
+        return context.receivedFg;
       case ConsignmentBatchStatus.packed:
-        return const Color(0xFF6A1B9A);
+        return context.packedFg;
       case ConsignmentBatchStatus.processing:
-        return const Color(0xFF0277BD);
+        return context.processingFg;
       case ConsignmentBatchStatus.rejected:
-        return const Color(0xFFC62828);
+        return context.rejectedFg;
       case ConsignmentBatchStatus.pending:
-        return const Color(0xFFF57F17);
+        return context.pendingFg;
     }
   }
 
@@ -283,14 +274,6 @@ class _AdminRequestCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color cardBg = isDark ? const Color(0xFF2B2930) : Colors.white;
-    final Color headerBg = isDark
-        ? const Color(0xFF3A3540)
-        : Colors.grey.shade100;
-    final Color borderColor = isDark
-        ? const Color(0xFF49454F)
-        : Colors.grey.shade200;
-
     return StreamBuilder<QuerySnapshot>(
       stream: requestsStream,
       builder: (context, snapshot) {
@@ -304,11 +287,13 @@ class _AdminRequestCard extends StatelessWidget {
           );
         } else if (snapshot.hasError) {
           content = _emptyState(
+            context: context,
             icon: Icons.error_outline,
             message: 'Gagal memuat data:\n${snapshot.error}',
           );
         } else if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           content = _emptyState(
+            context: context,
             icon: Icons.inbox_outlined,
             message: 'Belum ada pengajuan masuk',
           );
@@ -340,15 +325,14 @@ class _AdminRequestCard extends StatelessWidget {
           content = ListView.separated(
             padding: const EdgeInsets.only(top: 8),
             itemCount: batches.length,
-            separatorBuilder: (_, __) => Divider(height: 1, color: borderColor),
+            separatorBuilder: (_, __) => Divider(height: 1, color: context.cardBorder),
             itemBuilder: (context, i) {
               final batch = batches[i];
               final showActions = batch.status == ConsignmentBatchStatus.pending ||
                   batch.status == ConsignmentBatchStatus.processing;
               return _AdminRequestItem(
                 batch: batch,
-                isDark: isDark,
-                statusColor: _statusColor(batch.status),
+                statusColor: _statusColor(context, batch.status),
                 statusIcon: _statusIcon(batch.status),
                 statusLabel: _statusLabel(batch.status),
                 showActions: showActions,
@@ -389,14 +373,12 @@ class _AdminRequestCard extends StatelessWidget {
 
         return Container(
           decoration: BoxDecoration(
-            color: cardBg,
+            color: context.cardBg,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: borderColor),
+            border: Border.all(color: context.cardBorder),
             boxShadow: [
               BoxShadow(
-                color: isDark
-                    ? Colors.black26
-                    : Colors.black.withValues(alpha: 0.05),
+                color: context.cardShadow,
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -409,7 +391,7 @@ class _AdminRequestCard extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
-                  color: headerBg,
+                  color: context.headerBg,
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(12),
                     topRight: Radius.circular(12),
@@ -421,7 +403,7 @@ class _AdminRequestCard extends StatelessWidget {
                     fontFamily: 'Poppins',
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
-                    color: isDark ? Colors.white54 : Colors.black54,
+                    color: context.subColor,
                   ),
                 ),
               ),
@@ -447,7 +429,7 @@ class _AdminRequestCard extends StatelessWidget {
                       style: TextStyle(
                         fontFamily: 'Poppins',
                         fontSize: 13,
-                        color: isDark ? Colors.white38 : Colors.black54,
+                        color: context.subColor,
                       ),
                     ),
                   ),
@@ -459,7 +441,7 @@ class _AdminRequestCard extends StatelessWidget {
     );
   }
 
-  Widget _emptyState({required IconData icon, required String message}) {
+  Widget _emptyState({required BuildContext context, required IconData icon, required String message}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 16),
       child: Center(
@@ -469,7 +451,7 @@ class _AdminRequestCard extends StatelessWidget {
             Icon(
               icon,
               size: 48,
-              color: isDark ? Colors.white24 : Colors.black26,
+              color: context.emptyIcon,
             ),
             const SizedBox(height: 12),
             Text(
@@ -478,7 +460,7 @@ class _AdminRequestCard extends StatelessWidget {
               style: TextStyle(
                 fontFamily: 'Poppins',
                 fontSize: 13,
-                color: isDark ? Colors.white38 : Colors.grey,
+                color: context.emptyText,
               ),
             ),
           ],
@@ -490,7 +472,6 @@ class _AdminRequestCard extends StatelessWidget {
 
 class _AdminRequestItem extends StatelessWidget {
   final ConsignmentRequestModel batch;
-  final bool isDark;
   final Color statusColor;
   final IconData statusIcon;
   final String statusLabel;
@@ -501,7 +482,6 @@ class _AdminRequestItem extends StatelessWidget {
 
   const _AdminRequestItem({
     required this.batch,
-    required this.isDark,
     required this.statusColor,
     required this.statusIcon,
     required this.statusLabel,
@@ -513,9 +493,6 @@ class _AdminRequestItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color nameColor = isDark ? Colors.white : const Color(0xFF1D1B20);
-    final Color subColor = isDark ? Colors.white54 : const Color(0xFF757575);
-
     int totalQty = 0;
     double totalPrice = 0;
     for (final item in batch.items) {
@@ -550,7 +527,7 @@ class _AdminRequestItem extends StatelessWidget {
                     fontFamily: 'Poppins',
                     fontWeight: FontWeight.w600,
                     fontSize: 13,
-                    color: nameColor,
+                    color: context.nameColor,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -561,7 +538,7 @@ class _AdminRequestItem extends StatelessWidget {
                   style: TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 11,
-                    color: subColor,
+                    color: context.subColor,
                   ),
                 ),
                 if (dateLabel.isNotEmpty) ...[
@@ -571,7 +548,7 @@ class _AdminRequestItem extends StatelessWidget {
                     style: TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 11,
-                      color: subColor,
+                      color: context.subColor,
                     ),
                   ),
                 ],
@@ -612,7 +589,7 @@ class _AdminRequestItem extends StatelessWidget {
               children: [
                 _ActionButton(
                   icon: Icons.list_alt_rounded,
-                  color: isDark ? const Color(0xFF4DB6AC) : const Color(0xFF00796B),
+                  color: context.primaryFg,
                   onTap: onDetail,
                 ),
                 const SizedBox(width: 6),
@@ -632,7 +609,7 @@ class _AdminRequestItem extends StatelessWidget {
           if (!showActions)
             _ActionButton(
               icon: Icons.list_alt_rounded,
-              color: isDark ? const Color(0xFF4DB6AC) : const Color(0xFF00796B),
+              color: context.primaryFg,
               onTap: onDetail,
             ),
         ],
@@ -671,23 +648,13 @@ class _ActionButton extends StatelessWidget {
 
 class _AdminClientsCard extends StatelessWidget {
   final Stream<QuerySnapshot> clientsStream;
-  final bool isDark;
 
   const _AdminClientsCard({
     required this.clientsStream,
-    required this.isDark,
   });
 
   @override
   Widget build(BuildContext context) {
-    final Color cardBg = isDark ? const Color(0xFF2B2930) : Colors.white;
-    final Color headerBg = isDark
-        ? const Color(0xFF3A3540)
-        : Colors.grey.shade100;
-    final Color borderColor = isDark
-        ? const Color(0xFF49454F)
-        : Colors.grey.shade200;
-
     return StreamBuilder<QuerySnapshot>(
       stream: clientsStream,
       builder: (context, snapshot) {
@@ -701,11 +668,13 @@ class _AdminClientsCard extends StatelessWidget {
           );
         } else if (snapshot.hasError) {
           content = _emptyState(
+            context: context,
             icon: Icons.error_outline,
             message: 'Gagal memuat data:\n${snapshot.error}',
           );
         } else if (!snapshot.hasData) {
           content = _emptyState(
+            context: context,
             icon: Icons.inventory_2_outlined,
             message: 'Belum ada barang konsinyasi',
           );
@@ -724,6 +693,7 @@ class _AdminClientsCard extends StatelessWidget {
 
           if (clients.isEmpty) {
             content = _emptyState(
+              context: context,
               icon: Icons.inventory_2_outlined,
               message: 'Belum ada barang konsinyasi',
             );
@@ -731,14 +701,13 @@ class _AdminClientsCard extends StatelessWidget {
             content = ListView.separated(
               padding: const EdgeInsets.only(top: 8),
               itemCount: clients.length,
-              separatorBuilder: (_, __) => Divider(height: 1, color: borderColor),
+              separatorBuilder: (_, __) => Divider(height: 1, color: context.cardBorder),
               itemBuilder: (context, i) {
                 final client = clients[i];
                 final item = client.borrowedItems.first;
                 return _AdminClientItem(
                   client: client,
                   item: item,
-                  isDark: isDark,
                 );
               },
             );
@@ -747,14 +716,12 @@ class _AdminClientsCard extends StatelessWidget {
 
         return Container(
           decoration: BoxDecoration(
-            color: cardBg,
+            color: context.cardBg,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: borderColor),
+            border: Border.all(color: context.cardBorder),
             boxShadow: [
               BoxShadow(
-                color: isDark
-                    ? Colors.black26
-                    : Colors.black.withValues(alpha: 0.05),
+                color: context.cardShadow,
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -767,7 +734,7 @@ class _AdminClientsCard extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
-                  color: headerBg,
+                  color: context.headerBg,
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(12),
                     topRight: Radius.circular(12),
@@ -779,7 +746,7 @@ class _AdminClientsCard extends StatelessWidget {
                     fontFamily: 'Poppins',
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
-                    color: isDark ? Colors.white54 : Colors.black54,
+                    color: context.subColor,
                   ),
                 ),
               ),
@@ -805,7 +772,7 @@ class _AdminClientsCard extends StatelessWidget {
                       style: TextStyle(
                         fontFamily: 'Poppins',
                         fontSize: 13,
-                        color: isDark ? Colors.white38 : Colors.black54,
+                        color: context.subColor,
                       ),
                     ),
                   ),
@@ -817,7 +784,7 @@ class _AdminClientsCard extends StatelessWidget {
     );
   }
 
-  Widget _emptyState({required IconData icon, required String message}) {
+  Widget _emptyState({required BuildContext context, required IconData icon, required String message}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 16),
       child: Center(
@@ -827,7 +794,7 @@ class _AdminClientsCard extends StatelessWidget {
             Icon(
               icon,
               size: 48,
-              color: isDark ? Colors.white24 : Colors.black26,
+              color: context.emptyIcon,
             ),
             const SizedBox(height: 12),
             Text(
@@ -836,7 +803,7 @@ class _AdminClientsCard extends StatelessWidget {
               style: TextStyle(
                 fontFamily: 'Poppins',
                 fontSize: 13,
-                color: isDark ? Colors.white38 : Colors.grey,
+                color: context.emptyText,
               ),
             ),
           ],
@@ -849,19 +816,14 @@ class _AdminClientsCard extends StatelessWidget {
 class _AdminClientItem extends StatelessWidget {
   final ClientModel client;
   final BorrowedItem item;
-  final bool isDark;
 
   const _AdminClientItem({
     required this.client,
     required this.item,
-    required this.isDark,
   });
 
   @override
   Widget build(BuildContext context) {
-    final Color nameColor = isDark ? Colors.white : const Color(0xFF1D1B20);
-    final Color subColor = isDark ? Colors.white54 : const Color(0xFF757575);
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
@@ -882,7 +844,7 @@ class _AdminClientItem extends StatelessWidget {
                     fontFamily: 'Poppins',
                     fontWeight: FontWeight.w600,
                     fontSize: 13,
-                    color: nameColor,
+                    color: context.nameColor,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -893,7 +855,7 @@ class _AdminClientItem extends StatelessWidget {
                   style: TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 11,
-                    color: subColor,
+                    color: context.subColor,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -902,7 +864,7 @@ class _AdminClientItem extends StatelessWidget {
                   style: TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 11,
-                    color: subColor,
+                    color: context.subColor,
                   ),
                 ),
               ],
@@ -935,13 +897,10 @@ class _KaryawanContentState extends State<_KaryawanContent> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
       child: _KaryawanRequestCard(
         requestsStream: _requestsStream,
-        isDark: isDark,
       ),
     );
   }
@@ -949,23 +908,13 @@ class _KaryawanContentState extends State<_KaryawanContent> {
 
 class _KaryawanRequestCard extends StatelessWidget {
   final Stream<QuerySnapshot> requestsStream;
-  final bool isDark;
 
   const _KaryawanRequestCard({
     required this.requestsStream,
-    required this.isDark,
   });
 
   @override
   Widget build(BuildContext context) {
-    final Color cardBg = isDark ? const Color(0xFF2B2930) : Colors.white;
-    final Color headerBg = isDark
-        ? const Color(0xFF3A3540)
-        : Colors.grey.shade100;
-    final Color borderColor = isDark
-        ? const Color(0xFF49454F)
-        : Colors.grey.shade200;
-
     return StreamBuilder<QuerySnapshot>(
       stream: requestsStream,
       builder: (context, snapshot) {
@@ -979,11 +928,13 @@ class _KaryawanRequestCard extends StatelessWidget {
           );
         } else if (snapshot.hasError) {
           content = _emptyState(
+            context: context,
             icon: Icons.error_outline,
             message: 'Gagal memuat data:\n${snapshot.error}',
           );
         } else if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           content = _emptyState(
+            context: context,
             icon: Icons.inbox_outlined,
             message: 'Belum ada pengajuan masuk',
           );
@@ -1015,12 +966,11 @@ class _KaryawanRequestCard extends StatelessWidget {
           content = ListView.separated(
             padding: const EdgeInsets.only(top: 8),
             itemCount: batches.length,
-            separatorBuilder: (_, __) => Divider(height: 1, color: borderColor),
+            separatorBuilder: (_, __) => Divider(height: 1, color: context.cardBorder),
             itemBuilder: (context, i) {
               final batch = batches[i];
               return _RequestItem(
                 batch: batch,
-                isDark: isDark,
                 onDetail: () => Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -1034,14 +984,12 @@ class _KaryawanRequestCard extends StatelessWidget {
 
         return Container(
           decoration: BoxDecoration(
-            color: cardBg,
+            color: context.cardBg,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: borderColor),
+            border: Border.all(color: context.cardBorder),
             boxShadow: [
               BoxShadow(
-                color: isDark
-                    ? Colors.black26
-                    : Colors.black.withValues(alpha: 0.05),
+                color: context.cardShadow,
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -1054,7 +1002,7 @@ class _KaryawanRequestCard extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
-                  color: headerBg,
+                  color: context.headerBg,
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(12),
                     topRight: Radius.circular(12),
@@ -1066,7 +1014,7 @@ class _KaryawanRequestCard extends StatelessWidget {
                     fontFamily: 'Poppins',
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
-                    color: isDark ? Colors.white54 : Colors.black54,
+                    color: context.subColor,
                   ),
                 ),
               ),
@@ -1092,7 +1040,7 @@ class _KaryawanRequestCard extends StatelessWidget {
                       style: TextStyle(
                         fontFamily: 'Poppins',
                         fontSize: 13,
-                        color: isDark ? Colors.white38 : Colors.black54,
+                        color: context.subColor,
                       ),
                     ),
                   ),
@@ -1104,7 +1052,7 @@ class _KaryawanRequestCard extends StatelessWidget {
     );
   }
 
-  Widget _emptyState({required IconData icon, required String message}) {
+  Widget _emptyState({required BuildContext context, required IconData icon, required String message}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 16),
       child: Center(
@@ -1114,7 +1062,7 @@ class _KaryawanRequestCard extends StatelessWidget {
             Icon(
               icon,
               size: 48,
-              color: isDark ? Colors.white24 : Colors.black26,
+              color: context.emptyIcon,
             ),
             const SizedBox(height: 12),
             Text(
@@ -1123,7 +1071,7 @@ class _KaryawanRequestCard extends StatelessWidget {
               style: TextStyle(
                 fontFamily: 'Poppins',
                 fontSize: 13,
-                color: isDark ? Colors.white38 : Colors.grey,
+                color: context.emptyText,
               ),
             ),
           ],
@@ -1246,8 +1194,6 @@ class HomeClientPageState extends State<HomeClientPage> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-
     if (_loadingClient) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -1261,7 +1207,6 @@ class HomeClientPageState extends State<HomeClientPage> {
             child: _ClientRequestCard(
               clientId: _clientId,
               requestsStream: _requestsStream,
-              isDark: isDark,
             ),
           ),
         ),
@@ -1272,7 +1217,6 @@ class HomeClientPageState extends State<HomeClientPage> {
             child: _ClientBorrowedItemsCard(
               clientId: _clientId,
               firestore: _firestore,
-              isDark: isDark,
             ),
           ),
         ),
@@ -1284,31 +1228,20 @@ class HomeClientPageState extends State<HomeClientPage> {
 class _ClientRequestCard extends StatelessWidget {
   final String? clientId;
   final Stream<QuerySnapshot>? requestsStream;
-  final bool isDark;
 
   const _ClientRequestCard({
     required this.clientId,
     required this.requestsStream,
-    required this.isDark,
   });
 
   @override
   Widget build(BuildContext context) {
-    final Color cardBg = isDark ? const Color(0xFF2B2930) : Colors.white;
-    final Color headerBg = isDark
-        ? const Color(0xFF3A3540)
-        : Colors.grey.shade100;
-    final Color borderColor = isDark
-        ? const Color(0xFF49454F)
-        : Colors.grey.shade200;
-
     if (clientId == null) {
       return _shell(
-        cardBg: cardBg,
-        headerBg: headerBg,
-        borderColor: borderColor,
+        context: context,
         showFooter: false,
         child: _emptyState(
+          context: context,
           icon: Icons.info_outline,
           message:
               'Akun belum terdaftar sebagai klien.\nHubungi admin untuk pendaftaran.',
@@ -1329,11 +1262,13 @@ class _ClientRequestCard extends StatelessWidget {
           );
         } else if (snapshot.hasError) {
           content = _emptyState(
+            context: context,
             icon: Icons.error_outline,
             message: 'Gagal memuat data:\n${snapshot.error}',
           );
         } else if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           content = _emptyState(
+            context: context,
             icon: Icons.inventory_2_outlined,
             message: 'Belum ada pengajuan konsinyasi',
           );
@@ -1365,12 +1300,11 @@ class _ClientRequestCard extends StatelessWidget {
           content = ListView.separated(
             padding: const EdgeInsets.only(top: 8),
             itemCount: batches.length,
-            separatorBuilder: (_, __) => Divider(height: 1, color: borderColor),
+            separatorBuilder: (_, __) => Divider(height: 1, color: context.cardBorder),
             itemBuilder: (context, i) {
               final batch = batches[i];
               return _RequestItem(
                 batch: batch,
-                isDark: isDark,
                 onDetail: () => Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -1383,9 +1317,7 @@ class _ClientRequestCard extends StatelessWidget {
         }
 
         return _shell(
-          cardBg: cardBg,
-          headerBg: headerBg,
-          borderColor: borderColor,
+          context: context,
           showFooter: showFooter,
           onMoreTap: showFooter
               ? () => Navigator.push(
@@ -1400,23 +1332,19 @@ class _ClientRequestCard extends StatelessWidget {
   }
 
   Widget _shell({
-    required Color cardBg,
-    required Color headerBg,
-    required Color borderColor,
+    required BuildContext context,
     required bool showFooter,
     required Widget child,
     VoidCallback? onMoreTap,
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: cardBg,
+        color: context.cardBg,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: borderColor),
+        border: Border.all(color: context.cardBorder),
         boxShadow: [
           BoxShadow(
-            color: isDark
-                ? Colors.black26
-                : Colors.black.withValues(alpha: 0.05),
+            color: context.cardShadow,
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -1429,7 +1357,7 @@ class _ClientRequestCard extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: headerBg,
+              color: context.headerBg,
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(12),
                 topRight: Radius.circular(12),
@@ -1441,7 +1369,7 @@ class _ClientRequestCard extends StatelessWidget {
                 fontFamily: 'Poppins',
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
-                color: isDark ? Colors.white54 : Colors.black54,
+                color: context.subColor,
               ),
             ),
           ),
@@ -1462,7 +1390,7 @@ class _ClientRequestCard extends StatelessWidget {
                 style: TextStyle(
                   fontFamily: 'Poppins',
                   fontSize: 13,
-                  color: isDark ? Colors.white38 : Colors.black54,
+                  color: context.subColor,
                 ),
               ),
             ),
@@ -1472,7 +1400,7 @@ class _ClientRequestCard extends StatelessWidget {
     );
   }
 
-  Widget _emptyState({required IconData icon, required String message}) {
+  Widget _emptyState({required BuildContext context, required IconData icon, required String message}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 16),
       child: Center(
@@ -1482,7 +1410,7 @@ class _ClientRequestCard extends StatelessWidget {
             Icon(
               icon,
               size: 48,
-              color: isDark ? Colors.white24 : Colors.black26,
+              color: context.emptyIcon,
             ),
             const SizedBox(height: 12),
             Text(
@@ -1491,7 +1419,7 @@ class _ClientRequestCard extends StatelessWidget {
               style: TextStyle(
                 fontFamily: 'Poppins',
                 fontSize: 13,
-                color: isDark ? Colors.white38 : Colors.grey,
+                color: context.emptyText,
               ),
             ),
           ],
@@ -1504,24 +1432,14 @@ class _ClientRequestCard extends StatelessWidget {
 class _ClientBorrowedItemsCard extends StatelessWidget {
   final String? clientId;
   final FirebaseFirestore firestore;
-  final bool isDark;
 
   const _ClientBorrowedItemsCard({
     required this.clientId,
     required this.firestore,
-    required this.isDark,
   });
 
   @override
   Widget build(BuildContext context) {
-    final Color cardBg = isDark ? const Color(0xFF2B2930) : Colors.white;
-    final Color headerBg = isDark
-        ? const Color(0xFF3A3540)
-        : Colors.grey.shade100;
-    final Color borderColor = isDark
-        ? const Color(0xFF49454F)
-        : Colors.grey.shade200;
-
     if (clientId == null) {
       return const SizedBox.shrink();
     }
@@ -1540,11 +1458,13 @@ class _ClientBorrowedItemsCard extends StatelessWidget {
           );
         } else if (snapshot.hasError) {
           content = _emptyState(
+            context: context,
             icon: Icons.error_outline,
             message: 'Gagal memuat data:\n${snapshot.error}',
           );
         } else if (!snapshot.hasData || !snapshot.data!.exists) {
           content = _emptyState(
+            context: context,
             icon: Icons.inventory_2_outlined,
             message: 'Data klien tidak ditemukan',
           );
@@ -1558,6 +1478,7 @@ class _ClientBorrowedItemsCard extends StatelessWidget {
 
           if (borrowedItems.isEmpty) {
             content = _emptyState(
+              context: context,
               icon: Icons.inventory_2_outlined,
               message: 'Belum ada barang konsinyasi',
             );
@@ -1565,10 +1486,10 @@ class _ClientBorrowedItemsCard extends StatelessWidget {
             content = ListView.separated(
               padding: const EdgeInsets.only(top: 8),
               itemCount: borrowedItems.length,
-              separatorBuilder: (_, __) => Divider(height: 1, color: borderColor),
+              separatorBuilder: (_, __) => Divider(height: 1, color: context.cardBorder),
               itemBuilder: (context, i) {
                 final item = borrowedItems[i];
-                return _BorrowedItemTile(item: item, isDark: isDark);
+                return _BorrowedItemTile(item: item);
               },
             );
           }
@@ -1576,14 +1497,12 @@ class _ClientBorrowedItemsCard extends StatelessWidget {
 
         return Container(
           decoration: BoxDecoration(
-            color: cardBg,
+            color: context.cardBg,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: borderColor),
+            border: Border.all(color: context.cardBorder),
             boxShadow: [
               BoxShadow(
-                color: isDark
-                    ? Colors.black26
-                    : Colors.black.withValues(alpha: 0.05),
+                color: context.cardShadow,
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -1596,7 +1515,7 @@ class _ClientBorrowedItemsCard extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
-                  color: headerBg,
+                  color: context.headerBg,
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(12),
                     topRight: Radius.circular(12),
@@ -1608,7 +1527,7 @@ class _ClientBorrowedItemsCard extends StatelessWidget {
                     fontFamily: 'Poppins',
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
-                    color: isDark ? Colors.white54 : Colors.black54,
+                    color: context.subColor,
                   ),
                 ),
               ),
@@ -1634,7 +1553,7 @@ class _ClientBorrowedItemsCard extends StatelessWidget {
                       style: TextStyle(
                         fontFamily: 'Poppins',
                         fontSize: 13,
-                        color: isDark ? Colors.white38 : Colors.black54,
+                        color: context.subColor,
                       ),
                     ),
                   ),
@@ -1646,7 +1565,7 @@ class _ClientBorrowedItemsCard extends StatelessWidget {
     );
   }
 
-  Widget _emptyState({required IconData icon, required String message}) {
+  Widget _emptyState({required BuildContext context, required IconData icon, required String message}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 16),
       child: Center(
@@ -1656,7 +1575,7 @@ class _ClientBorrowedItemsCard extends StatelessWidget {
             Icon(
               icon,
               size: 48,
-              color: isDark ? Colors.white24 : Colors.black26,
+              color: context.emptyIcon,
             ),
             const SizedBox(height: 12),
             Text(
@@ -1665,7 +1584,7 @@ class _ClientBorrowedItemsCard extends StatelessWidget {
               style: TextStyle(
                 fontFamily: 'Poppins',
                 fontSize: 13,
-                color: isDark ? Colors.white38 : Colors.grey,
+                color: context.emptyText,
               ),
             ),
           ],
@@ -1677,16 +1596,11 @@ class _ClientBorrowedItemsCard extends StatelessWidget {
 
 class _BorrowedItemTile extends StatelessWidget {
   final BorrowedItem item;
-  final bool isDark;
 
-  const _BorrowedItemTile({required this.item, required this.isDark});
+  const _BorrowedItemTile({required this.item});
 
   @override
   Widget build(BuildContext context) {
-    final Color nameColor = isDark ? Colors.white : const Color(0xFF1D1B20);
-    final Color subColor = isDark ? Colors.white54 : const Color(0xFF757575);
-    final Color tealFg = isDark ? const Color(0xFF4DB6AC) : const Color(0xFF00796B);
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
@@ -1707,7 +1621,7 @@ class _BorrowedItemTile extends StatelessWidget {
                     fontFamily: 'Poppins',
                     fontWeight: FontWeight.w600,
                     fontSize: 13,
-                    color: nameColor,
+                    color: context.nameColor,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -1718,7 +1632,7 @@ class _BorrowedItemTile extends StatelessWidget {
                   style: TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 11,
-                    color: subColor,
+                    color: context.subColor,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -1727,7 +1641,7 @@ class _BorrowedItemTile extends StatelessWidget {
                   style: TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 11,
-                    color: subColor,
+                    color: context.subColor,
                   ),
                 ),
               ],
@@ -1739,7 +1653,7 @@ class _BorrowedItemTile extends StatelessWidget {
               fontFamily: 'Poppins',
               fontWeight: FontWeight.w600,
               fontSize: 13,
-              color: tealFg,
+              color: context.primaryFg,
             ),
           ),
         ],
@@ -1750,27 +1664,25 @@ class _BorrowedItemTile extends StatelessWidget {
 
 class _RequestItem extends StatelessWidget {
   final ConsignmentRequestModel batch;
-  final bool isDark;
   final VoidCallback? onDetail;
 
   const _RequestItem({
     required this.batch,
-    required this.isDark,
     this.onDetail,
   });
 
-  Color _statusColor(ConsignmentBatchStatus s) {
+  Color _statusColor(BuildContext context, ConsignmentBatchStatus s) {
     switch (s) {
       case ConsignmentBatchStatus.received:
-        return const Color(0xFF1565C0);
+        return context.receivedFg;
       case ConsignmentBatchStatus.packed:
-        return const Color(0xFF6A1B9A);
+        return context.packedFg;
       case ConsignmentBatchStatus.processing:
-        return const Color(0xFF0277BD);
+        return context.processingFg;
       case ConsignmentBatchStatus.rejected:
-        return const Color(0xFFC62828);
+        return context.rejectedFg;
       case ConsignmentBatchStatus.pending:
-        return const Color(0xFFF57F17);
+        return context.pendingFg;
     }
   }
 
@@ -1807,7 +1719,7 @@ class _RequestItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final status = batch.status;
-        final clientName = batch.clientName;
+    final clientName = batch.clientName;
     final createdAt = batch.createdAt != null ? Timestamp.fromDate(batch.createdAt!) : null;
 
     int totalQty = 0;
@@ -1817,9 +1729,7 @@ class _RequestItem extends StatelessWidget {
       totalPrice += item.quantity * item.catalogPrice;
     }
 
-    final Color nameColor = isDark ? Colors.white : const Color(0xFF1D1B20);
-    final Color subColor = isDark ? Colors.white54 : const Color(0xFF757575);
-    final sColor = _statusColor(status);
+    final sColor = _statusColor(context, status);
 
     String dateLabel = '';
     if (createdAt != null) {
@@ -1848,7 +1758,7 @@ class _RequestItem extends StatelessWidget {
                     fontFamily: 'Poppins',
                     fontWeight: FontWeight.w600,
                     fontSize: 13,
-                    color: nameColor,
+                    color: context.nameColor,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -1859,7 +1769,7 @@ class _RequestItem extends StatelessWidget {
                   style: TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 11,
-                    color: subColor,
+                    color: context.subColor,
                   ),
                 ),
                 if (dateLabel.isNotEmpty) ...[
@@ -1869,7 +1779,7 @@ class _RequestItem extends StatelessWidget {
                     style: TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 11,
-                      color: subColor,
+                      color: context.subColor,
                     ),
                   ),
                 ],
@@ -1907,7 +1817,7 @@ class _RequestItem extends StatelessWidget {
             const SizedBox(width: 8),
             _ActionButton(
               icon: Icons.list_alt_rounded,
-              color: isDark ? const Color(0xFF4DB6AC) : const Color(0xFF00796B),
+              color: context.primaryFg,
               onTap: onDetail!,
             ),
           ],

@@ -10,6 +10,7 @@ import '../../widgets/catalog_image.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/quantity_stepper.dart';
 import '../../utils/currency_format.dart';
+import '../../utils/app_colors.dart';
 
 class _SelectedItem {
   final CatalogModel catalog;
@@ -156,9 +157,6 @@ class _ConsignmentRequestPageState extends State<ConsignmentRequestPage> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final Color emptyIcon = isDark ? Colors.white24 : Colors.black26;
-    final Color emptyText = isDark ? Colors.white38 : const Color(0xFF9E9E9E);
     final bool hasSelection = _selected.isNotEmpty;
 
     return Scaffold(
@@ -243,14 +241,14 @@ class _ConsignmentRequestPageState extends State<ConsignmentRequestPage> {
                               Icon(
                                 Icons.inventory_2_outlined,
                                 size: 64,
-                                color: emptyIcon,
+                                color: context.emptyIcon,
                               ),
                               const SizedBox(height: 16),
                               Text(
                                 'Belum Ada Barang',
                                 style: TextStyle(
                                   fontSize: 16,
-                                  color: emptyText,
+                                  color: context.emptyText,
                                   fontFamily: 'Poppins',
                                 ),
                               ),
@@ -287,14 +285,14 @@ class _ConsignmentRequestPageState extends State<ConsignmentRequestPage> {
                               Icon(
                                 Icons.search_off,
                                 size: 64,
-                                color: emptyIcon,
+                                color: context.emptyIcon,
                               ),
                               const SizedBox(height: 16),
                               Text(
                                 'Barang Tidak Ditemukan',
                                 style: TextStyle(
                                   fontSize: 16,
-                                  color: emptyText,
+                                  color: context.emptyText,
                                   fontFamily: 'Poppins',
                                 ),
                               ),
@@ -316,7 +314,6 @@ class _ConsignmentRequestPageState extends State<ConsignmentRequestPage> {
 
                           return _CatalogItemCard(
                             item: item,
-                            isDark: isDark,
                             isSelected: isSelected,
                             onAdd: () => _toggleItem(item),
                           );
@@ -333,7 +330,6 @@ class _ConsignmentRequestPageState extends State<ConsignmentRequestPage> {
       bottomSheet: _SelectionBottomSheet(
         selected: _selected.values.toList(),
         isSubmitting: _isSubmitting,
-        isDark: isDark,
         isVisible: hasSelection,
         onChangeQty: _changeQuantity,
         onSetQty: _setQuantity,
@@ -345,54 +341,29 @@ class _ConsignmentRequestPageState extends State<ConsignmentRequestPage> {
 
 class _CatalogItemCard extends StatelessWidget {
   final CatalogModel item;
-  final bool isDark;
   final bool isSelected;
   final VoidCallback onAdd;
 
   const _CatalogItemCard({
     required this.item,
-    required this.isDark,
     required this.isSelected,
     required this.onAdd,
   });
 
   @override
   Widget build(BuildContext context) {
-    final Color cardBg = isDark ? const Color(0xFF2B2930) : Colors.white;
-    final Color cardBorder = isDark
-        ? const Color(0xFF49454F)
-        : const Color(0xFFE0E0E0);
-    final Color nameColor = isDark ? Colors.white : const Color(0xFF1D1B20);
-    final Color subColor = isDark ? Colors.white54 : const Color(0xFF757575);
-    final Color categoryBg = isDark
-        ? const Color(0xFF3A3540)
-        : const Color(0xFFF3EFF4);
-    final Color categoryText = isDark
-        ? Colors.white70
-        : const Color(0xFF49454F);
-    final Color addBg = isDark
-        ? const Color(0xFF1A3A2A)
-        : const Color(0xFFE6F4EA);
-    final Color addIcon = isDark
-        ? const Color(0xFF80CBC4)
-        : const Color(0xFF2E7D32);
-
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: cardBg,
+        color: context.cardBg,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isSelected
-              ? (isDark ? const Color(0xFF80CBC4) : const Color(0xFF2E7D32))
-              : cardBorder,
+          color: isSelected ? context.successFg : context.cardBorder,
           width: isSelected ? 1.8 : 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: isDark
-                ? Colors.black26
-                : Colors.black.withValues(alpha: 0.06),
+            color: context.cardShadow,
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -414,7 +385,7 @@ class _CatalogItemCard extends StatelessWidget {
                       fontFamily: 'Poppins',
                       fontWeight: FontWeight.w600,
                       fontSize: 15,
-                      color: nameColor,
+                      color: context.nameColor,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -422,7 +393,7 @@ class _CatalogItemCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      Icon(Icons.sell_outlined, size: 13, color: subColor),
+                      Icon(Icons.sell_outlined, size: 13, color: context.subColor),
                       const SizedBox(width: 4),
                       Text(
                         formatRupiah(item.price),
@@ -430,9 +401,7 @@ class _CatalogItemCard extends StatelessWidget {
                           fontFamily: 'Poppins',
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: isDark
-                              ? const Color(0xFF80CBC4)
-                              : const Color(0xFF2E7D32),
+                          color: context.successFg,
                         ),
                       ),
                     ],
@@ -444,7 +413,7 @@ class _CatalogItemCard extends StatelessWidget {
                       vertical: 3,
                     ),
                     decoration: BoxDecoration(
-                      color: categoryBg,
+                      color: context.headerBg,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Row(
@@ -453,7 +422,7 @@ class _CatalogItemCard extends StatelessWidget {
                         Icon(
                           Icons.category_outlined,
                           size: 11,
-                          color: categoryText,
+                          color: context.unselectedColor,
                         ),
                         const SizedBox(width: 4),
                         Text(
@@ -462,7 +431,7 @@ class _CatalogItemCard extends StatelessWidget {
                             fontFamily: 'Poppins',
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
-                            color: categoryText,
+                            color: context.unselectedColor,
                           ),
                         ),
                       ],
@@ -478,12 +447,12 @@ class _CatalogItemCard extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: isSelected ? addBg : addBg.withValues(alpha: 0.5),
+                  color: isSelected ? context.successBg : context.successBg.withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Icon(
                   isSelected ? Icons.check : Icons.add,
-                  color: addIcon,
+                  color: context.successFg,
                   size: 20,
                 ),
               ),
@@ -500,7 +469,6 @@ class _CatalogItemCard extends StatelessWidget {
 class _SelectionBottomSheet extends StatefulWidget {
   final List<_SelectedItem> selected;
   final bool isSubmitting;
-  final bool isDark;
   final bool isVisible;
   final void Function(String id, int delta) onChangeQty;
   final void Function(String id, int exactQty) onSetQty;
@@ -509,7 +477,6 @@ class _SelectionBottomSheet extends StatefulWidget {
   const _SelectionBottomSheet({
     required this.selected,
     required this.isSubmitting,
-    required this.isDark,
     required this.isVisible,
     required this.onChangeQty,
     required this.onSetQty,
@@ -534,19 +501,6 @@ class _SelectionBottomSheetState extends State<_SelectionBottomSheet> {
   Widget build(BuildContext context) {
     if (!widget.isVisible) return const SizedBox.shrink();
 
-    final Color sheetBg = widget.isDark
-        ? const Color(0xFF2B2930)
-        : Colors.white;
-    final Color divider = widget.isDark
-        ? const Color(0xFF49454F)
-        : const Color(0xFFE0E0E0);
-    final Color nameColor = widget.isDark
-        ? Colors.white
-        : const Color(0xFF1D1B20);
-    final Color priceColor = widget.isDark
-        ? const Color(0xFF80CBC4)
-        : const Color(0xFF2E7D32);
-
     final double totalPrice = widget.selected.fold(
       0.0,
       (sum, e) => sum + e.catalog.price * e.quantity,
@@ -559,12 +513,12 @@ class _SelectionBottomSheetState extends State<_SelectionBottomSheet> {
     return Container(
       clipBehavior: Clip.hardEdge,
       decoration: BoxDecoration(
-        color: sheetBg,
+        color: context.cardBg,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        border: Border(top: BorderSide(color: divider, width: 1)),
+        border: Border(top: BorderSide(color: context.cardBorder, width: 1)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: widget.isDark ? 0.35 : 0.10),
+            color: Colors.black.withValues(alpha: context.isDark ? 0.35 : 0.10),
             blurRadius: 16,
             offset: const Offset(0, -3),
           ),
@@ -596,7 +550,7 @@ class _SelectionBottomSheetState extends State<_SelectionBottomSheet> {
                               width: 40,
                               height: 4,
                               decoration: BoxDecoration(
-                                color: divider,
+                                color: context.cardBorder,
                                 borderRadius: BorderRadius.circular(2),
                               ),
                             ),
@@ -611,7 +565,7 @@ class _SelectionBottomSheetState extends State<_SelectionBottomSheet> {
                                     fontFamily: 'Poppins',
                                     fontWeight: FontWeight.w700,
                                     fontSize: 14,
-                                    color: nameColor,
+                                    color: context.nameColor,
                                   ),
                                 ),
                                 const SizedBox(width: 8),
@@ -621,9 +575,7 @@ class _SelectionBottomSheetState extends State<_SelectionBottomSheet> {
                                     vertical: 2,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: widget.isDark
-                                        ? const Color(0xFF1A3A2A)
-                                        : const Color(0xFFE6F4EA),
+                                    color: context.successBg,
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Text(
@@ -632,9 +584,7 @@ class _SelectionBottomSheetState extends State<_SelectionBottomSheet> {
                                       fontFamily: 'Poppins',
                                       fontSize: 11,
                                       fontWeight: FontWeight.w600,
-                                      color: widget.isDark
-                                          ? const Color(0xFF80CBC4)
-                                          : const Color(0xFF2E7D32),
+                                      color: context.successFg,
                                     ),
                                   ),
                                 ),
@@ -648,7 +598,7 @@ class _SelectionBottomSheetState extends State<_SelectionBottomSheet> {
                       delegate: SliverChildBuilderDelegate(
                         (context, i) {
                           if (i.isOdd) {
-                            return Divider(height: 1, color: divider);
+                            return Divider(height: 1, color: context.cardBorder);
                           }
                           final index = i ~/ 2;
                           final entry = widget.selected[index];
@@ -676,7 +626,7 @@ class _SelectionBottomSheetState extends State<_SelectionBottomSheet> {
                                           fontFamily: 'Poppins',
                                           fontWeight: FontWeight.w600,
                                           fontSize: 13,
-                                          color: nameColor,
+                                          color: context.nameColor,
                                         ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
@@ -686,7 +636,7 @@ class _SelectionBottomSheetState extends State<_SelectionBottomSheet> {
                                         style: TextStyle(
                                           fontFamily: 'Poppins',
                                           fontSize: 12,
-                                          color: priceColor,
+                                          color: context.successFg,
                                           fontWeight: FontWeight.w500,
                                         ),
                                       ),
@@ -720,8 +670,8 @@ class _SelectionBottomSheetState extends State<_SelectionBottomSheet> {
           Container(
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
             decoration: BoxDecoration(
-              color: sheetBg,
-              border: Border(top: BorderSide(color: divider, width: 1)),
+              color: context.cardBg,
+              border: Border(top: BorderSide(color: context.cardBorder, width: 1)),
             ),
             child: Row(
               children: [
@@ -734,7 +684,7 @@ class _SelectionBottomSheetState extends State<_SelectionBottomSheet> {
                         style: TextStyle(
                           fontFamily: 'Poppins',
                           fontSize: 11,
-                          color: widget.isDark ? Colors.white54 : Colors.grey,
+                          color: context.subColor,
                         ),
                       ),
                       Text(
@@ -743,7 +693,7 @@ class _SelectionBottomSheetState extends State<_SelectionBottomSheet> {
                           fontFamily: 'Poppins',
                           fontWeight: FontWeight.w700,
                           fontSize: 15,
-                          color: nameColor,
+                          color: context.nameColor,
                         ),
                       ),
                     ],

@@ -8,6 +8,7 @@ import '../../widgets/search_filter_bar.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/catalog_image.dart';
 import '../../utils/currency_format.dart';
+import '../../utils/app_colors.dart';
 
 class CatalogPage extends StatefulWidget {
   const CatalogPage({super.key, this.isReadOnly = false});
@@ -117,44 +118,39 @@ class _CatalogPageState extends State<CatalogPage> {
                   hintText: '0',
                   prefixIcon: Icon(Icons.sell_outlined),
                 ),
-                keyboardType: TextInputType.number,
-                validator: _controller.validatePrice,
-                autovalidateMode: AutovalidateMode.onUserInteraction,
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                initialValue: selectedCategory,
-                decoration: const InputDecoration(
-                  labelText: 'Kategori',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.category_outlined),
-                ),
-                dropdownColor: Theme.of(dialogContext).brightness == Brightness.dark
-                    ? const Color(0xFF2B2930)
-                    : Colors.white,
-                items: _categories
-                    .map(
-                      (cat) => DropdownMenuItem(value: cat, child: Text(cat)),
-                    )
-                    .toList(),
-                onChanged: (value) {
-                  if (value != null) {
-                    setDialogState(() => selectedCategory = value);
-                  }
-                },
-                validator: _controller.validateCategory,
-              ),
-            ],
-          ),
-        ),
-      ),
-      actions: [
-        AppDialogAction(
-          label: 'Batal',
-          onPressed: () => Navigator.pop(context),
-        ),
-        AppDialogAction(
-          label: 'Tambah',
+                 keyboardType: TextInputType.number,
+                 validator: _controller.validatePrice,
+                 autovalidateMode: AutovalidateMode.onUserInteraction,
+               ),
+               const SizedBox(height: 16),
+               DropdownButtonFormField<String>(
+                 initialValue: selectedCategory,
+                 decoration: const InputDecoration(
+                   labelText: 'Kategori',
+                   border: OutlineInputBorder(),
+                   prefixIcon: Icon(Icons.category_outlined),
+                 ),
+                 items: _categories.map((cat) {
+                   return DropdownMenuItem(value: cat, child: Text(cat));
+                 }).toList(),
+                 onChanged: (value) {
+                   if (value != null) {
+                     setDialogState(() => selectedCategory = value);
+                   }
+                 },
+                 validator: _controller.validateCategory,
+               ),
+             ],
+           ),
+         ),
+       ),
+       actions: [
+         AppDialogAction(
+           label: 'Batal',
+           onPressed: () => Navigator.pop(context),
+         ),
+         AppDialogAction(
+           label: 'Tambah',
           type: AppDialogActionType.gradient,
           onPressed: () async {
             nameServerError = null;
@@ -277,45 +273,40 @@ class _CatalogPageState extends State<CatalogPage> {
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.sell_outlined),
                 ),
-                keyboardType: TextInputType.number,
-                validator: _controller.validatePrice,
-                autovalidateMode: AutovalidateMode.onUserInteraction,
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                initialValue: selectedCategory,
-                decoration: const InputDecoration(
-                  labelText: 'Kategori',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.category_outlined),
-                ),
-                dropdownColor: Theme.of(dialogContext).brightness == Brightness.dark
-                    ? const Color(0xFF2B2930)
-                    : Colors.white,
-                items: _categories
-                    .map(
-                      (cat) => DropdownMenuItem(value: cat, child: Text(cat)),
-                    )
-                    .toList(),
-                onChanged: (value) {
-                  if (value != null) {
-                    setDialogState(() => selectedCategory = value);
-                  }
-                },
-                validator: _controller.validateCategory,
-              ),
-            ],
-          ),
-        ),
-      ),
-      actions: [
-        AppDialogAction(
-          label: 'Batal',
-          onPressed: () => Navigator.pop(context),
-        ),
-        AppDialogAction(
-          label: 'Simpan',
-          type: AppDialogActionType.gradient,
+                 keyboardType: TextInputType.number,
+                 validator: _controller.validatePrice,
+                 autovalidateMode: AutovalidateMode.onUserInteraction,
+               ),
+               const SizedBox(height: 16),
+               DropdownButtonFormField<String>(
+                 initialValue: selectedCategory,
+                 decoration: const InputDecoration(
+                   labelText: 'Kategori',
+                   border: OutlineInputBorder(),
+                   prefixIcon: Icon(Icons.category_outlined),
+                 ),
+                 items: _categories.map((cat) {
+                   return DropdownMenuItem(value: cat, child: Text(cat));
+                 }).toList(),
+                 onChanged: (value) {
+                   if (value != null) {
+                     setDialogState(() => selectedCategory = value);
+                   }
+                 },
+                 validator: _controller.validateCategory,
+               ),
+             ],
+           ),
+         ),
+       ),
+       actions: [
+         AppDialogAction(
+           label: 'Batal',
+           onPressed: () => Navigator.pop(context),
+         ),
+         AppDialogAction(
+           label: 'Simpan',
+           type: AppDialogActionType.gradient,
           onPressed: () async {
             nameServerError = null;
             if (formKey.currentState!.validate()) {
@@ -410,22 +401,6 @@ class _CatalogPageState extends State<CatalogPage> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-
-    final Color editBg = isDark
-        ? const Color(0xFF49454F)
-        : const Color(0xFFE8E5EC);
-    final Color editIcon = isDark ? Colors.white : const Color(0xFF1D1B20);
-    final Color deleteBg = isDark
-        ? const Color(0xFF4D2B2B)
-        : const Color(0xFFFCE8E8);
-    final Color deleteIcon = isDark ? const Color(0xFFFF8A8A) : Colors.red;
-    final Color emptyIcon = isDark ? Colors.white24 : Colors.black26;
-    final Color emptyText = isDark ? Colors.white38 : const Color(0xFF9E9E9E);
-
-    final List<Color> fabGradient = isDark
-        ? [const Color(0xFFA3A3A3), const Color(0xFFFFFFFF)]
-        : [const Color(0xFF67636D), const Color(0xFF1D1B20)];
 
     return Scaffold(
       appBar: AppBar(
@@ -509,14 +484,14 @@ class _CatalogPageState extends State<CatalogPage> {
                               Icon(
                                 Icons.inventory_2_outlined,
                                 size: 64,
-                                color: emptyIcon,
+                                color: context.emptyIcon,
                               ),
                               const SizedBox(height: 16),
                               Text(
                                 'Belum Ada Barang',
                                 style: TextStyle(
                                   fontSize: 16,
-                                  color: emptyText,
+                                  color: context.emptyText,
                                   fontFamily: 'Poppins',
                                 ),
                               ),
@@ -551,14 +526,14 @@ class _CatalogPageState extends State<CatalogPage> {
                               Icon(
                                 Icons.search_off,
                                 size: 64,
-                                color: emptyIcon,
+                                color: context.emptyIcon,
                               ),
                               const SizedBox(height: 16),
                               Text(
                                 'Barang Tidak Ditemukan',
                                 style: TextStyle(
                                   fontSize: 16,
-                                  color: emptyText,
+                                  color: context.emptyText,
                                   fontFamily: 'Poppins',
                                 ),
                               ),
@@ -574,36 +549,15 @@ class _CatalogPageState extends State<CatalogPage> {
                           final item = filteredWithMeta[index].item;
                           final isPending = filteredWithMeta[index].isPending;
 
-                          final cardBg = isDark
-                              ? const Color(0xFF2B2930)
-                              : Colors.white;
-                          final cardBorder = isDark
-                              ? const Color(0xFF49454F)
-                              : const Color(0xFFE0E0E0);
-                          final nameColor = isDark
-                              ? Colors.white
-                              : const Color(0xFF1D1B20);
-                          final subColor = isDark
-                              ? Colors.white54
-                              : const Color(0xFF757575);
-                          final categoryBg = isDark
-                              ? const Color(0xFF3A3540)
-                              : const Color(0xFFF3EFF4);
-                          final categoryText = isDark
-                              ? Colors.white70
-                              : const Color(0xFF49454F);
-
                           return Container(
                             margin: const EdgeInsets.only(bottom: 12),
                             decoration: BoxDecoration(
-                              color: cardBg,
+                              color: context.cardBg,
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: cardBorder, width: 1),
+                              border: Border.all(color: context.cardBorder, width: 1),
                               boxShadow: [
                                 BoxShadow(
-                                  color: isDark
-                                      ? Colors.black26
-                                      : Colors.black.withValues(alpha: 0.06),
+                                  color: context.cardShadow,
                                   blurRadius: 8,
                                   offset: const Offset(0, 2),
                                 ),
@@ -633,7 +587,7 @@ class _CatalogPageState extends State<CatalogPage> {
                                                   fontFamily: 'Poppins',
                                                   fontWeight: FontWeight.w600,
                                                   fontSize: 15,
-                                                  color: nameColor,
+                                                  color: context.nameColor,
                                                 ),
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
@@ -647,9 +601,7 @@ class _CatalogPageState extends State<CatalogPage> {
                                                 child: Icon(
                                                   Icons.access_time_rounded,
                                                   size: 14,
-                                                  color: isDark
-                                                      ? Colors.amber.shade300
-                                                      : Colors.orange,
+                                                  color: context.pendingColor,
                                                 ),
                                               ),
                                             ],
@@ -661,7 +613,7 @@ class _CatalogPageState extends State<CatalogPage> {
                                             Icon(
                                               Icons.sell_outlined,
                                               size: 13,
-                                              color: subColor,
+                                              color: context.subColor,
                                             ),
                                             const SizedBox(width: 4),
                                             Text(
@@ -670,9 +622,7 @@ class _CatalogPageState extends State<CatalogPage> {
                                                 fontFamily: 'Poppins',
                                                 fontSize: 13,
                                                 fontWeight: FontWeight.w600,
-                                                color: isDark
-                                                    ? const Color(0xFF80CBC4)
-                                                    : const Color(0xFF2E7D32),
+                                                color: context.successFg,
                                               ),
                                             ),
                                           ],
@@ -684,7 +634,7 @@ class _CatalogPageState extends State<CatalogPage> {
                                             vertical: 3,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: categoryBg,
+                                            color: context.headerBg,
                                             borderRadius: BorderRadius.circular(
                                               20,
                                             ),
@@ -695,7 +645,7 @@ class _CatalogPageState extends State<CatalogPage> {
                                               Icon(
                                                 Icons.category_outlined,
                                                 size: 11,
-                                                color: categoryText,
+                                                color: context.unselectedColor,
                                               ),
                                               const SizedBox(width: 4),
                                               Text(
@@ -704,7 +654,7 @@ class _CatalogPageState extends State<CatalogPage> {
                                                   fontFamily: 'Poppins',
                                                   fontSize: 11,
                                                   fontWeight: FontWeight.w500,
-                                                  color: categoryText,
+                                                  color: context.unselectedColor,
                                                 ),
                                               ),
                                             ],
@@ -723,14 +673,14 @@ class _CatalogPageState extends State<CatalogPage> {
                                         child: Container(
                                           padding: const EdgeInsets.all(8),
                                           decoration: BoxDecoration(
-                                            color: editBg,
+                                            color: context.editBg,
                                             borderRadius: BorderRadius.circular(
                                               20,
                                             ),
                                           ),
                                           child: Icon(
                                             Icons.edit_outlined,
-                                            color: editIcon,
+                                            color: context.editIcon,
                                             size: 18,
                                           ),
                                         ),
@@ -743,14 +693,14 @@ class _CatalogPageState extends State<CatalogPage> {
                                         child: Container(
                                           padding: const EdgeInsets.all(8),
                                           decoration: BoxDecoration(
-                                            color: deleteBg,
+                                            color: context.deleteBg,
                                             borderRadius: BorderRadius.circular(
                                               20,
                                             ),
                                           ),
                                           child: Icon(
                                             Icons.delete_outline,
-                                            color: deleteIcon,
+                                            color: context.deleteIcon,
                                             size: 18,
                                           ),
                                         ),
@@ -776,7 +726,7 @@ class _CatalogPageState extends State<CatalogPage> {
           gradient: LinearGradient(
             begin: Alignment.bottomLeft,
             end: Alignment.topRight,
-            colors: fabGradient,
+            colors: context.fabGradient,
           ),
           shape: BoxShape.circle,
         ),
@@ -784,7 +734,7 @@ class _CatalogPageState extends State<CatalogPage> {
           onPressed: _showAddItemDialog,
           tooltip: 'Tambah Barang',
           backgroundColor: Colors.transparent,
-          foregroundColor: isDark ? const Color(0xFF1D1B20) : Colors.white,
+          foregroundColor: context.isDark ? const Color(0xFF1D1B20) : Colors.white,
           elevation: 0,
           shape: const CircleBorder(),
           child: const Icon(Icons.add),
@@ -824,13 +774,6 @@ class _ImagePickerPreviewState extends State<_ImagePickerPreview> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final Color bg = isDark ? const Color(0xFF3A3540) : const Color(0xFFF5F5F5);
-    final Color iconColor = isDark ? Colors.white38 : const Color(0xFFB0B0B0);
-    final Color borderColor = isDark
-        ? const Color(0xFF49454F)
-        : const Color(0xFFE0E0E0);
-
     Widget content;
 
     if (widget.pickedImage != null) {
@@ -842,14 +785,14 @@ class _ImagePickerPreviewState extends State<_ImagePickerPreview> {
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return Container(
-                  color: bg,
+                  color: context.headerBg,
                   child: Center(
                     child: SizedBox(
                       width: 24,
                       height: 24,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: iconColor,
+                        color: context.emptyText,
                       ),
                     ),
                   ),
@@ -859,7 +802,7 @@ class _ImagePickerPreviewState extends State<_ImagePickerPreview> {
               if (bytes == null) {
                 return Icon(
                   Icons.broken_image_outlined,
-                  color: iconColor,
+                  color: context.emptyText,
                   size: 36,
                 );
               }
@@ -913,14 +856,14 @@ class _ImagePickerPreviewState extends State<_ImagePickerPreview> {
       content = Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.add_photo_alternate_outlined, color: iconColor, size: 32),
+          Icon(Icons.add_photo_alternate_outlined, color: context.emptyText, size: 32),
           const SizedBox(height: 6),
           Text(
             'Tap untuk pilih foto',
             style: TextStyle(
               fontFamily: 'Poppins',
               fontSize: 12,
-              color: iconColor,
+              color: context.emptyText,
             ),
           ),
         ],
@@ -931,9 +874,9 @@ class _ImagePickerPreviewState extends State<_ImagePickerPreview> {
       height: 100,
       width: double.infinity,
       decoration: BoxDecoration(
-        color: bg,
+        color: context.headerBg,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: borderColor),
+        border: Border.all(color: context.cardBorder),
       ),
       clipBehavior: Clip.antiAlias,
       child: content,
