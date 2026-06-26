@@ -12,6 +12,8 @@ import '../../utils/currency_format.dart';
 import '../../utils/app_colors.dart';
 import '../../widgets/gradient_button.dart';
 import '../../widgets/catalog_image.dart';
+import '../../widgets/app_empty_state.dart';
+import '../../widgets/app_card.dart';
 
 
 class BerandaPage extends StatelessWidget {
@@ -286,14 +288,12 @@ class _AdminRequestCard extends StatelessWidget {
             child: Center(child: CircularProgressIndicator()),
           );
         } else if (snapshot.hasError) {
-          content = _emptyState(
-            context: context,
+          content = AppEmptyState(
             icon: Icons.error_outline,
             message: 'Gagal memuat data:\n${snapshot.error}',
           );
         } else if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          content = _emptyState(
-            context: context,
+          content = const AppEmptyState(
             icon: Icons.inbox_outlined,
             message: 'Belum ada pengajuan masuk',
           );
@@ -371,101 +371,19 @@ class _AdminRequestCard extends StatelessWidget {
           );
         }
 
-        return Container(
-          decoration: BoxDecoration(
-            color: context.cardBg,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: context.cardBorder),
-            boxShadow: [
-              BoxShadow(
-                color: context.cardShadow,
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: context.headerBg,
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(12),
-                    topRight: Radius.circular(12),
-                  ),
-                ),
-                child: Text(
-                  'Daftar Pengajuan',
-                  style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: context.subColor,
-                  ),
-                ),
-              ),
-              Expanded(child: content),
-              if (showFooter)
-                InkWell(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => RequestListPage()),
-                    );
-                  },
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(12),
-                    bottomRight: Radius.circular(12),
-                  ),
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    alignment: Alignment.center,
-                    child: Text(
-                      'Lebih Banyak ...',
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 13,
-                        color: context.subColor,
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
+        return AppCardWithHeader(
+          title: 'Daftar Pengajuan',
+          onMoreTap: showFooter
+              ? () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => RequestListPage()),
+                  );
+                }
+              : null,
+          child: content,
         );
       },
-    );
-  }
-
-  Widget _emptyState({required BuildContext context, required IconData icon, required String message}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 16),
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 48,
-              color: context.emptyIcon,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 13,
-                color: context.emptyText,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -667,16 +585,14 @@ class _AdminClientsCard extends StatelessWidget {
             child: Center(child: CircularProgressIndicator()),
           );
         } else if (snapshot.hasError) {
-          content = _emptyState(
-            context: context,
+          content = AppEmptyState(
             icon: Icons.error_outline,
             message: 'Gagal memuat data:\n${snapshot.error}',
           );
-        } else if (!snapshot.hasData) {
-          content = _emptyState(
-            context: context,
-            icon: Icons.inventory_2_outlined,
-            message: 'Belum ada barang konsinyasi',
+        } else if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          content = const AppEmptyState(
+            icon: Icons.inbox_outlined,
+            message: 'Belum ada pengajuan masuk',
           );
         } else {
           final clients = snapshot.data!.docs
@@ -692,8 +608,7 @@ class _AdminClientsCard extends StatelessWidget {
           showFooter = clients.isNotEmpty;
 
           if (clients.isEmpty) {
-            content = _emptyState(
-              context: context,
+            content = const AppEmptyState(
               icon: Icons.inventory_2_outlined,
               message: 'Belum ada barang konsinyasi',
             );
@@ -714,101 +629,19 @@ class _AdminClientsCard extends StatelessWidget {
           }
         }
 
-        return Container(
-          decoration: BoxDecoration(
-            color: context.cardBg,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: context.cardBorder),
-            boxShadow: [
-              BoxShadow(
-                color: context.cardShadow,
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: context.headerBg,
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(12),
-                    topRight: Radius.circular(12),
-                  ),
-                ),
-                child: Text(
-                  'Barang Konsinyasi',
-                  style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: context.subColor,
-                  ),
-                ),
-              ),
-              Expanded(child: content),
-              if (showFooter)
-                InkWell(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => ConsignmentPage()),
-                    );
-                  },
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(12),
-                    bottomRight: Radius.circular(12),
-                  ),
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    alignment: Alignment.center,
-                    child: Text(
-                      'Lebih Banyak ...',
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 13,
-                        color: context.subColor,
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
+        return AppCardWithHeader(
+          title: 'Barang Konsinyasi',
+          onMoreTap: showFooter
+              ? () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => ConsignmentPage()),
+                  );
+                }
+              : null,
+          child: content,
         );
       },
-    );
-  }
-
-  Widget _emptyState({required BuildContext context, required IconData icon, required String message}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 16),
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 48,
-              color: context.emptyIcon,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 13,
-                color: context.emptyText,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -927,14 +760,12 @@ class _KaryawanRequestCard extends StatelessWidget {
             child: Center(child: CircularProgressIndicator()),
           );
         } else if (snapshot.hasError) {
-          content = _emptyState(
-            context: context,
+          content = AppEmptyState(
             icon: Icons.error_outline,
             message: 'Gagal memuat data:\n${snapshot.error}',
           );
         } else if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          content = _emptyState(
-            context: context,
+          content = const AppEmptyState(
             icon: Icons.inbox_outlined,
             message: 'Belum ada pengajuan masuk',
           );
@@ -982,101 +813,19 @@ class _KaryawanRequestCard extends StatelessWidget {
           );
         }
 
-        return Container(
-          decoration: BoxDecoration(
-            color: context.cardBg,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: context.cardBorder),
-            boxShadow: [
-              BoxShadow(
-                color: context.cardShadow,
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: context.headerBg,
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(12),
-                    topRight: Radius.circular(12),
-                  ),
-                ),
-                child: Text(
-                  'Daftar Pengajuan',
-                  style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: context.subColor,
-                  ),
-                ),
-              ),
-              Expanded(child: content),
-              if (showFooter)
-                InkWell(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => RequestListPage()),
-                    );
-                  },
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(12),
-                    bottomRight: Radius.circular(12),
-                  ),
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    alignment: Alignment.center,
-                    child: Text(
-                      'Lebih Banyak ...',
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 13,
-                        color: context.subColor,
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
+        return AppCardWithHeader(
+          title: 'Daftar Pengajuan',
+          onMoreTap: showFooter
+              ? () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => RequestListPage()),
+                  );
+                }
+              : null,
+          child: content,
         );
       },
-    );
-  }
-
-  Widget _emptyState({required BuildContext context, required IconData icon, required String message}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 16),
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 48,
-              color: context.emptyIcon,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 13,
-                color: context.emptyText,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -1237,11 +986,10 @@ class _ClientRequestCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (clientId == null) {
-      return _shell(
-        context: context,
-        showFooter: false,
-        child: _emptyState(
-          context: context,
+      return AppCardWithHeader(
+        title: 'Daftar Pengajuan',
+        onMoreTap: null,
+        child: const AppEmptyState(
           icon: Icons.info_outline,
           message:
               'Akun belum terdaftar sebagai klien.\nHubungi admin untuk pendaftaran.',
@@ -1261,16 +1009,14 @@ class _ClientRequestCard extends StatelessWidget {
             child: Center(child: CircularProgressIndicator()),
           );
         } else if (snapshot.hasError) {
-          content = _emptyState(
-            context: context,
+          content = AppEmptyState(
             icon: Icons.error_outline,
             message: 'Gagal memuat data:\n${snapshot.error}',
           );
         } else if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          content = _emptyState(
-            context: context,
-            icon: Icons.inventory_2_outlined,
-            message: 'Belum ada pengajuan konsinyasi',
+          content = const AppEmptyState(
+            icon: Icons.inbox_outlined,
+            message: 'Belum ada pengajuan masuk',
           );
         } else {
           showFooter = true;
@@ -1316,9 +1062,8 @@ class _ClientRequestCard extends StatelessWidget {
           );
         }
 
-        return _shell(
-          context: context,
-          showFooter: showFooter,
+        return AppCardWithHeader(
+          title: 'Daftar Pengajuan',
           onMoreTap: showFooter
               ? () => Navigator.push(
                   context,
@@ -1328,103 +1073,6 @@ class _ClientRequestCard extends StatelessWidget {
           child: content,
         );
       },
-    );
-  }
-
-  Widget _shell({
-    required BuildContext context,
-    required bool showFooter,
-    required Widget child,
-    VoidCallback? onMoreTap,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: context.cardBg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: context.cardBorder),
-        boxShadow: [
-          BoxShadow(
-            color: context.cardShadow,
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: context.headerBg,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(12),
-                topRight: Radius.circular(12),
-              ),
-            ),
-            child: Text(
-              'Daftar Pengajuan',
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: context.subColor,
-              ),
-            ),
-          ),
-          Expanded(child: child),
-          if (showFooter)
-          InkWell(
-            onTap: onMoreTap,
-            borderRadius: const BorderRadius.only(
-              bottomLeft: Radius.circular(12),
-              bottomRight: Radius.circular(12),
-            ),
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              alignment: Alignment.center,
-              child: Text(
-                'Lebih Banyak ...',
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 13,
-                  color: context.subColor,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _emptyState({required BuildContext context, required IconData icon, required String message}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 16),
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 48,
-              color: context.emptyIcon,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 13,
-                color: context.emptyText,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -1457,14 +1105,12 @@ class _ClientBorrowedItemsCard extends StatelessWidget {
             child: Center(child: CircularProgressIndicator()),
           );
         } else if (snapshot.hasError) {
-          content = _emptyState(
-            context: context,
+          content = AppEmptyState(
             icon: Icons.error_outline,
             message: 'Gagal memuat data:\n${snapshot.error}',
           );
         } else if (!snapshot.hasData || !snapshot.data!.exists) {
-          content = _emptyState(
-            context: context,
+          content = const AppEmptyState(
             icon: Icons.inventory_2_outlined,
             message: 'Data klien tidak ditemukan',
           );
@@ -1477,8 +1123,7 @@ class _ClientBorrowedItemsCard extends StatelessWidget {
           showFooter = borrowedItems.isNotEmpty;
 
           if (borrowedItems.isEmpty) {
-            content = _emptyState(
-              context: context,
+            content = const AppEmptyState(
               icon: Icons.inventory_2_outlined,
               message: 'Belum ada barang konsinyasi',
             );
@@ -1495,101 +1140,19 @@ class _ClientBorrowedItemsCard extends StatelessWidget {
           }
         }
 
-        return Container(
-          decoration: BoxDecoration(
-            color: context.cardBg,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: context.cardBorder),
-            boxShadow: [
-              BoxShadow(
-                color: context.cardShadow,
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: context.headerBg,
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(12),
-                    topRight: Radius.circular(12),
-                  ),
-                ),
-                child: Text(
-                  'Barang Konsinyasi',
-                  style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: context.subColor,
-                  ),
-                ),
-              ),
-              Expanded(child: content),
-              if (showFooter)
-                InkWell(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => ConsignmentPage()),
-                    );
-                  },
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(12),
-                    bottomRight: Radius.circular(12),
-                  ),
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    alignment: Alignment.center,
-                    child: Text(
-                      'Lebih Banyak ...',
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 13,
-                        color: context.subColor,
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
+        return AppCardWithHeader(
+          title: 'Barang Konsinyasi',
+          onMoreTap: showFooter
+              ? () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => ConsignmentPage()),
+                  );
+                }
+              : null,
+          child: content,
         );
       },
-    );
-  }
-
-  Widget _emptyState({required BuildContext context, required IconData icon, required String message}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 16),
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 48,
-              color: context.emptyIcon,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 13,
-                color: context.emptyText,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

@@ -140,3 +140,75 @@ extension AppColorsExtension on BuildContext {
     }
   }
 }
+
+extension AppTextThemeExtension on BuildContext {
+  TextStyle get titleLarge => TextStyle(
+    fontFamily: 'Poppins',
+    fontSize: 18,
+    fontWeight: FontWeight.w600,
+    color: nameColor,
+  );
+
+  TextStyle get titleMedium => TextStyle(
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    fontWeight: FontWeight.w600,
+    color: nameColor,
+  );
+
+  TextStyle get titleSmall => TextStyle(
+    fontFamily: 'Poppins',
+    fontSize: 13,
+    fontWeight: FontWeight.w600,
+    color: nameColor,
+  );
+
+  TextStyle get bodyLarge => TextStyle(
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    fontWeight: FontWeight.w400,
+    color: nameColor,
+  );
+
+  TextStyle get bodyMedium => TextStyle(
+    fontFamily: 'Poppins',
+    fontSize: 13,
+    fontWeight: FontWeight.w400,
+    color: nameColor,
+  );
+
+  TextStyle get bodySmall => TextStyle(
+    fontFamily: 'Poppins',
+    fontSize: 12,
+    fontWeight: FontWeight.w400,
+    color: nameColor,
+  );
+
+  TextStyle get labelLarge => TextStyle(
+    fontFamily: 'Poppins',
+    fontSize: 13,
+    fontWeight: FontWeight.w500,
+    color: subColor,
+  );
+
+  TextStyle get labelMedium => TextStyle(
+    fontFamily: 'Poppins',
+    fontSize: 12,
+    fontWeight: FontWeight.w500,
+    color: subColor,
+  );
+
+  TextStyle get labelSmall => TextStyle(
+    fontFamily: 'Poppins',
+    fontSize: 11,
+    fontWeight: FontWeight.w400,
+    color: subColor,
+  );
+
+  TextStyle get caption => TextStyle(
+    fontFamily: 'Poppins',
+    fontSize: 10,
+    fontWeight: FontWeight.w400,
+    color: subColor,
+  );
+}

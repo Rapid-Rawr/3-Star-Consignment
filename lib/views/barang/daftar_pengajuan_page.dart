@@ -12,6 +12,7 @@ import '../../widgets/gradient_button.dart';
 import '../../utils/currency_format.dart';
 import '../../widgets/app_dialog.dart';
 import '../../utils/app_colors.dart';
+import '../../widgets/app_empty_state.dart';
 
 class RequestListPage extends StatefulWidget {
   final ConsignmentRequestModel? initialBatch;
@@ -473,26 +474,10 @@ class _RequestListPageState extends State<RequestListPage> {
                   );
                 }
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.assignment_outlined,
-                          size: 64,
-                          color: context.emptyIcon,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Belum Ada Pengajuan',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: context.emptyText,
-                            fontFamily: 'Poppins',
-                          ),
-                        ),
-                      ],
-                    ),
+                  return const AppEmptyState(
+                    icon: Icons.assignment_outlined,
+                    message: 'Belum Ada Pengajuan',
+                    iconSize: 64,
                   );
                 }
 
@@ -544,26 +529,10 @@ class _RequestListPageState extends State<RequestListPage> {
                 });
 
                 if (batches.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.search_off_rounded,
-                          size: 64,
-                          color: context.emptyIcon,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Pengajuan Tidak Ditemukan',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: context.emptyText,
-                            fontFamily: 'Poppins',
-                          ),
-                        ),
-                      ],
-                    ),
+                  return const AppEmptyState(
+                    icon: Icons.search_off_rounded,
+                    message: 'Pengajuan Tidak Ditemukan',
+                    iconSize: 64,
                   );
                 }
 

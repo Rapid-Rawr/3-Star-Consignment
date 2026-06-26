@@ -1,8 +1,41 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
 
 enum ConsignmentItemStatus { pending, approved, partial, rejected }
 
 enum ConsignmentBatchStatus { pending, processing, packed, received, rejected }
+
+extension ConsignmentBatchStatusX on ConsignmentBatchStatus {
+  String get label {
+    switch (this) {
+      case ConsignmentBatchStatus.pending:
+        return 'Menunggu';
+      case ConsignmentBatchStatus.processing:
+        return 'Diproses';
+      case ConsignmentBatchStatus.packed:
+        return 'Dikemas';
+      case ConsignmentBatchStatus.received:
+        return 'Diserahkan';
+      case ConsignmentBatchStatus.rejected:
+        return 'Ditolak';
+    }
+  }
+
+  IconData get icon {
+    switch (this) {
+      case ConsignmentBatchStatus.pending:
+        return Icons.hourglass_empty_rounded;
+      case ConsignmentBatchStatus.processing:
+        return Icons.pending_actions_rounded;
+      case ConsignmentBatchStatus.packed:
+        return Icons.inventory_2_rounded;
+      case ConsignmentBatchStatus.received:
+        return Icons.verified_outlined;
+      case ConsignmentBatchStatus.rejected:
+        return Icons.cancel_outlined;
+    }
+  }
+}
 
 class ConsignmentItemEntry {
   final String catalogId;

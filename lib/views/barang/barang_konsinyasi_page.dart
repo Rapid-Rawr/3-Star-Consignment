@@ -17,6 +17,7 @@ import '../../utils/currency_format.dart';
 import '../../utils/app_colors.dart';
 import '../../widgets/date_range_filter.dart';
 import '../../widgets/app_dialog.dart';
+import '../../widgets/app_empty_state.dart';
 
 class ConsignmentPage extends StatefulWidget {
   const ConsignmentPage({super.key});
@@ -201,29 +202,13 @@ class _ConsignmentPageState extends State<ConsignmentPage> {
                       );
                     }
                     if (clients.isEmpty) {
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.people_outline_rounded,
-                              size: 64,
-                              color: context.emptyIcon,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              _searchQuery.isNotEmpty ||
-                                      _selectedCategory != null
-                                  ? 'Klien Tidak Ditemukan'
-                                  : 'Belum Ada Klien',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: context.emptyText,
-                                fontFamily: 'Poppins',
-                              ),
-                            ),
-                          ],
-                        ),
+                      return AppEmptyState(
+                        icon: Icons.people_outline_rounded,
+                        message: _searchQuery.isNotEmpty ||
+                                _selectedCategory != null
+                            ? 'Klien Tidak Ditemukan'
+                            : 'Belum Ada Klien',
+                        iconSize: 64,
                       );
                     }
 
@@ -365,22 +350,10 @@ class _ClientConsignmentView extends StatelessWidget {
                   Divider(height: 1, color: context.cardBorder),
 
                   if (displayItems.isEmpty)
-                    Padding(
+                    AppEmptyState(
+                      icon: Icons.inventory_2_outlined,
+                      message: 'Belum ada barang konsinyasi',
                       padding: const EdgeInsets.symmetric(vertical: 32),
-                      child: Column(
-                        children: [
-                          Icon(Icons.inventory_2_outlined, size: 48, color: context.subColor),
-                          const SizedBox(height: 10),
-                          Text(
-                            'Belum ada barang konsinyasi',
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 13,
-                              color: context.subColor,
-                            ),
-                          ),
-                        ],
-                      ),
                     )
                   else
                     ...displayItems.asMap().entries.map((entry) {
@@ -1055,15 +1028,9 @@ class _ClientDetailSheetState extends State<ClientDetailSheet> {
 
               Expanded(
                 child: items.isEmpty
-                    ? Center(
-                        child: Text(
-                          'Tidak ada barang di kategori ini',
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 13,
-                            color: context.subColor,
-                          ),
-                        ),
+                    ? AppEmptyState(
+                        icon: Icons.inventory_2_outlined,
+                        message: 'Tidak ada barang di kategori ini',
                       )
                     : ListView.separated(
                         controller: sc,
@@ -1712,15 +1679,9 @@ class _SerahkanBottomSheetState extends State<_SerahkanBottomSheet> {
                         .toList();
 
                     if (allItems.isEmpty) {
-                      return Center(
-                        child: Text(
-                          'Katalog tidak ditemukan',
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 13,
-                            color: context.subColor,
-                          ),
-                        ),
+                      return AppEmptyState(
+                        icon: Icons.search_off_rounded,
+                        message: 'Katalog tidak ditemukan',
                       );
                     }
 
