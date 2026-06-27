@@ -8,6 +8,7 @@ import '../../service/auth_provider.dart';
 import '../../widgets/search_filter_bar.dart';
 import '../../widgets/date_range_filter.dart';
 import '../../widgets/detail_sheet_widgets.dart';
+import '../../widgets/invoice_dialog.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/currency_format.dart';
 import '../../utils/konsinyasi_status_helpers.dart';
@@ -253,6 +254,7 @@ class _RequestHistoryPageState extends State<RequestHistoryPage> {
                       isDark: context.isDark,
                       onDetail: () =>
                           _showDetail(context, batch, context.isDark),
+                      onInvoice: () => showInvoiceDialog(context, batch: batch),
                     );
                   },
                 );
@@ -270,12 +272,14 @@ class _BatchHistoryCard extends StatelessWidget {
   final List<String> categories;
   final bool isDark;
   final VoidCallback onDetail;
+  final VoidCallback onInvoice;
 
   const _BatchHistoryCard({
     required this.batch,
     required this.categories,
     required this.isDark,
     required this.onDetail,
+    required this.onInvoice,
   });
 
   @override
@@ -416,21 +420,47 @@ class _BatchHistoryCard extends StatelessWidget {
               }).toList(),
             ),
             const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: onDetail,
-              icon: const Icon(Icons.visibility_outlined, size: 16),
-              label: const Text(
-                'Lihat Riwayat',
-                style: TextStyle(fontFamily: 'Poppins', fontSize: 12),
-              ),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: nameColor,
-                side: BorderSide(color: cardBorder),
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: onDetail,
+                    icon: const Icon(Icons.visibility_outlined, size: 16),
+                    label: const Text(
+                      'Lihat Riwayat',
+                      style: TextStyle(fontFamily: 'Poppins', fontSize: 12),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: nameColor,
+                      side: BorderSide(color: cardBorder),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(width: 8),
+                Material(
+                  color: context.primaryBg,
+                  shape: const CircleBorder(),
+                  clipBehavior: Clip.hardEdge,
+                  child: Tooltip(
+                    message: 'Invoice',
+                    child: InkWell(
+                      onTap: onInvoice,
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        child: Icon(
+                          Icons.receipt_long_outlined,
+                          color: context.primaryFg,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

@@ -8,6 +8,7 @@ import '../../service/auth_provider.dart';
 import '../../widgets/date_range_filter.dart';
 import '../../widgets/search_filter_bar.dart';
 import '../../widgets/detail_sheet_widgets.dart';
+import '../../widgets/invoice_dialog.dart';
 import '../../utils/currency_format.dart';
 import '../../utils/app_colors.dart';
 
@@ -241,6 +242,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                       isDark: context.isDark,
                       onDetail: () =>
                           _showDetail(context, payment, context.isDark),
+                      onInvoice: () => showInvoiceDialog(context, payment: payment),
                     );
                   },
                 );
@@ -258,12 +260,14 @@ class _PaymentHistoryCard extends StatelessWidget {
   final List<String> categories;
   final bool isDark;
   final VoidCallback onDetail;
+  final VoidCallback onInvoice;
 
   const _PaymentHistoryCard({
     required this.payment,
     required this.categories,
     required this.isDark,
     required this.onDetail,
+    required this.onInvoice,
   });
 
   String _methodLabel(String method) {
@@ -493,21 +497,47 @@ class _PaymentHistoryCard extends StatelessWidget {
 
             const SizedBox(height: 12),
 
-            OutlinedButton.icon(
-              onPressed: onDetail,
-              icon: const Icon(Icons.visibility_outlined, size: 16),
-              label: const Text(
-                'Lihat Detail',
-                style: TextStyle(fontFamily: 'Poppins', fontSize: 12),
-              ),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: context.nameColor,
-                side: BorderSide(color: cardBorder),
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: onDetail,
+                    icon: const Icon(Icons.visibility_outlined, size: 16),
+                    label: const Text(
+                      'Lihat Detail',
+                      style: TextStyle(fontFamily: 'Poppins', fontSize: 12),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: context.nameColor,
+                      side: BorderSide(color: cardBorder),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(width: 8),
+                Material(
+                  color: context.primaryBg,
+                  shape: const CircleBorder(),
+                  clipBehavior: Clip.hardEdge,
+                  child: Tooltip(
+                    message: 'Invoice',
+                    child: InkWell(
+                      onTap: onInvoice,
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        child: Icon(
+                          Icons.receipt_long_outlined,
+                          color: context.primaryFg,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

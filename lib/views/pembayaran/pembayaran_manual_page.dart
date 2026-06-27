@@ -117,6 +117,16 @@ class _ManualPaymentPageState extends State<ManualPaymentPage> {
                 .toList();
           }
 
+          // Sort: clients with debt first
+          clients.sort((a, b) {
+            final aHasDebt = a.computedDebt > 0;
+            final bHasDebt = b.computedDebt > 0;
+            if (aHasDebt != bHasDebt) {
+              return aHasDebt ? -1 : 1;
+            }
+            return 0;
+          });
+
           final filterOptions = <FilterChipOption<String>>[
             const FilterChipOption(label: 'Semua', value: null),
             ...allCats.map((c) => FilterChipOption(label: c, value: c)),

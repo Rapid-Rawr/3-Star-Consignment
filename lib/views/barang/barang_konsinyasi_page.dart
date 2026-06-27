@@ -135,6 +135,17 @@ class _ConsignmentPageState extends State<ConsignmentPage> {
           role: role,
         );
 
+        if (role == Roles.admin || role == Roles.karyawan) {
+          clients.sort((a, b) {
+            final aHasDebt = a.computedDebt > 0;
+            final bHasDebt = b.computedDebt > 0;
+            if (aHasDebt != bHasDebt) {
+              return aHasDebt ? -1 : 1;
+            }
+            return 0;
+          });
+        }
+
         final allCats =
             clients
                 .expand((c) => c.borrowedItems.map((b) => b.catalogCategory))
