@@ -3,8 +3,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../service/roles.dart';
 
 class AuthService {
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
-  final FirebaseAuth auth = FirebaseAuth.instance;
+  final FirebaseFirestore firestore ;
+  final FirebaseAuth auth ;
+
+  // Cukup ubah constructor ini saja di file asli
+  AuthService({FirebaseFirestore? firestore, FirebaseAuth? auth})
+    : firestore = firestore ?? FirebaseFirestore.instance,
+      auth = auth ?? FirebaseAuth.instance;
 
   Future<String?> getUserRole() async {
     final user = auth.currentUser;

@@ -1,0 +1,86 @@
+{
+  "project_info": {
+    "project_number": "412217447834",
+    "project_id": "test-4d7e0",
+    "storage_bucket": "test-4d7e0.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:412217447834:android:35d85fe745e384dc161623",
+        "android_client_info": {
+          "package_name": "com.example.star_consignment"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "412217447834-7ila6uu3ckojum1f8cos7nv6ukcrk5gc.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.star_consignment",
+            "certificate_hash": "3eef298b8352477cbf1b38ff6e160650ddb7ec15"
+          }
+        },
+        {
+          "client_id": "412217447834-kmqq5ller4oatt0q7lep0134mrru6nl0.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.star_consignment",
+            "certificate_hash": "961fdae5c612cbc3273ed73afaba46d55a4474a8"
+          }
+        },
+        {
+          "client_id": "412217447834-lepl92r5k178bqs868ceh59d15r7ftqm.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.star_consignment",
+            "certificate_hash": "0820d6550f9b9e94b8b0d31428e7666fd2cd68e7"
+          }
+        },
+        {
+          "client_id": "412217447834-nigk9c98ov4tr6a2ipv8qvggeql6slat.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.star_consignment",
+            "certificate_hash": "d743171b10fcc1fffa973ffdb747507776733c0c"
+          }
+        },
+        {
+          "client_id": "412217447834-v5mo5eppe4ba8mjttdck9vglp5ktghhk.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.star_consignment",
+            "certificate_hash": "ee96184008dee3b4e353095c2d21e72e477849f8"
+          }
+        },
+        {
+          "client_id": "412217447834-g80jvq0cigo7gce4s64s5a6d3njb35hb.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDPEu4FOGpPdzvlJ50K0ic5yHOh8z2m8iI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "412217447834-g80jvq0cigo7gce4s64s5a6d3njb35hb.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "412217447834-97atm13s3jde4clsrd31ik8oqc3r1i8m.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.starConsignment"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
