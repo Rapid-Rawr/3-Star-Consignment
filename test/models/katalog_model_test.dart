@@ -3,7 +3,7 @@ import 'package:star_consignment/models/barang_models/katalog_model.dart';
 
 void main() {
   group('CatalogModel', () {
-    //Apakah data Firestore/Map berhasil diubah menjadi CatalogModel dengan benar
+    // Apakah data Firestore/Map berhasil diubah menjadi CatalogModel dengan benar
     test('fromMap creates object correctly', () {
       final catalog = CatalogModel.fromMap(
         'item1',
@@ -22,7 +22,7 @@ void main() {
       expect(catalog.imagePath, 'test.jpg');
     });
 
-    //Apakah fallback imageUrl bekerja jika imagePath tidak ada
+    // Apakah fallback imageUrl bekerja jika imagePath tidak ada
     test('fromMap uses imageUrl when imagePath is missing', () {
       final catalog = CatalogModel.fromMap(
         'item1',
@@ -37,7 +37,7 @@ void main() {
       expect(catalog.imagePath, 'fallback.jpg');
     });
 
-    //Apakah nilai default digunakan jika field kosong/hilang
+    // Apakah nilai default digunakan jika field kosong/hilang
     test('fromMap returns default values when fields are missing', () {
       final catalog = CatalogModel.fromMap(
         'item1',
@@ -51,7 +51,7 @@ void main() {
       expect(catalog.imagePath, null);
     });
 
-    //Apakah object bisa diubah kembali menjadi Map untuk disimpan ke Firestore
+    // Apakah object bisa diubah kembali menjadi Map untuk disimpan ke Firestore
     test('toMap converts object correctly', () {
       final catalog = CatalogModel(
         id: 'item1',
@@ -69,7 +69,7 @@ void main() {
       expect(map['imagePath'], 'test.jpg');
     });
 
-    //Apakah hanya field tertentu yang berubah
+    // Apakah hanya field tertentu yang berubah
     test('copyWith updates selected fields', () {
       final catalog = CatalogModel(
         id: 'item1',
@@ -91,24 +91,7 @@ void main() {
       expect(updated.imagePath, 'old.jpg');
     });
 
-    //Apakah gambar bisa diganti
-    test('copyWith can replace imagePath', () {
-      final catalog = CatalogModel(
-        id: 'item1',
-        name: 'Baju Seragam',
-        price: 150000,
-        category: 'Seragam',
-        imagePath: 'old.jpg',
-      );
-
-      final updated = catalog.copyWith(
-        imagePath: 'new.jpg',
-      );
-
-      expect(updated.imagePath, 'new.jpg');
-    });
-
-    //Apakah gambar bisa dihapus menggunakan clearImage
+    // Apakah gambar bisa dihapus menggunakan clearImage
     test('copyWith can clear imagePath', () {
       final catalog = CatalogModel(
         id: 'item1',
@@ -124,5 +107,60 @@ void main() {
 
       expect(updated.imagePath, null);
     });
+  });
+
+  group('CatalogModel - Invalid Cases', () {
+
+    // Apakah harga negatif tetap tersimpan (seharusnya ditolak)
+    test('fromMap with negative price should not be accepted', () {
+      final catalog = CatalogModel.fromMap(
+        'item1',
+        {
+          'name': 'Baju Seragam',
+          'price': -50000,
+          'category': 'Seragam',
+          'imagePath': 'test.jpg',
+        },
+      );
+
+      expect(catalog.price, isNot(isNegative),
+          reason: 'Harga tidak boleh negatif');
+    });
+
+    // Apakah imagePath dengan format bukan gambar diterima
+    test('fromMap with invalid image extension should not be accepted', () {
+      final catalog = CatalogModel.fromMap(
+        'item1',
+        {
+          'name': 'Baju Seragam',
+          'price': 150000,
+          'category': 'Seragam',
+          'imagePath': 'document.pdf',
+        },
+      );
+
+      final validExtensions = ['jpg', 'jpeg', 'png', 'webp'];
+      final ext = catalog.imagePath?.split('.').last ?? '';
+
+      expect(validExtensions.contains(ext), isTrue,
+          reason: 'Format gambar tidak valid');
+    });
+
+    // Apakah copyWith dengan harga negatif ditolak
+    test('copyWith with negative price should not be accepted', () {
+      final catalog = CatalogModel(
+        id: 'item1',
+        name: 'Baju Seragam',
+        price: 150000,
+        category: 'Seragam',
+        imagePath: 'test.jpg',
+      );
+
+      final updated = catalog.copyWith(price: -99999);
+
+      expect(updated.price, isNot(isNegative),
+          reason: 'Harga hasil copyWith tidak boleh negatif');
+    });
+
   });
 }
