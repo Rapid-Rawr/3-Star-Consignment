@@ -203,6 +203,48 @@ void main() {
       model = ConsignmentRequestModel.fromMap(snap.id, snap.data()!);
       expect(model.items.every((i) => i.itemStatus == ConsignmentItemStatus.rejected), isTrue);
     });
+
+    test('cannot approve all if batch is packed', () async {
+      final firestore = FakeFirebaseFirestore();
+      final controller = ConsignmentRequestController(firestore: firestore);
+      final docId = await _addRequest(firestore);
+
+      await firestore.collection('consignment_requests').doc(docId).update({
+        'status': ConsignmentBatchStatus.packed.name,
+      });
+
+      final result = await controller.approveAllPending(docId);
+      expect(result['success'], isFalse);
+      expect(result['error'], 'Pengajuan sudah dikemas');
+    });
+
+    test('cannot reject all if batch is packed', () async {
+      final firestore = FakeFirebaseFirestore();
+      final controller = ConsignmentRequestController(firestore: firestore);
+      final docId = await _addRequest(firestore);
+
+      await firestore.collection('consignment_requests').doc(docId).update({
+        'status': ConsignmentBatchStatus.packed.name,
+      });
+
+      final result = await controller.rejectAllPending(docId);
+      expect(result['success'], isFalse);
+      expect(result['error'], 'Pengajuan sudah dikemas');
+    });
+
+    test('cannot cancel all if batch is packed', () async {
+      final firestore = FakeFirebaseFirestore();
+      final controller = ConsignmentRequestController(firestore: firestore);
+      final docId = await _addRequest(firestore);
+
+      await firestore.collection('consignment_requests').doc(docId).update({
+        'status': ConsignmentBatchStatus.packed.name,
+      });
+
+      final result = await controller.cancelAllItems(docId);
+      expect(result['success'], isFalse);
+      expect(result['error'], 'Pengajuan sudah dikemas');
+    });
   });
 
   group('Packing Workflows', () {
