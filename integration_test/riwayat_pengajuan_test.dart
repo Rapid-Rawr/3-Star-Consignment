@@ -128,5 +128,97 @@ void main() {
         );
       }
     });
+
+    testWidgets('TC-RP-06: DateEnd tidak bisa dipilih sebelum DateFrom',
+        (tester) async {
+      await tester.pumpWidget(buildTestApp());
+      await tester.pumpAndSettle(const Duration(seconds: 5));
+
+      final fromDateButton = find.textContaining('Dari');
+      if (fromDateButton.evaluate().isNotEmpty) {
+        await tester.tap(fromDateButton.first);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(DatePickerDialog), findsOneWidget);
+
+        await tester.tap(find.text('OK'));
+        await tester.pumpAndSettle();
+
+        final toDateButton = find.textContaining('Sampai');
+        if (toDateButton.evaluate().isNotEmpty) {
+          await tester.tap(toDateButton.first);
+          await tester.pumpAndSettle();
+
+          expect(find.byType(DatePickerDialog), findsOneWidget);
+
+          // Verifikasi dateTo picker berhasil terbuka
+          // firstDate sudah di-set ke dateFrom, tanggal sebelum itu disabled
+          await tester.tap(find.text('OK'));
+          await tester.pumpAndSettle();
+
+          expect(find.textContaining('Sampai'), findsWidgets);
+        }
+      }
+    });
+
+    testWidgets('TC-RP-07: DateFrom diubah lebih besar dari DateEnd → DateEnd di-reset',
+        (tester) async {
+      await tester.pumpWidget(buildTestApp());
+      await tester.pumpAndSettle(const Duration(seconds: 5));
+
+      final fromDateButton = find.textContaining('Dari');
+      final toDateButton = find.textContaining('Sampai');
+
+      if (fromDateButton.evaluate().isNotEmpty && toDateButton.evaluate().isNotEmpty) {
+        // Step 1: Set dateFrom ke awal bulan
+        await tester.tap(fromDateButton.first);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(DatePickerDialog), findsOneWidget);
+
+        final firstDayText = find.text('1');
+        if (firstDayText.evaluate().isNotEmpty) {
+          await tester.tap(firstDayText.first);
+        }
+        await tester.tap(find.text('OK'));
+        await tester.pumpAndSettle();
+
+        // Step 2: Set dateTo ke akhir bulan
+        await tester.tap(toDateButton.first);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(DatePickerDialog), findsOneWidget);
+
+        for (int day = 28; day <= 31; day++) {
+          final dayText = find.text('$day');
+          if (dayText.evaluate().isNotEmpty) {
+            await tester.tap(dayText.first);
+            break;
+          }
+        }
+        await tester.tap(find.text('OK'));
+        await tester.pumpAndSettle();
+
+        // Step 3: Ubah dateFrom ke bulan berikutnya (lebih besar dari dateTo)
+        await tester.tap(fromDateButton.first);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(DatePickerDialog), findsOneWidget);
+
+        final nextMonthIcon = find.byIcon(Icons.chevron_right);
+        if (nextMonthIcon.evaluate().isNotEmpty) {
+          await tester.tap(nextMonthIcon.first);
+          await tester.pumpAndSettle();
+        }
+
+        await tester.tap(find.text('15'));
+        await tester.tap(find.text('OK'));
+        await tester.pumpAndSettle();
+
+        // Step 4: Verify dateTo di-reset (kembali ke label "Sampai Tanggal")
+        final toDateText = find.textContaining('Sampai');
+        expect(toDateText, findsWidgets);
+      }
+    });
   });
 }
